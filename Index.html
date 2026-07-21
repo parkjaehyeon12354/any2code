@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Claude — your thinking partner. An AI assistant built by Anthropic to be helpful, harmless, and honest.">
+<title>Claude — Your Thinking Partner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ── */
+:root {
+  /* Colors */
+  --primary: #cc785c;
+  --primary-active: #a9583e;
+  --primary-disabled: #e6dfd8;
+  --ink: #141413;
+  --body: #3d3d3a;
+  --body-strong: #252523;
+  --muted: #6c6a64;
+  --muted-soft: #8e8b82;
+  --hairline: #e6dfd8;
+  --hairline-soft: #ebe6df;
+  --canvas: #faf9f5;
+  --surface-soft: #f5f0e8;
+  --surface-card: #efe9de;
+  --surface-cream-strong: #e8e0d2;
+  --surface-dark: #181715;
+  --surface-dark-elevated: #252320;
+  --surface-dark-soft: #1f1e1b;
+  --on-primary: #ffffff;
+  --on-dark: #faf9f5;
+  --on-dark-soft: #a09d96;
+  --accent-teal: #5db8a6;
+  --accent-amber: #e8a55a;
+  --success: #5db872;
+  --warning: #d4a017;
+  --error: #c64545;
+
+  /* Typography families */
+  --font-display: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Rounded */
+  --rounded-xs: 4px;
+  --rounded-sm: 6px;
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
+  --rounded-xl: 16px;
+  --rounded-pill: 9999px;
+
+  /* Spacing */
+  --sp-xxs: 4px;
+  --sp-xs: 8px;
+  --sp-sm: 12px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+  --sp-xxl: 48px;
+  --sp-section: 96px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ── Container ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--sp-lg); }
+
+/* ── Typography Classes ── */
+.display-xl {
+  font-family: var(--font-display);
+  font-size: 64px; font-weight: 500; line-height: 1.05; letter-spacing: -1.5px;
+  color: var(--ink);
+}
+.display-lg {
+  font-family: var(--font-display);
+  font-size: 48px; font-weight: 500; line-height: 1.1; letter-spacing: -1px;
+  color: var(--ink);
+}
+.display-md {
+  font-family: var(--font-display);
+  font-size: 36px; font-weight: 500; line-height: 1.15; letter-spacing: -0.5px;
+  color: var(--ink);
+}
+.display-sm {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 500; line-height: 1.2; letter-spacing: -0.3px;
+  color: var(--ink);
+}
+.title-lg { font-family: var(--font-body); font-size: 22px; font-weight: 500; line-height: 1.3; color: var(--ink); }
+.title-md { font-family: var(--font-body); font-size: 18px; font-weight: 500; line-height: 1.4; color: var(--ink); }
+.title-sm { font-family: var(--font-body); font-size: 16px; font-weight: 500; line-height: 1.4; color: var(--ink); }
+.body-md { font-family: var(--font-body); font-size: 16px; font-weight: 400; line-height: 1.55; color: var(--body); }
+.body-sm { font-family: var(--font-body); font-size: 14px; font-weight: 400; line-height: 1.55; }
+.caption { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.4; }
+.caption-uppercase {
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  line-height: 1.4; letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500; line-height: 1;
+  padding: 12px 20px; height: 40px; border-radius: var(--rounded-md);
+  border: none; cursor: pointer; white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:active { background: var(--primary-active); }
+.btn-secondary { background: var(--canvas); color: var(--ink); border: 1px solid var(--hairline); }
+.btn-secondary-on-dark { background: var(--surface-dark-elevated); color: var(--on-dark); }
+.btn-on-coral { background: var(--canvas); color: var(--ink); }
+.btn-text { background: transparent; color: var(--ink); padding: 0; height: auto; border: none; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 500; }
+
+/* ── Text Link ── */
+.text-link { color: var(--primary); font-weight: 500; }
+.text-link:active { text-decoration: underline; }
+
+/* ── Badges ── */
+.badge-pill {
+  display: inline-block; background: var(--surface-card); color: var(--ink);
+  font-size: 13px; font-weight: 500; line-height: 1.4;
+  padding: 4px 12px; border-radius: var(--rounded-pill);
+}
+.badge-coral {
+  display: inline-block; background: var(--primary); color: var(--on-primary);
+  font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 4px 12px; border-radius: var(--rounded-pill);
+}
+
+/* ── Spike Mark (SVG inline) ── */
+.spike-mark {
+  display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;
+}
+
+/* ── Top Nav ── */
+.top-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--canvas); height: 64px;
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.top-nav .container {
+  display: flex; align-items: center; width: 100%;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-body); font-size: 18px; font-weight: 500; color: var(--ink);
+  margin-right: auto;
+}
+.nav-links {
+  display: flex; align-items: center; gap: var(--sp-lg); list-style: none;
+}
+.nav-links a {
+  font-size: 14px; font-weight: 500; color: var(--ink);
+}
+.nav-actions {
+  display: flex; align-items: center; gap: var(--sp-md); margin-left: var(--sp-xl);
+}
+.hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; align-items: center; justify-content: center;
+}
+.hamburger svg { width: 24px; height: 24px; }
+
+/* ── Hero Band ── */
+.hero-band {
+  padding: var(--sp-section) 0;
+}
+.hero-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-xxl); align-items: center;
+}
+.hero-content { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.hero-content p { color: var(--body); font-size: 18px; line-height: 1.55; max-width: 480px; }
+.hero-buttons { display: flex; gap: var(--sp-sm); flex-wrap: wrap; }
+.hero-card {
+  background: var(--surface-dark); border-radius: var(--rounded-xl); padding: var(--sp-xl);
+  color: var(--on-dark); overflow: hidden;
+}
+.hero-card-header {
+  display: flex; align-items: center; gap: var(--sp-xs); margin-bottom: var(--sp-md);
+}
+.hero-card-dot { width: 10px; height: 10px; border-radius: 50%; }
+.hero-card-dot.red { background: var(--error); }
+.hero-card-dot.yellow { background: var(--warning); }
+.hero-card-dot.green { background: var(--success); }
+.hero-card pre {
+  font-family: var(--font-code); font-size: 14px; line-height: 1.6;
+  color: var(--on-dark-soft); overflow-x: auto; margin: 0;
+}
+.hero-card pre .line-num { color: var(--muted-soft); user-select: none; margin-right: var(--sp-md); }
+.hero-card pre .kw { color: #c4a7e7; }
+.hero-card pre .fn { color: #82aaff; }
+.hero-card pre .str { color: var(--accent-teal); }
+.hero-card pre .cm { color: var(--muted-soft); }
+.hero-card pre .var { color: var(--on-dark); }
+
+/* ── Section Band ── */
+.section-band {
+  padding: var(--sp-section) 0;
+}
+.section-header {
+  text-align: center; max-width: 640px; margin: 0 auto var(--sp-xxl);
+}
+.section-header p { color: var(--body); margin-top: var(--sp-sm); }
+
+/* ── Feature Cards ── */
+.feature-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-lg);
+}
+.feature-card {
+  background: var(--surface-card); border-radius: var(--rounded-lg); padding: var(--sp-xl);
+}
+.feature-icon {
+  width: 40px; height: 40px; margin-bottom: var(--sp-md);
+  background: var(--surface-cream-strong); border-radius: var(--rounded-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary); font-size: 20px;
+}
+.feature-card h3 { margin-bottom: var(--sp-xs); }
+.feature-card p { color: var(--body); font-size: 16px; line-height: 1.55; }
+
+/* ── Dark Mockup Band ── */
+.dark-band {
+  background: var(--surface-dark); padding: var(--sp-section) 0;
+  border-radius: var(--rounded-xl); margin: 0 var(--sp-lg);
+}
+.dark-band .section-header { color: var(--on-dark); }
+.dark-band .section-header .display-lg { color: var(--on-dark); }
+.dark-band .section-header p { color: var(--on-dark-soft); }
+
+.code-window {
+  background: var(--surface-dark-soft); border-radius: var(--rounded-lg);
+  padding: var(--sp-lg); max-width: 800px; margin: 0 auto;
+}
+.code-window-bar {
+  display: flex; align-items: center; gap: var(--sp-xs); margin-bottom: var(--sp-md);
+  padding-bottom: var(--sp-sm); border-bottom: 1px solid var(--surface-dark-elevated);
+}
+.code-window-tab {
+  font-family: var(--font-code); font-size: 13px; color: var(--on-dark-soft);
+  padding: 4px 12px; border-radius: var(--rounded-sm);
+}
+.code-window-tab.active { background: var(--surface-dark-elevated); color: var(--on-dark); }
+.code-window pre {
+  font-family: var(--font-code); font-size: 14px; line-height: 1.6;
+  color: var(--on-dark-soft); overflow-x: auto; margin: 0;
+}
+.code-window pre .line-num { color: #555; user-select: none; margin-right: var(--sp-md); }
+.code-window pre .kw { color: #c4a7e7; }
+.code-window pre .fn { color: #82aaff; }
+.code-window pre .str { color: var(--accent-teal); }
+.code-window pre .cm { color: #666; font-style: italic; }
+.code-window pre .var { color: var(--on-dark); }
+.code-window pre .op { color: var(--accent-amber); }
+
+/* ── Model Comparison Cards ── */
+.model-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-lg);
+}
+.model-card {
+  background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg);
+  padding: var(--sp-xl); display: flex; flex-direction: column; gap: var(--sp-sm);
+}
+.model-card .model-shape {
+  width: 48px; height: 48px; border-radius: var(--rounded-md); margin-bottom: var(--sp-xs);
+}
+.model-card p { color: var(--body); flex: 1; }
+
+/* ── Pricing Cards ── */
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-lg);
+}
+.pricing-card {
+  background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg);
+  padding: var(--sp-xl); display: flex; flex-direction: column;
+}
+.pricing-card.featured {
+  background: var(--surface-dark); border-color: var(--surface-dark); color: var(--on-dark);
+}
+.pricing-card.featured .title-lg,
+.pricing-card.featured .display-sm,
+.pricing-card.featured .pricing-features li { color: var(--on-dark); }
+.pricing-card.featured .pricing-features li::before { color: var(--accent-teal); }
+.pricing-name { margin-bottom: var(--sp-xxs); }
+.pricing-price { margin-bottom: var(--sp-md); }
+.pricing-desc { color: var(--muted); font-size: 14px; margin-bottom: var(--sp-lg); }
+.pricing-card.featured .pricing-desc { color: var(--on-dark-soft); }
+.pricing-features {
+  list-style: none; display: flex; flex-direction: column; gap: var(--sp-xs);
+  margin-bottom: var(--sp-xl); flex: 1;
+}
+.pricing-features li {
+  font-size: 14px; color: var(--body); display: flex; align-items: baseline; gap: var(--sp-xs);
+}
+.pricing-features li::before { content: "✓"; color: var(--primary); font-weight: 500; }
+.pricing-card .btn { width: 100%; }
+
+/* ── Coral CTA Band ── */
+.cta-coral {
+  background: var(--primary); border-radius: var(--rounded-lg);
+  padding: 64px; text-align: center; margin: 0 var(--sp-lg);
+  color: var(--on-primary);
+}
+.cta-coral .display-sm { color: var(--on-primary); margin-bottom: var(--sp-xs); }
+.cta-coral p { color: rgba(255,255,255,0.85); margin-bottom: var(--sp-lg); }
+
+/* ── Category Tabs ── */
+.category-tabs {
+  display: flex; gap: var(--sp-xxs); margin-bottom: var(--sp-xl); justify-content: center; flex-wrap: wrap;
+}
+.category-tab {
+  background: transparent; color: var(--muted); font-family: var(--font-body);
+  font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: var(--rounded-md);
+  border: none; cursor: pointer;
+}
+.category-tab.active { background: var(--surface-card); color: var(--ink); }
+
+/* ── Connector Tiles ── */
+.connector-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-md);
+}
+.connector-tile {
+  background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg);
+  padding: 20px; display: flex; flex-direction: column; gap: var(--sp-xs);
+}
+.connector-icon {
+  width: 36px; height: 36px; background: var(--surface-card); border-radius: var(--rounded-md);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.connector-tile p { font-size: 14px; color: var(--muted); }
+
+/* ── Footer ── */
+.site-footer {
+  background: var(--surface-dark); padding: 64px 0; margin-top: var(--sp-section);
+}
+.footer-top {
+  display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-xxl);
+  font-size: 18px; font-weight: 500; color: var(--on-dark);
+}
+.footer-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-xl);
+}
+.footer-col h4 {
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  color: var(--on-dark); margin-bottom: var(--sp-md);
+}
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-xs); }
+.footer-col li a { font-size: 14px; color: var(--on-dark-soft); }
+.footer-bottom {
+  margin-top: var(--sp-xxl); padding-top: var(--sp-lg);
+  border-top: 1px solid var(--surface-dark-elevated);
+  font-size: 14px; color: var(--on-dark-soft);
+}
+
+/* ── Mobile Nav Overlay ── */
+.mobile-menu {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: var(--canvas); padding: var(--sp-xl);
+  flex-direction: column;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-xxl);
+}
+.mobile-menu-close { background: none; border: none; cursor: pointer; width: 36px; height: 36px; }
+.mobile-menu nav { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.mobile-menu nav a { font-size: 22px; font-weight: 500; color: var(--ink); }
+.mobile-menu-actions { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-sm); }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .feature-grid, .model-grid, .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  .connector-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .display-xl { font-size: 36px; letter-spacing: -0.5px; }
+  .display-lg { font-size: 32px; letter-spacing: -0.5px; }
+  .display-md { font-size: 28px; }
+
+  .nav-links { display: none; }
+  .nav-actions .btn-text { display: none; }
+  .hamburger { display: flex; }
+
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-card { margin-top: var(--sp-lg); }
+
+  .feature-grid, .model-grid, .pricing-grid { grid-template-columns: 1fr; }
+  .connector-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .dark-band, .cta-coral { margin: 0; border-radius: 0; }
+
+  .cta-coral { padding: var(--sp-xxl) var(--sp-lg); }
+  :root { --sp-section: 64px; }
+}
+
+@media (max-width: 480px) {
+  .connector-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="container">
+    <a href="#" class="nav-brand">
+      <svg class="spike-mark" viewBox="0 0 24 24" fill="none"><path d="M12 2L12 22M2 12L22 12M4.93 4.93L19.07 19.07M19.07 4.93L4.93 19.07" stroke="#141413" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Claude
+    </a>
+    <ul class="nav-links">
+      <li><a href="#">Product</a></li>
+      <li><a href="#">Solutions</a></li>
+      <li><a href="#">Use Cases</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Research</a></li>
+      <li><a href="#">Company</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="#" class="btn-text">Sign in</a>
+      <a href="#" class="btn btn-primary">Try Claude</a>
+      <button class="hamburger" onclick="document.getElementById('mobile-menu').classList.add('open')" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Mobile Menu ── -->
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand">
+      <svg class="spike-mark" viewBox="0 0 24 24" fill="none"><path d="M12 2L12 22M2 12L22 12M4.93 4.93L19.07 19.07M19.07 4.93L4.93 19.07" stroke="#141413" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Claude
+    </span>
+    <button class="mobile-menu-close" onclick="document.getElementById('mobile-menu').classList.remove('open')" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="#">Product</a>
+    <a href="#">Solutions</a>
+    <a href="#">Use Cases</a>
+    <a href="#">Pricing</a>
+    <a href="#">Research</a>
+    <a href="#">Company</a>
+  </nav>
+  <div class="mobile-menu-actions">
+    <a href="#" class="btn btn-secondary" style="width:100%">Sign in</a>
+    <a href="#" class="btn btn-primary" style="width:100%">Try Claude</a>
+  </div>
+</div>
+
+<!-- ── Hero Band ── -->
+<section class="hero-band" id="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content">
+        <span class="badge-coral">NEW</span>
+        <h1 class="display-xl">Meet your<br>thinking partner</h1>
+        <p>Claude is an AI assistant built by Anthropic — designed to be helpful, harmless, and honest. From quick questions to deep research, Claude helps you think through anything.</p>
+        <div class="hero-buttons">
+          <a href="#" class="btn btn-primary">Start for free</a>
+          <a href="#" class="btn btn-secondary">View pricing</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <span class="hero-card-dot red"></span>
+          <span class="hero-card-dot yellow"></span>
+          <span class="hero-card-dot green"></span>
+        </div>
+<pre><span class="line-num"> 1</span><span class="kw">import</span> <span class="var">anthropic</span>
+<span class="line-num"> 2</span>
+<span class="line-num"> 3</span><span class="var">client</span> <span class="op">=</span> <span class="var">anthropic</span>.<span class="fn">Anthropic</span>()
+<span class="line-num"> 4</span>
+<span class="line-num"> 5</span><span class="var">message</span> <span class="op">=</span> <span class="var">client</span>.<span class="var">messages</span>.<span class="fn">create</span>(
+<span class="line-num"> 6</span>    <span class="var">model</span><span class="op">=</span><span class="str">"claude-sonnet-4-20250514"</span>,
+<span class="line-num"> 7</span>    <span class="var">max_tokens</span><span class="op">=</span><span class="var">1024</span>,
+<span class="line-num"> 8</span>    <span class="var">messages</span><span class="op">=</span>[
+<span class="line-num"> 9</span>        {<span class="str">"role"</span>: <span class="str">"user"</span>,
+<span class="line-num">10</span>         <span class="str">"content"</span>: <span class="str">"Hello, Claude"</span>}
+<span class="line-num">11</span>    ]
+<span class="line-num">12</span>)
+<span class="line-num">13</span><span class="fn">print</span>(<span class="var">message</span>.<span class="var">content</span>)</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Feature Cards ── -->
+<section class="section-band" id="features">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="display-lg">Built for the way you work</h2>
+      <p class="body-md">Claude adapts to your needs — whether you're writing, analyzing, coding, or exploring ideas.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">✦</div>
+        <h3 class="title-md">Extended thinking</h3>
+        <p>Claude can reason step-by-step through complex problems, showing its work so you can follow along and verify.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⟨⟩</div>
+        <h3 class="title-md">Code generation</h3>
+        <p>Write, debug, and refactor code across dozens of languages. Claude understands your codebase in context.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◎</div>
+        <h3 class="title-md">Vision &amp; analysis</h3>
+        <p>Upload images, charts, and documents. Claude sees and interprets visual information with precision.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">▤</div>
+        <h3 class="title-md">Long context</h3>
+        <p>Process up to 200K tokens in a single conversation — entire codebases, research papers, or legal documents.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="title-md">Tool use</h3>
+        <p>Connect Claude to your tools and APIs. Let it take actions, search the web, and orchestrate complex workflows.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">☰</div>
+        <h3 class="title-md">Artifacts</h3>
+        <p>Claude creates documents, code, and visualizations as interactive artifacts you can iterate on in real time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Dark Code Mockup Band ── -->
+<section class="dark-band" id="code">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="display-lg">Claude Code</h2>
+      <p>An agentic coding tool that lives in your terminal, understands your codebase, and helps you ship faster.</p>
+    </div>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="code-window-tab active">main.py</span>
+        <span class="code-window-tab">utils.py</span>
+        <span class="code-window-tab">tests.py</span>
+      </div>
+<pre><span class="line-num"> 1</span><span class="cm"># Claude refactored this function</span>
+<span class="line-num"> 2</span><span class="kw">def</span> <span class="fn">process_data</span>(<span class="var">records</span>):
+<span class="line-num"> 3</span>    <span class="str">"""Clean and transform input records."""</span>
+<span class="line-num"> 4</span>    <span class="kw">return</span> [
+<span class="line-num"> 5</span>        {
+<span class="line-num"> 6</span>            <span class="str">"id"</span>: <span class="var">r</span>[<span class="str">"id"</span>],
+<span class="line-num"> 7</span>            <span class="str">"name"</span>: <span class="var">r</span>[<span class="str">"name"</span>].<span class="fn">strip</span>().<span class="fn">title</span>(),
+<span class="line-num"> 8</span>            <span class="str">"score"</span>: <span class="fn">round</span>(<span class="var">r</span>[<span class="str">"score"</span>], <span class="var">2</span>),
+<span class="line-num"> 9</span>        }
+<span class="line-num">10</span>        <span class="kw">for</span> <span class="var">r</span> <span class="kw">in</span> <span class="var">records</span>
+<span class="line-num">11</span>        <span class="kw">if</span> <span class="var">r</span>.<span class="fn">get</span>(<span class="str">"active"</span>)
+<span class="line-num">12</span>    ]</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── Model Comparison ── -->
+<section class="section-band" id="models" style="margin-top: var(--sp-section);">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="display-lg">Choose your model</h2>
+      <p class="body-md">Three models optimized for different needs — from quick tasks to deep research.</p>
+    </div>
+    <div class="model-grid">
+      <div class="model-card">
+        <div class="model-shape" style="background: linear-gradient(135deg, var(--primary), var(--accent-amber));"></div>
+        <h3 class="display-md">Opus</h3>
+        <span class="badge-pill">Most powerful</span>
+        <p>Our most capable model for complex analysis, nuanced understanding, and creative tasks requiring the highest quality.</p>
+        <a href="#" class="text-link">Learn more →</a>
+      </div>
+      <div class="model-card">
+        <div class="model-shape" style="background: linear-gradient(135deg, var(--accent-teal), #82aaff);"></div>
+        <h3 class="display-md">Sonnet</h3>
+        <span class="badge-pill">Best balance</span>
+        <p>The ideal combination of speed and intelligence. Great for coding, data analysis, and everyday work.</p>
+        <a href="#" class="text-link">Learn more →</a>
+      </div>
+      <div class="model-card">
+        <div class="model-shape" style="background: linear-gradient(135deg, var(--accent-amber), var(--warning));"></div>
+        <h3 class="display-md">Haiku</h3>
+        <span class="badge-pill">Fastest</span>
+        <p>Near-instant responses for lightweight tasks. Perfect for chat, quick edits, and high-volume automation.</p>
+        <a href="#" class="text-link">Learn more →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Connectors ── -->
+<section class="section-band" id="connectors">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="display-lg">Integrations</h2>
+      <p class="body-md">Connect Claude to the tools you already use.</p>
+    </div>
+    <div class="category-tabs">
+      <button class="category-tab active">All</button>
+      <button class="category-tab">Productivity</button>
+      <button class="category-tab">Developer</button>
+      <button class="category-tab">Data</button>
+      <button class="category-tab">Communication</button>
+    </div>
+    <div class="connector-grid">
+      <div class="connector-tile">
+        <div class="connector-icon">📋</div>
+        <h4 class="title-sm">Google Docs</h4>
+        <p>Draft, edit, and summarize documents.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">💬</div>
+        <h4 class="title-sm">Slack</h4>
+        <p>Chat with Claude in your workspace.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">🔗</div>
+        <h4 class="title-sm">GitHub</h4>
+        <p>Review PRs and manage issues.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">📊</div>
+        <h4 class="title-sm">Notion</h4>
+        <p>Organize and search your knowledge base.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">📁</div>
+        <h4 class="title-sm">Google Drive</h4>
+        <p>Access and analyze your files.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">🌐</div>
+        <h4 class="title-sm">Web Search</h4>
+        <p>Search the web for up-to-date info.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">📧</div>
+        <h4 class="title-sm">Gmail</h4>
+        <p>Draft and manage email.</p>
+      </div>
+      <div class="connector-tile">
+        <div class="connector-icon">📅</div>
+        <h4 class="title-sm">Calendar</h4>
+        <p>Schedule and manage events.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ── -->
+<section class="section-band" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="display-lg">Simple, transparent pricing</h2>
+      <p class="body-md">Start for free, upgrade when you need more.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3 class="title-lg pricing-name">Free</h3>
+        <div class="display-sm pricing-price">$0</div>
+        <p class="pricing-desc">For individuals getting started with Claude.</p>
+        <ul class="pricing-features">
+          <li>Access to Claude Sonnet</li>
+          <li>Limited daily messages</li>
+          <li>Basic integrations</li>
+          <li>Web &amp; mobile access</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Get started</a>
+      </div>
+      <div class="pricing-card featured">
+        <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-bottom:var(--sp-xxs)">
+          <h3 class="title-lg pricing-name" style="margin:0">Pro</h3>
+          <span class="badge-coral">Popular</span>
+        </div>
+        <div class="display-sm pricing-price">$20<span class="body-sm" style="color:var(--on-dark-soft)"> / month</span></div>
+        <p class="pricing-desc">For professionals who need more from Claude.</p>
+        <ul class="pricing-features">
+          <li>Access to Opus, Sonnet &amp; Haiku</li>
+          <li>5× more messages</li>
+          <li>Extended thinking</li>
+          <li>All integrations</li>
+          <li>Priority access</li>
+        </ul>
+        <a href="#" class="btn btn-primary">Start free trial</a>
+      </div>
+      <div class="pricing-card">
+        <h3 class="title-lg pricing-name">Team</h3>
+        <div class="display-sm pricing-price">$25<span class="body-sm" style="color:var(--muted)"> / user / month</span></div>
+        <p class="pricing-desc">For teams collaborating with Claude at scale.</p>
+        <ul class="pricing-features">
+          <li>Everything in Pro</li>
+          <li>Higher rate limits</li>
+          <li>Admin controls</li>
+          <li>Shared workspaces</li>
+          <li>SSO &amp; SCIM</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Contact sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Coral CTA Band ── -->
+<section class="section-band">
+  <div class="cta-coral">
+    <h2 class="display-sm">Ready to start thinking with Claude?</h2>
+    <p class="body-md">Join millions of people using Claude for work, learning, and creative exploration.</p>
+    <a href="#" class="btn btn-on-coral">Try Claude for free</a>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="site-footer" id="footer">
+  <div class="container">
+    <div class="footer-top">
+      <svg class="spike-mark" viewBox="0 0 24 24" fill="none"><path d="M12 2L12 22M2 12L22 12M4.93 4.93L19.07 19.07M19.07 4.93L4.93 19.07" stroke="#faf9f5" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Anthropic
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Claude</a></li>
+          <li><a href="#">Claude Code</a></li>
+          <li><a href="#">API</a></li>
+          <li><a href="#">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">News</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Research</a></li>
+          <li><a href="#">Status</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Acceptable Use</a></li>
+          <li><a href="#">Responsible Disclosure</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2025 Anthropic, PBC. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
