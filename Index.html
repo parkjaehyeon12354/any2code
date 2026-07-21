@@ -9,17 +9,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
-/* ── Design Tokens ── */
+/* ── Design Tokens (design-system.md 기준) ── */
 :root {
+  /* Colors */
   --primary: #cc785c;
   --primary-active: #a9583e;
+  --primary-disabled: #e6dfd8;
   --ink: #141413;
   --body: #3d3d3a;
+  --body-strong: #252523;
   --muted: #6c6a64;
   --muted-soft: #8e8b82;
   --hairline: #e6dfd8;
   --hairline-soft: #ebe6df;
   --canvas: #faf9f5;
+  --surface-soft: #f5f0e8;
   --surface-card: #efe9de;
   --surface-cream-strong: #e8e0d2;
   --surface-dark: #181715;
@@ -34,16 +38,19 @@
   --warning: #d4a017;
   --error: #c64545;
 
-  --font-display: "Cormorant Garamond", "EB Garamond", Georgia, serif;
-  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Typography — Copernicus/StyreneB = design MD 1순위, Google Fonts = fallback */
+  --font-display: "Copernicus", "Tiempos Headline", "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-body: "StyreneB", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-code: "JetBrains Mono", ui-monospace, monospace;
 
+  /* Rounded */
   --rounded-sm: 6px;
   --rounded-md: 8px;
   --rounded-lg: 12px;
   --rounded-xl: 16px;
   --rounded-pill: 9999px;
 
+  /* Spacing */
   --sp-xxs: 4px;
   --sp-xs: 8px;
   --sp-sm: 12px;
@@ -75,7 +82,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Typography ── */
 [class^="display-"] {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--ink);
 }
 .display-xl { font-size: 64px; line-height: 1.05; letter-spacing: -1.5px; }
@@ -101,7 +108,7 @@ a { color: inherit; text-decoration: none; }
 .btn-secondary { background: var(--canvas); color: var(--ink); border: 1px solid var(--hairline); }
 .btn-on-coral { background: var(--canvas); color: var(--ink); }
 .btn-text { background: transparent; color: var(--ink); padding: 0; height: auto; border: none; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 500; }
-.btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.18); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
 
 /* ── Text Link ── */
 .text-link { color: var(--primary); font-weight: 500; }
@@ -123,7 +130,7 @@ a { color: inherit; text-decoration: none; }
   display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;
 }
 
-/* ── Top Nav (Ans2Quest Discord-style) ── */
+/* ── Top Nav ── */
 .top-nav {
   position: sticky;
   top: 0;
@@ -131,16 +138,8 @@ a { color: inherit; text-decoration: none; }
   height: 56px;
   display: flex;
   align-items: center;
-  background:
-    radial-gradient(1px 1px at 6% 35%, rgba(255,255,255,0.3) 50%, transparent 50%),
-    radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.15) 50%, transparent 50%),
-    radial-gradient(1.5px 1.5px at 28% 20%, rgba(255,255,255,0.35) 50%, transparent 50%),
-    radial-gradient(1px 1px at 42% 80%, rgba(255,255,255,0.12) 50%, transparent 50%),
-    radial-gradient(1px 1px at 55% 30%, rgba(255,255,255,0.25) 50%, transparent 50%),
-    radial-gradient(1.5px 1.5px at 68% 70%, rgba(255,255,255,0.18) 50%, transparent 50%),
-    radial-gradient(1px 1px at 82% 45%, rgba(255,255,255,0.28) 50%, transparent 50%),
-    radial-gradient(1px 1px at 93% 60%, rgba(255,255,255,0.2) 50%, transparent 50%),
-    linear-gradient(135deg, #0e1225 0%, #1a1f3d 50%, #0e1225 100%);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .nav-inner {
@@ -158,7 +157,7 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--ink);
   white-space: nowrap;
 }
 .nav-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
@@ -173,15 +172,15 @@ a { color: inherit; text-decoration: none; }
 .nav-links a {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255,255,255,0.75);
+  color: var(--muted);
   padding: 6px 14px;
   border-radius: var(--rounded-md);
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 }
 .nav-links a:hover {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
+  background: var(--surface-soft);
+  color: var(--ink);
 }
 
 .nav-cta a {
@@ -189,14 +188,14 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   font-size: 14px;
   font-weight: 500;
-  color: var(--ink);
-  background: #fff;
+  color: var(--on-primary);
+  background: var(--primary);
   padding: 7px 16px;
   border-radius: var(--rounded-pill);
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition: background 0.15s;
 }
-.nav-cta a:hover { opacity: 0.88; }
+.nav-cta a:hover { background: var(--primary-active); }
 
 .hamburger {
   display: none;
@@ -208,25 +207,35 @@ a { color: inherit; text-decoration: none; }
 }
 .hamburger svg { width: 24px; height: 24px; }
 
-/* ── Hero (Ans2Quest) ── */
+/* ── Hero ── */
 .hero {
+  position: relative;
   text-align: center;
   padding: 140px 24px 120px;
-  background: linear-gradient(180deg, #0e1225 0%, #151a35 35%, var(--canvas) 100%);
+  background: var(--canvas);
+  overflow: hidden;
 }
+.hero canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hero h1, .hero p, .hero-buttons { position: relative; z-index: 1; }
 .hero h1 {
   font-family: var(--font-display);
   font-size: 56px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: -1px;
-  color: #fff;
+  color: var(--ink);
   margin-bottom: 16px;
 }
 .hero p {
   font-size: 18px;
   line-height: 1.55;
-  color: rgba(255,255,255,0.65);
+  color: var(--body);
   max-width: 520px;
   margin: 0 auto 32px;
 }
@@ -411,7 +420,7 @@ a { color: inherit; text-decoration: none; }
     <a href="#" class="nav-brand">
       <svg viewBox="0 0 26 26" fill="none">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
-        <line x1="9" y1="3" x2="17" y2="3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
         <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
         <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
       </svg>
@@ -429,7 +438,7 @@ a { color: inherit; text-decoration: none; }
       <a href="#">시작하기</a>
     </div>
     <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
 </header>
@@ -464,7 +473,8 @@ a { color: inherit; text-decoration: none; }
 </div>
 
 <!-- ── Hero ── -->
-<section class="hero">
+<section class="hero" id="hero">
+  <canvas id="hero-particles"></canvas>
   <h1>탐구의 시작,<br>Ans2Quest</h1>
   <p>과학 실험 시뮬레이션과 커뮤니티 기반 탐구 활동으로 당신의 과학적 사고를 확장하세요.</p>
   <div class="hero-buttons">
@@ -473,223 +483,112 @@ a { color: inherit; text-decoration: none; }
   </div>
 </section>
 
-<!-- ── Features ── -->
-<section class="section-band" id="features">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="display-lg">Built for the way you work</h2>
-      <p class="body-md">Claude adapts to your needs — whether you're writing, analyzing, coding, or exploring ideas.</p>
-    </div>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">✦</div>
-        <h3 class="title-md">Extended thinking</h3>
-        <p>Claude can reason step-by-step through complex problems, showing its work so you can follow along and verify.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⟨⟩</div>
-        <h3 class="title-md">Code generation</h3>
-        <p>Write, debug, and refactor code across dozens of languages. Claude understands your codebase in context.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">◎</div>
-        <h3 class="title-md">Vision &amp; analysis</h3>
-        <p>Upload images, charts, and documents. Claude sees and interprets visual information with precision.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">▤</div>
-        <h3 class="title-md">Long context</h3>
-        <p>Process up to 200K tokens in a single conversation — entire codebases, research papers, or legal documents.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3 class="title-md">Tool use</h3>
-        <p>Connect Claude to your tools and APIs. Let it take actions, search the web, and orchestrate complex workflows.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">☰</div>
-        <h3 class="title-md">Artifacts</h3>
-        <p>Claude creates documents, code, and visualizations as interactive artifacts you can iterate on in real time.</p>
-      </div>
-    </div>
-  </div>
-</section>
+<script>
+(function() {
+  const cvs = document.getElementById('hero-particles');
+  const ctx = cvs.getContext('2d');
+  const hero = document.getElementById('hero');
+  
+  let w, h;
+  // Mouse position
+  let mouseX = -9999, mouseY = -9999;
+  // Center of the vortex (smoothly tracks mouse)
+  let cx = 0, cy = 0;
 
-<!-- ── Claude Code ── -->
-<section class="dark-band" id="code">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="display-lg">Claude Code</h2>
-      <p>An agentic coding tool that lives in your terminal, understands your codebase, and helps you ship faster.</p>
-    </div>
-    <div class="code-window">
-      <div class="code-window-bar">
-        <span class="code-window-tab active">main.py</span>
-        <span class="code-window-tab">utils.py</span>
-        <span class="code-window-tab">tests.py</span>
-      </div>
-<pre><span class="line-num"> 1</span><span class="cm"># Claude refactored this function</span>
-<span class="line-num"> 2</span><span class="kw">def</span> <span class="fn">process_data</span>(<span class="var">records</span>):
-<span class="line-num"> 3</span>    <span class="str">"""Clean and transform input records."""</span>
-<span class="line-num"> 4</span>    <span class="kw">return</span> [
-<span class="line-num"> 5</span>        {
-<span class="line-num"> 6</span>            <span class="str">"id"</span>: <span class="var">r</span>[<span class="str">"id"</span>],
-<span class="line-num"> 7</span>            <span class="str">"name"</span>: <span class="var">r</span>[<span class="str">"name"</span>].<span class="fn">strip</span>().<span class="fn">title</span>(),
-<span class="line-num"> 8</span>            <span class="str">"score"</span>: <span class="fn">round</span>(<span class="var">r</span>[<span class="str">"score"</span>], <span class="var">2</span>),
-<span class="line-num"> 9</span>        }
-<span class="line-num">10</span>        <span class="kw">for</span> <span class="var">r</span> <span class="kw">in</span> <span class="var">records</span>
-<span class="line-num">11</span>        <span class="kw">if</span> <span class="var">r</span>.<span class="fn">get</span>(<span class="str">"active"</span>)
-<span class="line-num">12</span>    ]</pre>
-    </div>
-  </div>
-</section>
+  const COLORS = ['#cc785c','#e8a55a','#5db8a6','#c64545','#5db872'];
+  const COUNT = 800; // Grand, screen-filling amount
+  let particles = [];
 
-<!-- ── Models ── -->
-<section class="section-band" id="models" style="margin-top: var(--sp-section);">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="display-lg">Choose your model</h2>
-      <p class="body-md">Three models optimized for different needs — from quick tasks to deep research.</p>
-    </div>
-    <div class="model-grid">
-      <div class="model-card">
-        <div class="model-shape" style="background: linear-gradient(135deg, var(--primary), var(--accent-amber));"></div>
-        <h3 class="display-md">Opus</h3>
-        <span class="badge-pill">Most powerful</span>
-        <p>Our most capable model for complex analysis, nuanced understanding, and creative tasks requiring the highest quality.</p>
-        <a href="#" class="text-link">Learn more →</a>
-      </div>
-      <div class="model-card">
-        <div class="model-shape" style="background: linear-gradient(135deg, var(--accent-teal), #82aaff);"></div>
-        <h3 class="display-md">Sonnet</h3>
-        <span class="badge-pill">Best balance</span>
-        <p>The ideal combination of speed and intelligence. Great for coding, data analysis, and everyday work.</p>
-        <a href="#" class="text-link">Learn more →</a>
-      </div>
-      <div class="model-card">
-        <div class="model-shape" style="background: linear-gradient(135deg, var(--accent-amber), var(--warning));"></div>
-        <h3 class="display-md">Haiku</h3>
-        <span class="badge-pill">Fastest</span>
-        <p>Near-instant responses for lightweight tasks. Perfect for chat, quick edits, and high-volume automation.</p>
-        <a href="#" class="text-link">Learn more →</a>
-      </div>
-    </div>
-  </div>
-</section>
+  function resize() {
+    const r = hero.getBoundingClientRect();
+    w = r.width;
+    h = r.height;
+    cvs.width = w * devicePixelRatio;
+    cvs.height = h * devicePixelRatio;
+    cvs.style.width = w + 'px';
+    cvs.style.height = h + 'px';
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    
+    if (mouseX === -9999) {
+      mouseX = w / 2;
+      mouseY = h / 2;
+      cx = mouseX;
+      cy = mouseY;
+    }
+  }
 
-<!-- ── Integrations ── -->
-<section class="section-band" id="connectors">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="display-lg">Integrations</h2>
-      <p class="body-md">Connect Claude to the tools you already use.</p>
-    </div>
-    <div class="connector-grid">
-      <div class="connector-tile">
-        <div class="connector-icon">📋</div>
-        <h4 class="title-sm">Google Docs</h4>
-        <p>Draft, edit, and summarize documents.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">💬</div>
-        <h4 class="title-sm">Slack</h4>
-        <p>Chat with Claude in your workspace.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">🔗</div>
-        <h4 class="title-sm">GitHub</h4>
-        <p>Review PRs and manage issues.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">📊</div>
-        <h4 class="title-sm">Notion</h4>
-        <p>Organize and search your knowledge base.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">📁</div>
-        <h4 class="title-sm">Google Drive</h4>
-        <p>Access and analyze your files.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">🌐</div>
-        <h4 class="title-sm">Web Search</h4>
-        <p>Search the web for up-to-date info.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">📧</div>
-        <h4 class="title-sm">Gmail</h4>
-        <p>Draft and manage email.</p>
-      </div>
-      <div class="connector-tile">
-        <div class="connector-icon">📅</div>
-        <h4 class="title-sm">Calendar</h4>
-        <p>Schedule and manage events.</p>
-      </div>
-    </div>
-  </div>
-</section>
+  function init() {
+    particles = [];
+    for (let i = 0; i < COUNT; i++) {
+      // Exponential distribution to have a dense core and sparse edges, spreading across the whole screen
+      // Increased max radius to 1800 so it covers the screen even when mouse is at the edge
+      const radius = Math.pow(Math.random(), 1.8) * 1800 + 20; 
+      const angle = Math.random() * Math.PI * 2;
+      particles.push({
+        radius: radius,
+        angle: angle,
+        // Slower rotation for a grand feel
+        speed: (Math.random() * 0.001 + 0.0002) * (Math.random() > 0.5 ? 1 : -1),
+        size: Math.random() * 4 + 2,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: Math.random() * 0.6 + 0.1
+      });
+    }
+    resize();
+  }
 
-<!-- ── Pricing ── -->
-<section class="section-band" id="pricing">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="display-lg">Simple, transparent pricing</h2>
-      <p class="body-md">Start for free, upgrade when you need more.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="pricing-card">
-        <h3 class="title-lg pricing-name">Free</h3>
-        <div class="display-sm pricing-price">$0</div>
-        <p class="pricing-desc">For individuals getting started with Claude.</p>
-        <ul class="pricing-features">
-          <li>Access to Claude Sonnet</li>
-          <li>Limited daily messages</li>
-          <li>Basic integrations</li>
-          <li>Web &amp; mobile access</li>
-        </ul>
-        <a href="#" class="btn btn-secondary">Get started</a>
-      </div>
-      <div class="pricing-card featured">
-        <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-bottom:var(--sp-xxs)">
-          <h3 class="title-lg pricing-name" style="margin:0">Pro</h3>
-          <span class="badge-coral">Popular</span>
-        </div>
-        <div class="display-sm pricing-price">$20<span class="body-sm" style="color:var(--on-dark-soft)"> / month</span></div>
-        <p class="pricing-desc">For professionals who need more from Claude.</p>
-        <ul class="pricing-features">
-          <li>Access to Opus, Sonnet &amp; Haiku</li>
-          <li>5× more messages</li>
-          <li>Extended thinking</li>
-          <li>All integrations</li>
-          <li>Priority access</li>
-        </ul>
-        <a href="#" class="btn btn-primary">Start free trial</a>
-      </div>
-      <div class="pricing-card">
-        <h3 class="title-lg pricing-name">Team</h3>
-        <div class="display-sm pricing-price">$25<span class="body-sm" style="color:var(--muted)"> / user / month</span></div>
-        <p class="pricing-desc">For teams collaborating with Claude at scale.</p>
-        <ul class="pricing-features">
-          <li>Everything in Pro</li>
-          <li>Higher rate limits</li>
-          <li>Admin controls</li>
-          <li>Shared workspaces</li>
-          <li>SSO &amp; SCIM</li>
-        </ul>
-        <a href="#" class="btn btn-secondary">Contact sales</a>
-      </div>
-    </div>
-  </div>
-</section>
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
 
-<!-- ── CTA ── -->
-<section class="section-band">
-  <div class="cta-coral">
-    <h2 class="display-sm">Ready to start thinking with Claude?</h2>
-    <p class="body-md">Join millions of people using Claude for work, learning, and creative exploration.</p>
-    <a href="#" class="btn btn-on-coral">Try Claude for free</a>
-  </div>
-</section>
+    // Smoothly interpolate the actual center of the vortex towards mouse position
+    cx += (mouseX - cx) * 0.08;
+    cy += (mouseY - cy) * 0.08;
+
+    for (const p of particles) {
+      p.angle += p.speed;
+      
+      // Calculate particle position relative to the moving center (cx, cy)
+      const x = cx + Math.cos(p.angle) * p.radius;
+      const y = cy + Math.sin(p.angle) * p.radius;
+
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(x, y);
+      
+      // Orient dashes radially (pointing outward from center) like Antigravity
+      ctx.rotate(p.angle);
+      
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      // Elongated dash shape
+      ctx.roundRect(-p.size, -1, p.size * 2, 2, 1);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  hero.addEventListener('mousemove', function(e) {
+    const r = hero.getBoundingClientRect();
+    mouseX = e.clientX - r.left;
+    mouseY = e.clientY - r.top;
+  });
+  
+  hero.addEventListener('mouseleave', function() {
+    mouseX = w / 2;
+    mouseY = h / 2;
+  });
+  
+  window.addEventListener('resize', resize);
+
+  init();
+  draw();
+})();
+</script>
+
+<!-- ── Main Content Area ── -->
+<!-- Ans2Quest 본문 내용이 들어갈 자리입니다. -->
 
 <!-- ── Footer ── -->
 <footer class="site-footer" id="footer">
