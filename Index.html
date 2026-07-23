@@ -169,7 +169,8 @@ a { color: inherit; text-decoration: none; }
   list-style: none;
   margin: 0 auto;
 }
-.nav-links a {
+.nav-links > li { position: relative; padding-bottom: 18px; margin-bottom: -18px; }
+.nav-links > li > a {
   font-size: 14px;
   font-weight: 500;
   color: var(--muted);
@@ -177,11 +178,62 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--rounded-md);
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
+  cursor: pointer;
 }
-.nav-links a:hover {
+.nav-links > li > a:hover,
+.nav-links > li.active > a {
   background: var(--surface-soft);
   color: var(--ink);
 }
+/* Active underline indicator */
+.nav-links > li.active > a::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--primary);
+}
+.nav-links > li > a { position: relative; }
+
+/* ── Mega Dropdown ── */
+.mega-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 560px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  padding: var(--sp-lg) var(--sp-xl);
+  padding-top: calc(var(--sp-lg) + 8px);
+  display: none;
+  z-index: 200;
+}
+.mega-dropdown.open { display: flex; gap: var(--sp-xl); }
+
+.mega-col { flex: 1; min-width: 0; }
+.mega-col h5 {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted-soft);
+  margin-bottom: var(--sp-sm);
+}
+.mega-col a {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body);
+  padding: 6px 0;
+  transition: color 0.15s;
+}
+.mega-col a:hover { color: var(--primary); }
 
 .nav-cta a {
   display: inline-flex;
@@ -426,14 +478,93 @@ a { color: inherit; text-decoration: none; }
       </svg>
       Ans2Quest
     </a>
-    <ul class="nav-links">
-      <li><a href="#">실험실</a></li>
-      <li><a href="#">커뮤니티</a></li>
-      <li><a href="#">심화 탐구</a></li>
+    <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown" id="dropdown-physics">
+          <div class="mega-col">
+            <h5>카테고리 1</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <h5>카테고리 2</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown" id="dropdown-chemistry">
+          <div class="mega-col">
+            <h5>카테고리 1</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <h5>카테고리 2</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown" id="dropdown-biology">
+          <div class="mega-col">
+            <h5>카테고리 1</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <h5>카테고리 2</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown" id="dropdown-earthscience">
+          <div class="mega-col">
+            <h5>카테고리 1</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <h5>카테고리 2</h5>
+            <a href="#">미정</a>
+            <a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community.html">커뮤니티</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown" id="dropdown-research">
+          <div class="mega-col">
+            <h5>탐구 활동</h5>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <h5>생기부 연계</h5>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
       <li><a href="#">가이드</a></li>
-      <li><a href="#">블로그</a></li>
-      <li><a href="#">소개</a></li>
     </ul>
+
+
     <div class="nav-cta">
       <a href="#">시작하기</a>
     </div>
@@ -615,7 +746,8 @@ a { color: inherit; text-decoration: none; }
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="#">About</a></li>
+          <li><a href="#">소개 (About)</a></li>
+          <li><a href="#">블로그 (Blog)</a></li>
           <li><a href="#">Careers</a></li>
           <li><a href="#">News</a></li>
           <li><a href="#">Contact</a></li>
@@ -645,6 +777,63 @@ a { color: inherit; text-decoration: none; }
     </div>
   </div>
 </footer>
+
+<script>
+(function() {
+  const navLinks = document.getElementById('nav-links');
+  let activeDropdown = null;
+  let activeLi = null;
+  let closeTimer = null;
+
+  function closeAll() {
+    clearTimeout(closeTimer);
+    if (activeDropdown) activeDropdown.classList.remove('open');
+    if (activeLi) activeLi.classList.remove('active');
+    activeDropdown = null;
+    activeLi = null;
+  }
+
+  function openDropdown(li) {
+    clearTimeout(closeTimer);
+    const link = li.querySelector('[data-dropdown]');
+    if (!link) return;
+    const id = 'dropdown-' + link.dataset.dropdown;
+    const panel = document.getElementById(id);
+    if (!panel) return;
+
+    if (activeDropdown === panel) return;
+    closeAll();
+    panel.classList.add('open');
+    li.classList.add('active');
+    activeDropdown = panel;
+    activeLi = li;
+  }
+
+  const listItems = navLinks.querySelectorAll('li');
+  listItems.forEach(li => {
+    li.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      openDropdown(li);
+    });
+
+    li.addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(closeAll, 250);
+    });
+  });
+
+  // Prevent top-level dropdown links from navigating or jumping to top
+  navLinks.addEventListener('click', function(e) {
+    const link = e.target.closest('[data-dropdown]');
+    if (link) {
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAll();
+  });
+})();
+</script>
 
 </body>
 </html>
