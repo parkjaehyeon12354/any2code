@@ -5,6 +5,11 @@
    sessionStorage 는 사용자가 개발자도구로 얼마든지 고칠 수 있으므로
    권한 판단(관리자 여부, 데이터 접근 허용)에 절대 쓰면 안 된다.
    실제 검증은 서버가 토큰을 확인해서 해야 한다. */
+/* HTML 이스케이프 — 구글 프로필 이름·신고 내용 등 외부에서 온 문자열을
+   innerHTML 에 넣기 전에 반드시 거친다. nav-user.js 와 admin.html 이 공유. */
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const Session = (function () {
   const KEY = 'ans2quest_user';
 

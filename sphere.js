@@ -10,7 +10,6 @@
 
   const COUNT = +cvs.dataset.count || 1400;
   const ALPHA = +cvs.dataset.alpha || 1;      // 전체 농도 배율
-  const SCALE = +cvs.dataset.scale || 1;      // 구 크기 배율
   const CLEAR = +cvs.dataset.clear || 0.38;   // 중앙 몇 %를 비울지 (글자 가독성)
 
   let w, h, R;
@@ -49,7 +48,7 @@
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     // 투영 반지름은 약 1.07R. 폭 기준으로는 림이 보이고, 높이 기준으로는
     // 위아래로 흘러넘치게 — 원형이 읽히면서 화면은 꽉 찬다
-    R = Math.min(w * 0.42, h * 0.72) * SCALE;
+    R = Math.min(w * 0.42, h * 0.72);
   }
 
   function init() {

@@ -67,7 +67,7 @@
 <header class="top-nav" id="top-nav">
   <div class="nav-inner">
     <a href="#" class="nav-brand">
-      <svg viewBox="0 0 26 26" fill="none">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
         <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
@@ -80,13 +80,13 @@
         <a href="#" data-dropdown="physics">물리학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
-            <h5>카테고리 1</h5>
+            <p class="mega-label">카테고리 1</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
           <div class="mega-col">
-            <h5>카테고리 2</h5>
+            <p class="mega-label">카테고리 2</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
@@ -96,13 +96,13 @@
         <a href="#" data-dropdown="chemistry">화학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
-            <h5>카테고리 1</h5>
+            <p class="mega-label">카테고리 1</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
           <div class="mega-col">
-            <h5>카테고리 2</h5>
+            <p class="mega-label">카테고리 2</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
@@ -112,13 +112,13 @@
         <a href="#" data-dropdown="biology">생명과학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
-            <h5>카테고리 1</h5>
+            <p class="mega-label">카테고리 1</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
           <div class="mega-col">
-            <h5>카테고리 2</h5>
+            <p class="mega-label">카테고리 2</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
@@ -128,13 +128,13 @@
         <a href="#" data-dropdown="earthscience">지구과학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
-            <h5>카테고리 1</h5>
+            <p class="mega-label">카테고리 1</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
           <div class="mega-col">
-            <h5>카테고리 2</h5>
+            <p class="mega-label">카테고리 2</p>
             <a href="#">미정</a>
             <a href="#">미정</a>
           </div>
@@ -145,13 +145,13 @@
         <a href="#" data-dropdown="research">심화 탐구</a>
         <div class="mega-dropdown">
           <div class="mega-col">
-            <h5>탐구 활동</h5>
+            <p class="mega-label">탐구 활동</p>
             <a href="#">주제 탐색</a>
             <a href="#">가설 설정 가이드</a>
             <a href="#">실험 설계</a>
           </div>
           <div class="mega-col">
-            <h5>생기부 연계</h5>
+            <p class="mega-label">생기부 연계</p>
             <a href="#">세특 작성 가이드</a>
             <a href="#">보고서 템플릿</a>
             <a href="#">우수 사례</a>
@@ -166,7 +166,7 @@
       <a href="login.html">시작하기</a>
     </div>
     <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
 </header>
@@ -175,7 +175,7 @@
 <div class="mobile-menu" id="mobile-menu">
   <div class="mobile-menu-header">
     <span class="nav-brand" style="color: var(--ink);">
-      <svg viewBox="0 0 26 26" fill="none">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
         <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
@@ -184,16 +184,19 @@
       Ans2Quest
     </span>
     <button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
     </button>
   </div>
+  <!-- 항목은 위 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 (실제로 그렇게 갈라진 적 있음) -->
   <nav>
-    <a href="#">실험실</a>
-    <a href="#">커뮤니티</a>
+    <a href="#">물리학</a>
+    <a href="#">화학</a>
+    <a href="#">생명과학</a>
+    <a href="#">지구과학</a>
+    <a href="/community.html">커뮤니티</a>
     <a href="#">심화 탐구</a>
     <a href="#">가이드</a>
-    <a href="#">블로그</a>
-    <a href="#">소개</a>
   </nav>
   <div class="mobile-menu-actions" id="mobile-cta">
     <a href="login.html" class="btn btn-primary" style="width:100%">시작하기</a>
@@ -202,7 +205,7 @@
 
 <!-- ── Hero ── -->
 <section class="hero" id="hero">
-  <canvas id="hero-particles" data-sphere></canvas>
+  <canvas data-sphere aria-hidden="true"></canvas>
   <h1>탐구의 시작,<br>Ans2Quest</h1>
   <p>과학 실험 시뮬레이션과 커뮤니티 기반 탐구 활동으로 당신의 과학적 사고를 확장하세요.</p>
   <div class="hero-buttons">
@@ -212,65 +215,8 @@
 </section>
 
 <script src="session.js"></script>
+<script src="nav-user.js"></script>
 <script src="sphere.js"></script>
-<script>
-// 로그인 상태면 "시작하기" 자리를 사용자 이름 + 로그아웃으로 바꾼다.
-// 표시만 바꿀 뿐 권한과는 무관하다 — session.js 의 경고 참고.
-(function () {
-  const user = Session.load();
-  if (!user) return;
-
-  const escape = (s) => String(s).replace(/[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-  const adminLink = Session.isAdmin() ? '<a href="admin.html">관리자</a>' : '';
-
-  document.getElementById('nav-cta').innerHTML =
-    '<div class="profile-menu" id="profile-menu">' +
-    '  <button type="button" class="profile-trigger" aria-expanded="false" aria-haspopup="true">' +
-           escape(user.name) +
-    '    <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-    '  </button>' +
-    '  <div class="profile-dropdown">' +
-           adminLink +
-    '    <a href="#" data-logout>로그아웃</a>' +
-    '  </div>' +
-    '</div>';
-
-  document.getElementById('mobile-cta').innerHTML =
-    (Session.isAdmin() ? '<a href="admin.html" class="btn btn-ghost" style="width:100%">관리자</a>' : '') +
-    '<a href="#" class="btn btn-primary" style="width:100%" data-logout>로그아웃</a>';
-
-  document.querySelectorAll('[data-logout]').forEach(function (el) {
-    el.addEventListener('click', function (e) {
-      e.preventDefault();
-      Session.clear();
-      window.location.reload();
-    });
-  });
-
-  // 프로필 드롭다운 — 트리거 클릭으로 열고, 바깥 클릭·Esc로 닫는다.
-  const menu = document.getElementById('profile-menu');
-  if (menu) {
-    const trigger = menu.querySelector('.profile-trigger');
-    trigger.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const open = menu.classList.toggle('open');
-      trigger.setAttribute('aria-expanded', String(open));
-    });
-    document.addEventListener('click', function () {
-      menu.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        menu.classList.remove('open');
-        trigger.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
-})();
-</script>
 
 <!-- ── Main Content Area ── -->
 <!-- Ans2Quest 본문 내용이 들어갈 자리입니다. -->
@@ -279,7 +225,7 @@
 <footer class="site-footer" id="footer">
   <div class="container">
     <div class="footer-top">
-      <svg viewBox="0 0 26 26" fill="none" style="width: 24px; height: 24px; margin-right: 8px;">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true" style="width: 24px; height: 24px; margin-right: 8px;">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
         <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>

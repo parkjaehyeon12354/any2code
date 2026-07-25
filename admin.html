@@ -11,27 +11,359 @@
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-/* 이 페이지 전용. 공용 토큰/네비는 styles.css 에 있다 */
-.admin-shell { min-height: calc(100vh - 56px); }
-.admin-header { padding: var(--sp-xl) 0 var(--sp-lg); border-bottom: 1px solid var(--hairline); }
-.admin-header h1 {
+/* 이 페이지 전용. 공용 토큰/네비는 styles.css 에 있다.
+   운영 화면이라 랜딩과 목적이 반대다 — 파티클·큰 여백 대신 밀도와 스캔 가능성.
+   크림/코랄 팔레트는 유지해서 같은 제품으로 읽히게 한다. */
+
+.admin-badge {
+  margin-left: var(--sp-sm);
+  padding: 3px 10px;
+  border-radius: var(--rounded-pill);
+  background: var(--surface-dark);
+  color: var(--on-dark);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.admin-layout { display: flex; min-height: calc(100vh - 56px); }
+
+/* ── 사이드바 ── */
+.admin-side {
+  width: 200px;
+  flex-shrink: 0;
+  padding: var(--sp-lg) var(--sp-sm);
+  background: var(--surface-soft);
+  border-right: 1px solid var(--hairline);
+}
+.admin-side h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);   /* --muted-soft 는 11px 에서 3.0:1 로 AA 미달 */
+  padding: 0 12px;
+  margin-bottom: var(--sp-xs);
+}
+.admin-side a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: var(--rounded-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.admin-side a:hover { background: rgba(20, 20, 19, .05); color: var(--ink); }
+.admin-side a.active {
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 20, 19, .06);
+}
+
+/* ── 본문 ── */
+.admin-main { flex: 1; min-width: 0; padding: var(--sp-xl); }
+.admin-main > section { display: none; }
+.admin-main > section.active { display: block; }
+
+.page-head { margin-bottom: var(--sp-lg); }
+.page-head h1 {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 400;
   color: var(--ink);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
-.admin-header p { font-size: 14px; color: var(--muted); }
+.page-head p { font-size: 13.5px; color: var(--muted); }
 
-.admin-body { padding: var(--sp-xl) 0; }
-.admin-placeholder {
-  border: 1px dashed var(--hairline);
+/* 샘플 데이터임을 명확히 — 실제 회원 정보로 오인하면 안 된다.
+   강조는 한쪽 굵은 테두리 대신 아이콘 색으로 준다 (login.html 의 .auth-notice 와 같은 방식) */
+.mock-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: var(--sp-lg);
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  word-break: keep-all;
+}
+/* --primary(2.89:1)도 --primary-active(4.46:1)도 13px 에서 AA 미달.
+   surface-soft 위에서 4.5:1 을 넘기려면 한 단계 더 어두워야 한다. */
+.mock-banner .mark { color: #8f4a33; font-weight: 600; flex-shrink: 0; }
+.mock-banner strong { color: var(--ink); font-weight: 600; }
+
+/* ── 지표 카드 ── */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-md); margin-bottom: var(--sp-xl); }
+.stat {
+  padding: var(--sp-lg);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
   border-radius: var(--rounded-lg);
+}
+.stat-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.stat-value { font-size: 26px; font-weight: 600; color: var(--ink); margin-top: 6px; line-height: 1.1; }
+/* 12px 보조 문구에 --muted-soft(3.23:1)·--primary(3.11:1)는 AA 미달 */
+.stat-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-note.warn { color: #8f4a33; font-weight: 500; }
+
+/* ── 표 ── */
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+  margin-bottom: var(--sp-lg);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--hairline);
+  flex-wrap: wrap;
+}
+.panel-head h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.panel-scroll { overflow-x: auto; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table th {
+  text-align: left;
+  padding: 10px var(--sp-lg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+.table td {
+  padding: 12px var(--sp-lg);
+  color: var(--body);
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: var(--surface-soft); }
+.table .cell-name { color: var(--ink); font-weight: 500; }
+.table .cell-muted { color: var(--muted); }
+
+/* 검색 */
+.search {
+  height: 36px;
+  padding: 0 12px;
+  min-width: 220px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.search:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(204, 120, 92, .18);
+}
+
+/* 상태 배지 */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--rounded-pill);
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
+/* --error(#c64545)는 이 연한 배경 위에서 4.02:1 → 한 단계 어둡게 */
+.badge-hold { background: rgba(198, 69, 69, .1); color: #a33434; }
+.badge-wait { background: rgba(204, 120, 92, .14); color: #8f4a33; }
+
+/* 제공자 칩 — 색으로 구분하면 표를 훑을 때 빨리 잡힌다 */
+.chip { display: inline-block; padding: 2px 8px; border-radius: var(--rounded-pill); font-size: 12px; font-weight: 500; }
+.chip-google { background: #f1f3f4; color: #3c4043; }
+.chip-kakao { background: #FEE500; color: rgba(0,0,0,.85); }
+.chip-github { background: #24292f; color: #fff; }
+.chip-discord { background: #5865F2; color: #fff; }
+
+.row-action {
+  padding: 5px 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  cursor: pointer;
+}
+.row-action:hover { background: var(--surface-soft); color: var(--ink); }
+
+.empty {
   padding: var(--sp-xxl);
   text-align: center;
+  font-size: 13.5px;
   color: var(--muted);
 }
-.admin-placeholder p { word-break: keep-all; }
+
+/* ── 신고 처리 모달 ──
+   네이티브 <dialog>. showModal() 이 초점 가둠·Esc 닫기·배경 스크롤 잠금을
+   전부 해주므로 직접 구현하지 않는다. */
+.modal {
+  padding: 0;
+  width: calc(100% - 32px);
+  max-width: 460px;
+  color: var(--body);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 16px 48px rgba(20, 20, 19, .18);
+}
+.modal::backdrop { background: rgba(20, 20, 19, .45); }
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.modal-head h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.modal-close {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
+  border-radius: var(--rounded-md);
+  color: var(--muted); font-size: 18px; line-height: 1;
+}
+.modal-close:hover { background: var(--surface-soft); color: var(--ink); }
+
+.modal-body { padding: var(--sp-lg); max-height: 62vh; overflow-y: auto; }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: var(--sp-xs);
+  padding: var(--sp-md) var(--sp-lg);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+
+/* 신고 요약 */
+.mod-summary {
+  margin-bottom: var(--sp-lg);
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--surface-soft);
+  border-radius: var(--rounded-md);
+  font-size: 13px;
+}
+.mod-summary div { display: flex; gap: var(--sp-sm); padding: 3px 0; }
+.mod-summary dt { width: 52px; flex-shrink: 0; color: var(--muted); }
+.mod-summary dd { color: var(--ink); font-weight: 500; word-break: break-all; }
+
+/* 선택한 제재가 언제까지인지 — 표와 같은 문구를 쓴다 */
+.mod-effect {
+  margin: calc(var(--sp-lg) * -1 + 10px) 0 var(--sp-lg);
+  font-size: 13px;
+  color: var(--body);
+}
+.mod-effect strong { color: var(--ink); font-weight: 600; }
+
+/* 표 안의 해제일 보조 표기 */
+.cell-sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+
+.field-row { margin-bottom: var(--sp-lg); }
+.field-row:last-child { margin-bottom: 0; }
+.field-row legend, .field-row .legend {
+  display: block;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.field-row fieldset { border: none; }
+
+.opt-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+.opt span {
+  display: block;
+  padding: 8px 13px;
+  font-size: 13px;
+  color: var(--body);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.opt span:hover { background: var(--surface-soft); }
+/* 선택 상태는 --primary(3.28:1, AA 미달) 대신 --primary-active(5.06:1) */
+.opt input:checked + span {
+  background: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--on-primary);
+}
+.opt input:focus-visible + span { outline: 2px solid var(--primary-active); outline-offset: 2px; }
+
+.check { display: flex; align-items: center; gap: 8px; padding: 7px 0; font-size: 13.5px; cursor: pointer; }
+.check input { width: 16px; height: 16px; accent-color: var(--primary-active); cursor: pointer; }
+/* 12px 안내문에 --muted-soft 를 쓰면 3.23:1 로 미달 */
+.check-note { display: block; margin-left: 24px; font-size: 12px; color: var(--muted); word-break: keep-all; }
+
+.modal textarea {
+  width: 100%;
+  min-height: 108px;
+  padding: 10px 12px;
+  resize: vertical;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.modal textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary-active);
+  box-shadow: 0 0 0 3px rgba(169, 88, 62, .18);
+}
+.modal textarea[disabled] { background: var(--surface-soft); color: var(--muted); }
+
+/* 처리 결과 — 서버가 없으니 "보냈을 내용"만 그대로 보여준다 */
+.mod-result {
+  margin: 0 0 var(--sp-lg);
+  padding: var(--sp-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--body);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .admin-layout { flex-direction: column; }
+  .admin-side {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: var(--sp-sm);
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .admin-side h2 { display: none; }
+  .admin-side a { white-space: nowrap; }
+  .admin-main { padding: var(--sp-lg) var(--sp-md); }
+}
 </style>
 </head>
 <body>
@@ -47,35 +379,417 @@
       </svg>
       Ans2Quest
     </a>
-    <span style="margin-left:12px; padding:3px 10px; border-radius:var(--rounded-pill); background:var(--surface-dark); color:var(--on-dark); font-size:12px; font-weight:500;">관리자</span>
+    <span class="admin-badge">관리자</span>
+    <div class="nav-cta" id="nav-cta" style="margin-left:auto"></div>
   </div>
 </header>
 
-<main class="admin-shell">
-  <div class="container admin-header">
-    <h1>관리자</h1>
-    <p id="admin-whoami"></p>
+<div class="admin-layout">
+  <nav class="admin-side">
+    <h2>운영</h2>
+    <a href="#overview" data-nav="overview">개요</a>
+    <a href="#users" data-nav="users">회원</a>
+    <a href="#reports" data-nav="reports">신고</a>
+  </nav>
+
+  <main class="admin-main">
+    <!-- ── 개요 ── -->
+    <section id="overview">
+      <div class="page-head">
+        <h1>개요</h1>
+        <p id="whoami"></p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>아래는 전부 화면 확인용 샘플입니다.</strong> 실제 회원 정보가 아니며,
+        서버가 연결되기 전까지는 어떤 데이터도 저장·조회되지 않습니다.</span>
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="stat-label">전체 회원</div>
+          <div class="stat-value">1,248</div>
+          <div class="stat-note">지난주 대비 +36</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">오늘 가입</div>
+          <div class="stat-value">12</div>
+          <div class="stat-note">평균 9명</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">처리 대기 신고</div>
+          <div class="stat-value" id="pending-count">3</div>
+          <div class="stat-note warn" id="pending-note">확인 필요</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>최근 가입</h3></div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">이름</th><th scope="col">이메일</th><th scope="col">가입 경로</th><th scope="col">가입일</th></tr></thead>
+            <tbody id="recent-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 회원 ── -->
+    <section id="users">
+      <div class="page-head">
+        <h1>회원</h1>
+        <p>가입한 학생 계정을 확인하고 상태를 관리합니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>샘플 데이터입니다.</strong> 정지·해제 버튼은 아직 아무 동작도 하지 않습니다.</span>
+      </p>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>전체 회원 <span class="cell-muted" id="user-count"></span></h3>
+          <input type="search" class="search" id="user-search" placeholder="이름 또는 이메일 검색" aria-label="회원 검색">
+        </div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead>
+              <tr><th scope="col">이름</th><th scope="col">이메일</th><th scope="col">가입 경로</th><th scope="col">가입일</th><th scope="col">상태</th><th scope="col"></th></tr>
+            </thead>
+            <tbody id="user-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 신고 ── -->
+    <section id="reports">
+      <div class="page-head">
+        <h1>신고</h1>
+        <p>커뮤니티에서 접수된 신고를 처리합니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>샘플 데이터입니다.</strong> 학생 대상 서비스라 신고 처리는
+        실제 운영에서 가장 먼저 필요해지는 기능입니다.</span>
+      </p>
+
+      <pre class="mod-result" id="mod-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head"><h3>접수된 신고</h3></div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">대상</th><th scope="col">사유</th><th scope="col">신고자</th><th scope="col">접속 IP</th><th scope="col">접수일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
+            <tbody id="report-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 신고 처리 모달 -->
+<dialog class="modal" id="mod-dialog" aria-labelledby="mod-title">
+  <div class="modal-head">
+    <h3 id="mod-title">신고 처리</h3>
+    <button type="button" class="modal-close" id="mod-x" aria-label="닫기">×</button>
   </div>
 
-  <div class="container admin-body">
-    <div class="admin-placeholder">
-      <p>회원 목록 · 게시글 관리 · 콘텐츠 관리 화면이 들어갈 자리입니다.<br>어떤 걸 먼저 만들지 정하면 여기부터 채웁니다.</p>
+  <div class="modal-body">
+    <dl class="mod-summary">
+      <div><dt>대상</dt><dd id="mod-target"></dd></div>
+      <div><dt>사유</dt><dd id="mod-reason"></dd></div>
+      <div><dt>IP</dt><dd id="mod-ip"></dd></div>
+      <div id="mod-prev-row" hidden><dt>기존</dt><dd id="mod-prev"></dd></div>
+    </dl>
+
+    <!-- 선택한 제재가 실제로 며칠까지인지 바로 보여준다 -->
+    <p class="mod-effect" id="mod-effect"></p>
+
+    <div class="field-row">
+      <fieldset>
+        <legend>이용 제한</legend>
+        <div class="opt-row" id="mod-durations">
+          <label class="opt"><input type="radio" name="duration" value="0" checked><span>경고만</span></label>
+          <label class="opt"><input type="radio" name="duration" value="1"><span>1일</span></label>
+          <label class="opt"><input type="radio" name="duration" value="3"><span>3일</span></label>
+          <label class="opt"><input type="radio" name="duration" value="7"><span>7일</span></label>
+          <label class="opt"><input type="radio" name="duration" value="30"><span>30일</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="field-row">
+      <span class="legend">추가 조치</span>
+      <label class="check">
+        <input type="checkbox" id="mod-ipblock">
+        접속 IP도 함께 차단
+      </label>
+      <span class="check-note">같은 사람이 다른 계정으로 다시 들어오는 걸 막습니다.
+      공유 네트워크(학교·PC방)라면 무관한 학생까지 막힐 수 있어 신중히 쓰세요.</span>
+    </div>
+
+    <div class="field-row">
+      <label class="legend" for="mod-message">안내 메시지</label>
+      <textarea id="mod-message"></textarea>
+      <label class="check">
+        <input type="checkbox" id="mod-send" checked>
+        처리 후 이 메시지를 대상에게 발송
+      </label>
     </div>
   </div>
-</main>
+
+  <div class="modal-foot">
+    <button type="button" class="btn btn-ghost" id="mod-cancel">취소</button>
+    <button type="button" class="btn btn-primary" id="mod-confirm">처리하기</button>
+  </div>
+</dialog>
 
 <script src="session.js"></script>
 <script>
-// 화면 접근 가드. session.js 의 경고 그대로 — 이건 UI 를 숨길 뿐 진짜 보안이 아니다.
-// 개발자도구로 role 을 admin 으로 바꾸면 이 페이지도 그냥 열린다.
-// 서버가 붙기 전까지 이 파일에 진짜 데이터를 두면 안 된다.
+// 접근 가드. session.js 의 경고 그대로 — UI 를 숨길 뿐 진짜 보안이 아니다.
+// 개발자도구로 role 을 바꾸면 이 페이지도 열린다. 서버가 붙기 전까지
+// 이 파일에 진짜 회원 데이터를 두면 안 된다.
+if (!Session.isAdmin()) window.location.replace('Index.html');
+</script>
+<script src="nav-user.js"></script>
+<script>
 (function () {
-  if (!Session.isAdmin()) {
-    window.location.replace('Index.html');
-    return;
+  if (!Session.isAdmin()) return;
+
+  document.getElementById('whoami').textContent =
+    Session.load().name + '님으로 로그인됨 · 오늘의 운영 현황입니다.';
+
+  // ⚠ 전부 가짜 데이터. 이메일은 예약된 예시 도메인(example.com)만 썼다.
+  // 서버가 붙으면 이 배열들을 fetch('/api/admin/...') 응답으로 갈아끼운다.
+  const MOCK_USERS = [
+    { name: '김서연', email: 'student01@example.com', provider: 'google',  joined: '2026-07-25', status: 'ok' },
+    { name: '이준호', email: 'student02@example.com', provider: 'kakao',   joined: '2026-07-25', status: 'ok' },
+    { name: '박민수', email: 'student03@example.com', provider: 'google',  joined: '2026-07-24', status: 'ok' },
+    { name: '최지우', email: 'student04@example.com', provider: 'discord', joined: '2026-07-24', status: 'hold' },
+    { name: '정하은', email: 'student05@example.com', provider: 'kakao',   joined: '2026-07-23', status: 'ok' },
+    { name: '강태윤', email: 'student06@example.com', provider: 'github',  joined: '2026-07-23', status: 'ok' },
+    { name: '윤소미', email: 'student07@example.com', provider: 'google',  joined: '2026-07-22', status: 'ok' },
+    { name: '임도현', email: 'student08@example.com', provider: 'kakao',   joined: '2026-07-22', status: 'ok' }
+  ];
+
+  // IP 는 문서용 예약 대역(203.0.113.x, RFC 5737)만 썼다 — 실존 주소일 수 없다
+  const MOCK_REPORTS = [
+    { target: '게시글 #482', reason: '광고성 게시물',       by: 'student05@example.com', ip: '203.0.113.42', at: '2026-07-25', status: 'wait' },
+    { target: '댓글 #1173',  reason: '욕설·비방',           by: 'student02@example.com', ip: '203.0.113.17', at: '2026-07-25', status: 'wait' },
+    { target: '게시글 #470', reason: '타인 자료 무단 게시', by: 'student07@example.com', ip: '203.0.113.88', at: '2026-07-24', status: 'wait' }
+  ];
+
+  const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', github: 'GitHub', discord: 'Discord' };
+  const STATUS = {
+    ok:    { cls: 'badge-ok',    text: '정상' },
+    hold:  { cls: 'badge-hold',  text: '정지' },
+    wait:  { cls: 'badge-wait',  text: '대기' },
+    done:  { cls: 'badge-ok',    text: '처리됨' }   // text 는 제재 내용으로 덮어쓴다
+  };
+
+  const esc = escapeHtml;   // session.js 제공
+  const chip = (p) => '<span class="chip chip-' + p + '">' + PROVIDER_LABEL[p] + '</span>';
+  const badge = (s, override) =>
+    '<span class="badge ' + STATUS[s].cls + '">' + esc(override || STATUS[s].text) + '</span>';
+
+  // 제재 표기 — 표와 모달이 같은 문구를 쓰도록 한 곳에서 만든다
+  const sanctionText = (days, ip) =>
+    (days === 0 ? '경고' : days + '일 제한') + (ip ? ' · IP차단' : '');
+
+  // 제한 해제일. 서버가 붙으면 서버 시각으로 계산해야 한다 (기기 시계는 못 믿는다)
+  const untilDate = (days) => {
+    const d = new Date(Date.now() + days * 86400000);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  const fill = (id, rows, empty) => {
+    document.getElementById(id).innerHTML = rows.length
+      ? rows.join('')
+      : '<tr><td colspan="6" class="empty">' + empty + '</td></tr>';
+  };
+
+  // 개요 — 최근 가입 4명만
+  fill('recent-body', MOCK_USERS.slice(0, 4).map((u) =>
+    '<tr><td class="cell-name">' + esc(u.name) + '</td>' +
+    '<td class="cell-muted">' + esc(u.email) + '</td>' +
+    '<td>' + chip(u.provider) + '</td>' +
+    '<td class="cell-muted">' + u.joined + '</td></tr>'
+  ), '');
+
+  // 회원 — 검색어로 걸러 그린다
+  function renderUsers(q) {
+    const key = (q || '').trim().toLowerCase();
+    const list = key
+      ? MOCK_USERS.filter((u) => (u.name + u.email).toLowerCase().includes(key))
+      : MOCK_USERS;
+
+    document.getElementById('user-count').textContent = list.length + '명';
+    fill('user-body', list.map((u) =>
+      '<tr><td class="cell-name">' + esc(u.name) + '</td>' +
+      '<td class="cell-muted">' + esc(u.email) + '</td>' +
+      '<td>' + chip(u.provider) + '</td>' +
+      '<td class="cell-muted">' + u.joined + '</td>' +
+      '<td>' + badge(u.status) + '</td>' +
+      '<td><button type="button" class="row-action">' +
+      (u.status === 'hold' ? '정지 해제' : '정지') + '</button></td></tr>'
+    ), '검색 결과가 없습니다.');
   }
-  document.getElementById('admin-whoami').textContent =
-    Session.load().name + '님으로 로그인됨 (관리자)';
+  renderUsers('');
+  document.getElementById('user-search').addEventListener('input', (e) => renderUsers(e.target.value));
+
+  // 개요의 대기 건수도 표와 같은 원본을 보게 한다 (숫자가 따로 놀면 신뢰를 잃는다)
+  function updatePendingCount() {
+    const n = MOCK_REPORTS.filter((r) => r.status === 'wait').length;
+    document.getElementById('pending-count').textContent = n;
+    const note = document.getElementById('pending-note');
+    note.textContent = n ? '확인 필요' : '모두 처리됨';
+    note.classList.toggle('warn', n > 0);
+  }
+
+  // 처리 후 상태가 바뀌므로 다시 그릴 수 있어야 한다
+  function renderReports() {
+    fill('report-body', MOCK_REPORTS.map((r, i) =>
+      '<tr><td class="cell-name">' + esc(r.target) + '</td>' +
+      '<td>' + esc(r.reason) + '</td>' +
+      '<td class="cell-muted">' + esc(r.by) + '</td>' +
+      '<td class="cell-muted">' + esc(r.ip) + '</td>' +
+      '<td class="cell-muted">' + r.at + '</td>' +
+      '<td>' + badge(r.status, r.applied && sanctionText(r.applied.days, r.applied.ip)) +
+      (r.applied && r.applied.days > 0
+        ? '<div class="cell-sub">' + r.applied.until + ' 해제</div>' : '') + '</td>' +
+      '<td><button type="button" class="row-action" data-report="' + i + '">' +
+      (r.applied ? '다시 처리' : '처리') + '</button></td></tr>'
+    ), '접수된 신고가 없습니다.');
+  }
+  renderReports();
+  updatePendingCount();
+
+  // ── 신고 처리 모달 ──
+  const dlg = document.getElementById('mod-dialog');
+  const msgBox = document.getElementById('mod-message');
+  const sendBox = document.getElementById('mod-send');
+  const ipBox = document.getElementById('mod-ipblock');
+  const resultBox = document.getElementById('mod-result');
+  let current = null;
+  let msgEdited = false;   // 관리자가 직접 고쳤으면 템플릿으로 덮어쓰지 않는다
+
+  const days = () => Number(dlg.querySelector('input[name="duration"]:checked').value);
+
+  function template() {
+    const d = days();
+    const limit = d === 0
+      ? '이번 건은 경고로 처리되었으며 이용 제한은 적용되지 않았습니다.'
+      : '이에 따라 ' + d + '일간 서비스 이용이 제한됩니다.';
+    return '안녕하세요, Ans2Quest 운영팀입니다.\n\n' +
+      '회원님의 「' + current.target + '」이(가) ‘' + current.reason + '’ 사유로 신고 접수되어 검토했습니다.\n' +
+      limit +
+      (ipBox.checked ? '\n접속 IP도 함께 차단되었습니다.' : '') +
+      '\n\n이의가 있으시면 이 메시지에 회신해 주세요.';
+  }
+
+  function refreshTemplate() {
+    if (!msgEdited) msgBox.value = template();
+  }
+
+  // 선택한 제재가 실제로 언제까지인지 즉시 보여준다 — "7일"만 보면 감이 안 온다
+  function refreshEffect() {
+    const d = days();
+    const ip = ipBox.checked;
+    document.getElementById('mod-effect').innerHTML = d === 0
+      ? '<strong>경고</strong>만 기록됩니다. 이용 제한 없음.' + (ip ? ' IP는 차단됩니다.' : '')
+      : '<strong>' + d + '일 제한</strong> · <strong>' + untilDate(d) + '</strong>에 자동 해제' +
+        (ip ? ' · IP 차단 동시 적용' : '');
+  }
+
+  const refreshAll = () => { refreshTemplate(); refreshEffect(); };
+
+  msgBox.addEventListener('input', function () { msgEdited = true; });
+  dlg.querySelectorAll('input[name="duration"]').forEach((r) =>
+    r.addEventListener('change', refreshAll));
+  ipBox.addEventListener('change', refreshAll);
+  sendBox.addEventListener('change', function () {
+    msgBox.disabled = !sendBox.checked;   // 발송 안 할 거면 입력칸도 잠근다
+  });
+
+  document.getElementById('report-body').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-report]');
+    if (!btn) return;
+    current = MOCK_REPORTS[Number(btn.dataset.report)];
+
+    document.getElementById('mod-target').textContent = current.target;
+    document.getElementById('mod-reason').textContent = current.reason;
+    document.getElementById('mod-ip').textContent = current.ip;
+
+    // 이미 처리한 건이면 기존 제재를 보여주고 그 값으로 시작한다 —
+    // 다시 처리할 때 뭘 걸어뒀는지 모르면 실수로 더 세게 걸게 된다
+    const prevRow = document.getElementById('mod-prev-row');
+    const prev = current.applied;
+    prevRow.hidden = !prev;
+    if (prev) {
+      document.getElementById('mod-prev').textContent =
+        sanctionText(prev.days, prev.ip) + (prev.days > 0 ? ' (' + prev.until + ' 해제)' : '');
+    }
+
+    dlg.querySelector('input[name="duration"][value="' + (prev ? prev.days : 0) + '"]').checked = true;
+    ipBox.checked = prev ? prev.ip : false;
+    sendBox.checked = true;
+    msgBox.disabled = false;
+    msgEdited = false;
+    refreshAll();
+
+    dlg.showModal();   // 초점 가둠·Esc 닫기는 네이티브가 처리
+  });
+
+  const close = () => dlg.close();
+  document.getElementById('mod-x').addEventListener('click', close);
+  document.getElementById('mod-cancel').addEventListener('click', close);
+  // 배경(backdrop) 클릭으로 닫기 — dialog 자체가 클릭 대상이면 바깥이다
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
+
+  document.getElementById('mod-confirm').addEventListener('click', function () {
+    const d = days();
+    // ⚠ 서버가 없으므로 아무것도 저장·발송되지 않는다.
+    // 실제로 보낼 내용만 그대로 보여준다 — 처리된 척하면 안 된다.
+    // 서버가 붙으면 이 자리에서 POST /api/admin/reports/{id}/resolve 를 호출한다.
+    const payload = {
+      대상: current.target,
+      사유: current.reason,
+      제재: d === 0 ? '경고만 (이용 제한 없음)' : d + '일 이용 제한 (' + untilDate(d) + ' 해제)',
+      IP차단: ipBox.checked ? '예 (' + current.ip + ')' : '아니오',
+      메시지발송: sendBox.checked ? '예' : '아니오'
+    };
+
+    resultBox.textContent =
+      '[서버 미연결 — 저장되지 않았습니다]\n\n' +
+      Object.entries(payload).map(([k, v]) => k + ': ' + v).join('\n') +
+      (sendBox.checked ? '\n\n─ 발송될 메시지 ─\n' + msgBox.value : '');
+    resultBox.hidden = false;
+
+    // 화면 상태만 갱신한다. 새로고침하면 사라진다 —
+    // 처리 후 화면이 어떻게 보이는지 확인하기 위한 것이지 저장이 아니다.
+    current.status = 'done';
+    current.applied = { days: d, ip: ipBox.checked, until: d > 0 ? untilDate(d) : null };
+    renderReports();
+    updatePendingCount();
+
+    close();
+    resultBox.scrollIntoView({ block: 'nearest' });
+  });
+
+  // ── 섹션 전환 ──
+  // location.hash 를 쓰면 뒤로가기와 새로고침이 공짜로 동작한다.
+  const navs = [...document.querySelectorAll('[data-nav]')];
+  function show(name) {
+    const target = document.getElementById(name) ? name : 'overview';
+    document.querySelectorAll('.admin-main > section')
+      .forEach((s) => s.classList.toggle('active', s.id === target));
+    navs.forEach((a) => a.classList.toggle('active', a.dataset.nav === target));
+  }
+  show(location.hash.slice(1));
+  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
 })();
 </script>
 
