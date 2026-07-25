@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Ans2Quest 로그인">
+<title>로그인 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰/버튼/네비는 styles.css 에 있다 */
+
+/* 로그인은 이탈을 만들면 안 되는 화면이라 상단 메뉴를 브랜드만 남긴다 */
+.auth-bar { height: 56px; display: flex; align-items: center; }
+.auth-bar .nav-inner { justify-content: flex-start; }
+
+.auth {
+  position: relative;
+  min-height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  overflow: hidden;
+}
+.auth canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  /* 반투명 + 블러 — 뒤의 구가 비쳐서 첫 화면과 이어진다 */
+  background: rgba(250, 249, 245, 0.82);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 40px rgba(20, 20, 19, 0.06);
+}
+
+.auth-card h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+  word-break: keep-all;
+  color: var(--ink);
+  margin-bottom: var(--sp-xs);
+}
+.auth-lead { font-size: 15px; color: var(--muted); word-break: keep-all; margin-bottom: var(--sp-xl); }
+
+/* 폼 전체에 대한 결과 알림 (서버 응답, 연결 실패 등) */
+.auth-notice {
+  display: none;
+  margin-bottom: var(--sp-md);
+  padding: 12px 14px;
+  border-radius: var(--rounded-md);
+  font-size: 13.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+  border: 1px solid var(--error);
+  background: rgba(198, 69, 69, .07);
+  color: var(--error);
+}
+.auth-notice.show { display: block; }
+
+/* 구글 로그인 성공 결과 표시 — 성공은 error 톤이 아니라 muted 톤으로 */
+.auth-result {
+  display: none;
+  margin-bottom: var(--sp-md);
+  padding: 12px 14px;
+  border-radius: var(--rounded-md);
+  font-size: 13.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+  border: 1px solid var(--hairline);
+  background: var(--surface-soft);
+  color: var(--body);
+}
+.auth-result.show { display: block; }
+
+/* 소셜 로그인 버튼.
+   공통 골격은 design-system.md 의 button 규격(14px / 500 / lineHeight 1)과
+   rounded-lg(12px)를 따른다. 12px 는 카카오 필수 규격과도 일치한다.
+   구글 가이드가 "다른 소셜 옵션과 최소한 동등하게 노출"을 요구하므로
+   네 개의 크기·너비·간격을 모두 동일하게 맞춘다. */
+.providers { display: flex; flex-direction: column; gap: var(--sp-xs); }
+
+.btn-oauth {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: var(--rounded-lg);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  transition: filter .15s;
+}
+.btn-oauth:hover { filter: brightness(.96); }
+.btn-oauth[disabled] { opacity: .6; cursor: progress; }
+.btn-oauth svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* 각 사의 브랜드 규격. 색을 임의로 바꾸면 심사에서 반려될 수 있다. */
+.oauth-kakao   { background: #FEE500; color: rgba(0, 0, 0, .85); }
+.oauth-google  { background: #FFFFFF; color: #1f1f1f; border: 1px solid #747775; }
+.oauth-github  { background: #24292f; color: #ffffff; }
+.oauth-discord { background: #5865F2; color: #ffffff; }
+
+.auth-hint {
+  margin-top: var(--sp-md);
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-soft);
+  word-break: keep-all;
+}
+
+@media (max-width: 480px) {
+  .auth { padding: 24px 16px; }
+  .auth-card { padding: 28px 22px; }
+  .auth-card h1 { font-size: 27px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top-nav auth-bar">
+  <div class="nav-inner">
+    <a href="Index.html" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+  </div>
+</header>
+
+<main class="auth">
+  <canvas data-sphere data-count="700" data-alpha="0.45" data-clear="0.6" aria-hidden="true"></canvas>
+
+  <div class="auth-card">
+    <h1>탐구를 시작해볼까요?</h1>
+    <p class="auth-lead">소셜 계정 하나로 로그인과 가입이 함께 처리됩니다. 처음이라면 자동으로 계정이 만들어져요.</p>
+
+    <p class="auth-notice" id="notice" role="alert"></p>
+
+    <div class="providers">
+      <button type="button" class="btn-oauth oauth-kakao" data-provider="kakao">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#000000" d="M12 3C6.99 3 3 6.24 3 10.2c0 2.52 1.68 4.74 4.2 6.02-.18.66-.66 2.4-.75 2.78-.12.48.18.48.36.36.15-.09 2.34-1.59 3.3-2.25.6.09 1.23.15 1.89.15 5.01 0 9-3.24 9-7.06S17.01 3 12 3z"/>
+        </svg>
+        카카오 로그인
+      </button>
+
+      <!-- 구글: G 로고는 컬러 그라데이션 원본만 사용 가능하고 크기·색 변경이 금지된다.
+           모노크롬 대체나 로고 단독 표기도 불가라 문구를 반드시 함께 둔다. -->
+      <button type="button" class="btn-oauth oauth-google" data-provider="google">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Google로 로그인
+      </button>
+
+      <button type="button" class="btn-oauth oauth-github" data-provider="github">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="#ffffff" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub로 로그인
+      </button>
+
+      <button type="button" class="btn-oauth oauth-discord" data-provider="discord">
+        <svg viewBox="0 0 71 55" aria-hidden="true">
+          <path fill="#ffffff" d="M60.1 4.9A58.5 58.5 0 0 0 45.65.42a.22.22 0 0 0-.23.1c-.63 1.11-1.32 2.56-1.8 3.7a54 54 0 0 0-16.23 0A37.4 37.4 0 0 0 25.56.52a.23.23 0 0 0-.23-.1A58.4 58.4 0 0 0 10.88 4.9a.21.21 0 0 0-.1.08C1.58 18.73-.94 32.14.29 45.39c0 .07.04.13.09.17a58.8 58.8 0 0 0 17.73 8.96c.09.03.19 0 .24-.08a42 42 0 0 0 3.63-5.9.22.22 0 0 0-.12-.31 38.7 38.7 0 0 1-5.54-2.64.22.22 0 0 1-.02-.37c.37-.28.74-.57 1.1-.86a.21.21 0 0 1 .22-.03c11.62 5.3 24.2 5.3 35.68 0a.21.21 0 0 1 .23.03c.36.29.73.58 1.1.86a.22.22 0 0 1-.02.37 36.3 36.3 0 0 1-5.54 2.63.22.22 0 0 0-.12.32 47.2 47.2 0 0 0 3.63 5.9c.05.08.15.11.24.08a58.6 58.6 0 0 0 17.76-8.96.22.22 0 0 0 .09-.17c1.48-15.32-2.48-28.62-10.5-40.41a.17.17 0 0 0-.09-.09zM23.73 37.33c-3.5 0-6.38-3.21-6.38-7.16s2.83-7.16 6.38-7.16c3.58 0 6.44 3.24 6.38 7.16 0 3.95-2.83 7.16-6.38 7.16zm23.59 0c-3.5 0-6.38-3.21-6.38-7.16s2.83-7.16 6.38-7.16c3.58 0 6.44 3.24 6.38 7.16 0 3.95-2.8 7.16-6.38 7.16z"/>
+        </svg>
+        Discord로 로그인
+      </button>
+    </div>
+
+    <p class="auth-hint">계속 진행하면 서비스 이용약관과 개인정보 처리방침에 동의하게 됩니다.</p>
+
+    <p class="auth-result" id="result"></p>
+  </div>
+</main>
+
+<!-- Google Identity Services. 구글만 서버 없이 브라우저에서 끝나는 공식 방식이 있어
+     별도로 로드한다 (카카오/GitHub/Discord 는 REST API 키·client secret이 필요해
+     반드시 서버 콜백을 거쳐야 한다 — 아래 PROVIDERS 표는 그 셋만 다룬다). -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="session.js"></script>
+<script src="sphere.js"></script>
+<script>
+(function () {
+  // 카카오/GitHub/Discord — OAuth2 authorization code 방식, 흐름이 같아 표로 처리.
+  // clientId 는 각 개발자 콘솔에서 발급받아 채운다. 공개돼도 되는 값이다
+  // (client secret 은 절대 여기 두지 말 것 — 서버 콜백에서만 쓴다).
+  const PROVIDERS = {
+    kakao: {
+      label: '카카오',
+      authUrl: 'https://kauth.kakao.com/oauth/authorize',
+      clientId: '',
+      scope: ''
+    },
+    github: {
+      label: 'GitHub',
+      authUrl: 'https://github.com/login/oauth/authorize',
+      clientId: '',
+      scope: 'read:user user:email'
+    },
+    discord: {
+      label: 'Discord',
+      authUrl: 'https://discord.com/api/oauth2/authorize',
+      clientId: '',
+      scope: 'identify email'
+    }
+  };
+
+  const notice = document.getElementById('notice');
+  const result = document.getElementById('result');
+  // crypto.randomUUID 는 보안 컨텍스트 전용이라 file:// 등에서 없을 수 있다
+  const randomState = () =>
+    crypto.randomUUID?.() ?? [...crypto.getRandomValues(new Uint32Array(4))].join('-');
+
+  document.querySelectorAll('.btn-oauth[data-provider]:not([data-provider="google"])')
+    .forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const name = btn.dataset.provider;
+        const p = PROVIDERS[name];
+
+        // clientId 를 채우기 전에 보내면 각 사의 에러 화면이 떠서 더 혼란스럽다.
+        if (!p.clientId) {
+          notice.textContent = p.label + ' 로그인이 아직 연결되지 않았습니다. 화면만 동작하는 상태입니다.';
+          notice.classList.add('show');
+          return;
+        }
+        notice.classList.remove('show');
+        btn.disabled = true;
+
+        // CSRF 방지용 state. 서버 콜백에서 반드시 이 값을 대조해야 한다.
+        const state = randomState();
+        sessionStorage.setItem('oauth_state', state);
+        sessionStorage.setItem('oauth_provider', name);
+
+        const url = new URL(p.authUrl);
+        url.searchParams.set('client_id', p.clientId);
+        url.searchParams.set('redirect_uri', location.origin + '/api/auth/' + name + '/callback');
+        url.searchParams.set('response_type', 'code');
+        url.searchParams.set('state', state);
+        if (p.scope) url.searchParams.set('scope', p.scope);
+        window.location.href = url.toString();
+      });
+    });
+
+  // ── Google: 서버 없이 브라우저에서 끝나는 유일한 제공자 ──
+  // initTokenClient 는 실제 팝업 창을 띄우는 표준 OAuth 동의 화면이라
+  // One Tap(prompt())과 달리 자동 억제·쿨다운 없이 항상 안정적으로 뜬다.
+  // 받은 access_token으로 구글 userinfo 엔드포인트를 브라우저에서 직접 호출한다 —
+  // 이 엔드포인트는 CORS를 허용해서 서버 없이도 사용자 이름/이메일을 확인할 수 있다.
+  const GOOGLE_CLIENT_ID = '194432657121-iikucs4298h7bh1puflg009tcucg4oa1.apps.googleusercontent.com';
+  const googleBtn = document.querySelector('[data-provider="google"]');
+
+  function initGoogle() {
+    if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+      // 스크립트가 아직 로드 중이거나 서드파티 콘텐츠가 차단된 환경
+      setTimeout(initGoogle, 200);
+      return;
+    }
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid email profile',
+      callback: async function (tokenResponse) {
+        googleBtn.disabled = false;
+        if (tokenResponse.error) {
+          notice.textContent = 'Google 로그인이 취소되었거나 실패했습니다.';
+          notice.classList.add('show');
+          return;
+        }
+        try {
+          const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+          });
+          if (!res.ok) throw new Error('userinfo request failed');
+          const profile = await res.json();
+          notice.classList.remove('show');
+
+          Session.save({
+            name: profile.name,
+            email: profile.email,
+            picture: profile.picture
+          });
+
+          // 성공을 한 번 보여준 뒤 이동한다. 즉시 넘기면 로그인이 된 건지
+          // 화면이 그냥 깜빡인 건지 사용자가 알 수 없다.
+          result.textContent = profile.name + '님으로 로그인되었습니다. 잠시 후 이동합니다…';
+          result.classList.add('show');
+          setTimeout(function () {
+            window.location.replace('Index.html');   // 뒤로가기로 로그인 화면에 돌아오지 않게
+          }, 900);
+        } catch (err) {
+          notice.textContent = '사용자 정보를 가져오지 못했습니다. 다시 시도해 주세요.';
+          notice.classList.add('show');
+        }
+      }
+    });
+
+    googleBtn.addEventListener('click', function () {
+      notice.classList.remove('show');
+      result.classList.remove('show');
+      googleBtn.disabled = true;
+      client.requestAccessToken();
+
+      // 팝업이 차단되면 GIS 콜백 자체가 안 불려서 버튼이 영영 잠긴 채로 남는다.
+      // 몇 초 안에 응답이 없으면 팝업 차단으로 보고 버튼을 되살린다.
+      setTimeout(function () {
+        if (googleBtn.disabled) {
+          googleBtn.disabled = false;
+          notice.textContent = '팝업 창이 열리지 않았습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.';
+          notice.classList.add('show');
+        }
+      }, 4000);
+    });
+  }
+  initGoogle();
+})();
+</script>
+
+</body>
+</html>

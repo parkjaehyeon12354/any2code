@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>관리자 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰/네비는 styles.css 에 있다 */
+.admin-shell { min-height: calc(100vh - 56px); }
+.admin-header { padding: var(--sp-xl) 0 var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.admin-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.admin-header p { font-size: 14px; color: var(--muted); }
+
+.admin-body { padding: var(--sp-xl) 0; }
+.admin-placeholder {
+  border: 1px dashed var(--hairline);
+  border-radius: var(--rounded-lg);
+  padding: var(--sp-xxl);
+  text-align: center;
+  color: var(--muted);
+}
+.admin-placeholder p { word-break: keep-all; }
+</style>
+</head>
+<body>
+
+<header class="top-nav">
+  <div class="nav-inner">
+    <a href="Index.html" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <span style="margin-left:12px; padding:3px 10px; border-radius:var(--rounded-pill); background:var(--surface-dark); color:var(--on-dark); font-size:12px; font-weight:500;">관리자</span>
+  </div>
+</header>
+
+<main class="admin-shell">
+  <div class="container admin-header">
+    <h1>관리자</h1>
+    <p id="admin-whoami"></p>
+  </div>
+
+  <div class="container admin-body">
+    <div class="admin-placeholder">
+      <p>회원 목록 · 게시글 관리 · 콘텐츠 관리 화면이 들어갈 자리입니다.<br>어떤 걸 먼저 만들지 정하면 여기부터 채웁니다.</p>
+    </div>
+  </div>
+</main>
+
+<script src="session.js"></script>
+<script>
+// 화면 접근 가드. session.js 의 경고 그대로 — 이건 UI 를 숨길 뿐 진짜 보안이 아니다.
+// 개발자도구로 role 을 admin 으로 바꾸면 이 페이지도 그냥 열린다.
+// 서버가 붙기 전까지 이 파일에 진짜 데이터를 두면 안 된다.
+(function () {
+  if (!Session.isAdmin()) {
+    window.location.replace('Index.html');
+    return;
+  }
+  document.getElementById('admin-whoami').textContent =
+    Session.load().name + '님으로 로그인됨 (관리자)';
+})();
+</script>
+
+</body>
+</html>

@@ -9,204 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 <style>
-/* ── Design Tokens (design-system.md 기준) ── */
-:root {
-  /* Colors */
-  --primary: #cc785c;
-  --primary-active: #a9583e;
-  --ink: #141413;
-  --body: #3d3d3a;
-  --muted: #6c6a64;
-  --muted-soft: #8e8b82;
-  --hairline: #e6dfd8;
-  --canvas: #faf9f5;
-  --surface-soft: #f5f0e8;
-  --surface-dark: #181715;
-  --surface-dark-elevated: #252320;
-  --on-primary: #ffffff;
-  --on-dark: #faf9f5;
-  --on-dark-soft: #a09d96;
-
-  /* Typography — Copernicus/StyreneB = design MD 1순위, 웹폰트 = 실제 렌더링 담당
-     라틴은 Cormorant, 한글은 고운바탕이 받는다 (Cormorant에 한글 글리프 없음) */
-  --font-display: "Copernicus", "Tiempos Headline", "Cormorant Garamond", "Gowun Batang", Georgia, serif;
-  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Rounded */
-  --rounded-md: 8px;
-  --rounded-lg: 12px;
-  --rounded-pill: 9999px;
-
-  /* Spacing */
-  --sp-xs: 8px;
-  --sp-sm: 12px;
-  --sp-md: 16px;
-  --sp-lg: 24px;
-  --sp-xl: 32px;
-  --sp-xxl: 48px;
-  --sp-section: 96px;
-}
-
-/* ── Reset ── */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { overflow-x: hidden; }
-
-body {
-  font-family: var(--font-body);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.55;
-  color: var(--body);
-  background: var(--canvas);
-  -webkit-font-smoothing: antialiased;
-}
-
-a { color: inherit; text-decoration: none; }
-
-/* ── Container ── */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--sp-lg); }
-
-/* ── Buttons ── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  font-family: var(--font-body); font-size: 14px; font-weight: 500; line-height: 1;
-  padding: 12px 20px; height: 40px; border-radius: var(--rounded-md);
-  border: none; cursor: pointer; white-space: nowrap;
-}
-.btn-primary { background: var(--primary); color: var(--on-primary); }
-.btn-primary:active { background: var(--primary-active); }
-.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
-
-/* ── Top Nav ── */
-.top-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  background: var(--canvas);
-  border-bottom: 1px solid var(--hairline);
-}
-
-.nav-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ink);
-  white-space: nowrap;
-}
-.nav-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  list-style: none;
-  margin: 0 auto;
-}
-.nav-links > li { position: relative; padding-bottom: 18px; margin-bottom: -18px; }
-.nav-links > li > a {
-  position: relative;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--muted);
-  padding: 6px 14px;
-  border-radius: var(--rounded-md);
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-  cursor: pointer;
-}
-.nav-links > li > a:hover,
-.nav-links > li.active > a {
-  background: var(--surface-soft);
-  color: var(--ink);
-}
-/* Active underline indicator */
-.nav-links > li.active > a::after {
-  content: '';
-  position: absolute;
-  bottom: -18px;
-  left: 14px;
-  right: 14px;
-  height: 2px;
-  background: var(--primary);
-}
-
-/* ── Mega Dropdown ── */
-.mega-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 560px;
-  background: var(--canvas);
-  border: 1px solid var(--hairline);
-  border-radius: var(--rounded-lg);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-  padding: var(--sp-lg) var(--sp-xl);
-  padding-top: calc(var(--sp-lg) + 8px);
-  display: none;
-  z-index: 200;
-}
-.mega-dropdown.open { display: flex; gap: var(--sp-xl); }
-
-.mega-col { flex: 1; min-width: 0; }
-.mega-col h5 {
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted-soft);
-  margin-bottom: var(--sp-sm);
-}
-.mega-col a {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--body);
-  padding: 6px 0;
-  transition: color 0.15s;
-}
-.mega-col a:hover { color: var(--primary); }
-
-.nav-cta a {
-  display: inline-flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--on-primary);
-  background: var(--primary);
-  padding: 7px 16px;
-  border-radius: var(--rounded-pill);
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.nav-cta a:hover { background: var(--primary-active); }
-
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  margin-left: auto;
-  padding: 4px;
-}
-.hamburger svg { width: 24px; height: 24px; }
-
+/* 이 페이지 전용. 공용 토큰/네비/푸터는 styles.css 에 있다 */
 /* ── Hero ── */
 .hero {
   position: relative;
@@ -250,50 +55,9 @@ a { color: inherit; text-decoration: none; }
 }
 .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-
-/* ── Footer ── */
-.site-footer { background: var(--surface-dark); padding: 64px 0; margin-top: var(--sp-section); }
-.footer-top {
-  display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-xxl);
-  font-size: 18px; font-weight: 500; color: var(--on-dark);
-}
-.footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-xl); }
-.footer-col h4 { font-size: 14px; font-weight: 500; color: var(--on-dark); margin-bottom: var(--sp-md); }
-.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-xs); }
-.footer-col li a { font-size: 14px; color: var(--on-dark-soft); }
-.footer-bottom {
-  margin-top: var(--sp-xxl); padding-top: var(--sp-lg);
-  border-top: 1px solid var(--surface-dark-elevated);
-  font-size: 14px; color: var(--on-dark-soft);
-}
-
-/* ── Mobile Nav ── */
-.mobile-menu {
-  display: none; position: fixed; inset: 0; z-index: 200;
-  background: var(--canvas); padding: var(--sp-xl); flex-direction: column;
-}
-.mobile-menu.open { display: flex; }
-.mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-xxl); }
-.mobile-menu-close { background: none; border: none; cursor: pointer; width: 36px; height: 36px; }
-.mobile-menu nav { display: flex; flex-direction: column; gap: var(--sp-lg); }
-.mobile-menu nav a { font-size: 22px; font-weight: 500; color: var(--ink); }
-.mobile-menu-actions { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-sm); }
-
-/* ── Responsive ── */
 @media (max-width: 768px) {
-  .nav-links { display: none; }
-  .hamburger { display: flex; }
-
   .hero h1 { font-size: 36px; }
   .hero { padding: 48px 20px; }
-
-  .footer-grid { grid-template-columns: repeat(2, 1fr); }
-
-  :root { --sp-section: 64px; }
-}
-
-@media (max-width: 480px) {
-  .footer-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -398,8 +162,8 @@ a { color: inherit; text-decoration: none; }
     </ul>
 
 
-    <div class="nav-cta">
-      <a href="#">시작하기</a>
+    <div class="nav-cta" id="nav-cta">
+      <a href="login.html">시작하기</a>
     </div>
     <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -431,14 +195,14 @@ a { color: inherit; text-decoration: none; }
     <a href="#">블로그</a>
     <a href="#">소개</a>
   </nav>
-  <div class="mobile-menu-actions">
-    <a href="#" class="btn btn-primary" style="width:100%">시작하기</a>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="login.html" class="btn btn-primary" style="width:100%">시작하기</a>
   </div>
 </div>
 
 <!-- ── Hero ── -->
 <section class="hero" id="hero">
-  <canvas id="hero-particles"></canvas>
+  <canvas id="hero-particles" data-sphere></canvas>
   <h1>탐구의 시작,<br>Ans2Quest</h1>
   <p>과학 실험 시뮬레이션과 커뮤니티 기반 탐구 활동으로 당신의 과학적 사고를 확장하세요.</p>
   <div class="hero-buttons">
@@ -447,140 +211,64 @@ a { color: inherit; text-decoration: none; }
   </div>
 </section>
 
+<script src="session.js"></script>
+<script src="sphere.js"></script>
 <script>
-(function() {
-  const cvs = document.getElementById('hero-particles');
-  const ctx = cvs.getContext('2d');
-  const hero = document.getElementById('hero');
-  
-  let w, h, R;
-  // 마우스는 -1~1로 정규화해서 구를 살짝 기울이는 데만 쓴다 (끌고 다니지 않음)
-  let pointerX = 0, pointerY = 0, tiltX = 0, tiltY = 0, spin = 0;
-  // 마우스가 떠날 때 tiltX를 흡수해 두는 영구 기울기. 이게 없으면 원위치로 튕긴다
-  let tiltKeep = 0;
+// 로그인 상태면 "시작하기" 자리를 사용자 이름 + 로그아웃으로 바꾼다.
+// 표시만 바꿀 뿐 권한과는 무관하다 — session.js 의 경고 참고.
+(function () {
+  const user = Session.load();
+  if (!user) return;
 
-  // 가중 팔레트. 균등 배분하면 색종이가 된다 — 어두운 질량 69%가 구조를 잡고
-  // 브랜드 악센트 28%가 드물게 튄다. 숫자는 1400개 중 비율(%).
-  const WEIGHTS = [
-    ['#1b2340', 40],  // 딥 네이비 — 기본 질량
-    ['#232c52', 16],  // 네이비 라이트
-    ['#3d3d3a', 13],  // 웜 그레이 — 크림 팔레트로 이어주는 다리
-    ['#2f4bd6',  9],  // 블루
-    ['#cc785c',  8],  // 코랄 — 브랜드 프라이머리, CTA와 같은 색
-    ['#5db8a6',  6],  // 틸 — 로고 플라스크와 같은 색
-    ['#e8a55a',  5],  // 앰버
-    ['#8a93b8',  3],  // 라이트 블루그레이 — 가장 먼 안개
-  ];
-  const PALETTE = WEIGHTS.flatMap(([c, n]) => Array(n).fill(c));
-  // 채도 있는 색은 크림 배경에서 묻히므로 알파를 올려줘야 색으로 읽힌다
-  const ACCENTS = new Set(['#2f4bd6', '#cc785c', '#5db8a6', '#e8a55a']);
-  const COUNT = 1400;
-  const FOV = 2.8;       // 원근 강도. 낮을수록 앞뒤 크기차가 커진다
-  const TILT = -0.32;    // 구를 살짝 위에서 내려다보는 기본 기울기
-  const points = [];
+  const escape = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  function resize() {
-    const r = hero.getBoundingClientRect();
-    w = r.width;
-    h = r.height;
-    cvs.width = w * devicePixelRatio;
-    cvs.height = h * devicePixelRatio;
-    cvs.style.width = w + 'px';
-    cvs.style.height = h + 'px';
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    // 투영 반지름은 약 1.07R. 폭 기준으로는 림이 보이고, 높이 기준으로는
-    // 위아래로 흘러넘치게 — 원형이 읽히면서 화면은 꽉 찬다
-    R = Math.min(w * 0.42, h * 0.72);
-  }
+  const adminLink = Session.isAdmin() ? '<a href="admin.html">관리자</a>' : '';
 
-  function init() {
-    points.length = 0;
-    // 피보나치 구면 — 표면에 균등 분포. '껍데기'라서 2D로 투영하면
-    // 림(가장자리)이 촘촘하고 중앙이 성기다. 헤드라인 자리가 저절로 비는 구조.
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < COUNT; i++) {
-      const y = 1 - (i / (COUNT - 1)) * 2;
-      const ring = Math.sqrt(Math.max(0, 1 - y * y));
-      const th = golden * i;
-      const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-      points.push({
-        x: Math.cos(th) * ring,
-        y: y,
-        z: Math.sin(th) * ring,
-        size: Math.random() * 1.2 + 0.9,
-        color: color,
-        alpha: Math.min(0.85, (Math.random() * 0.35 + 0.25) * (ACCENTS.has(color) ? 1.35 : 1))
-      });
-    }
-    resize();
-  }
+  document.getElementById('nav-cta').innerHTML =
+    '<div class="profile-menu" id="profile-menu">' +
+    '  <button type="button" class="profile-trigger" aria-expanded="false" aria-haspopup="true">' +
+           escape(user.name) +
+    '    <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+    '  </button>' +
+    '  <div class="profile-dropdown">' +
+           adminLink +
+    '    <a href="#" data-logout>로그아웃</a>' +
+    '  </div>' +
+    '</div>';
 
-  function paint() {
-    ctx.clearRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2;
+  document.getElementById('mobile-cta').innerHTML =
+    (Session.isAdmin() ? '<a href="admin.html" class="btn btn-ghost" style="width:100%">관리자</a>' : '') +
+    '<a href="#" class="btn btn-primary" style="width:100%" data-logout>로그아웃</a>';
 
-    tiltY += (pointerX * 0.28 - tiltY) * 0.05;
-    tiltX += (pointerY * 0.18 - tiltX) * 0.05;
-
-    const cosS = Math.cos(spin + tiltY), sinS = Math.sin(spin + tiltY);
-    const cosT = Math.cos(TILT + tiltKeep + tiltX), sinT = Math.sin(TILT + tiltKeep + tiltX);
-
-    for (const p of points) {
-      // Y축 회전 → X축 기울임
-      const x1 = p.x * cosS - p.z * sinS;
-      const z1 = p.x * sinS + p.z * cosS;
-      const y2 = p.y * cosT - z1 * sinT;
-      const z2 = p.y * sinT + z1 * cosT;
-
-      const persp = FOV / (FOV + z2);
-      const sx = cx + x1 * R * persp;
-      const sy = cy + y2 * R * persp;
-
-      // 뒤쪽(z2<0)일수록 어둡고 작게 — 이게 구로 읽히게 만든다
-      const depth = (z2 + 1) / 2;
-      // 중앙 38% 안쪽은 추가로 페이드. 헤드라인 가독성 확보용
-      const clear = Math.min(1, Math.hypot(sx - cx, sy - cy) / (R * 0.38));
-
-      ctx.globalAlpha = p.alpha * (0.25 + depth * 0.75) * clear;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(sx, sy, p.size * persp, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function draw() {
-    spin += 0.0009;   // 한 바퀴 약 2분
-    paint();
-    requestAnimationFrame(draw);
-  }
-
-  hero.addEventListener('mousemove', function(e) {
-    const r = hero.getBoundingClientRect();
-    pointerX = (e.clientX - r.left) / r.width * 2 - 1;
-    pointerY = (e.clientY - r.top) / r.height * 2 - 1;
+  document.querySelectorAll('[data-logout]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      Session.clear();
+      window.location.reload();
+    });
   });
 
-  hero.addEventListener('mouseleave', function() {
-    // 지금 기울어진 만큼을 영구 상태로 흡수한다. spin+tiltY 와 TILT+tiltKeep+tiltX 의
-    // 합이 그대로 보존되므로 튀지 않고, 그 자리에서 자동 회전만 이어진다.
-    spin += tiltY;
-    tiltKeep = Math.max(-0.45, Math.min(0.45, tiltKeep + tiltX));  // 뒤집히지 않게 제한
-    tiltX = tiltY = 0;
-    pointerX = pointerY = 0;
-  });
-
-  const still = matchMedia('(prefers-reduced-motion: reduce)');
-
-  window.addEventListener('resize', function() {
-    resize();
-    if (still.matches) paint();
-  });
-
-  init();
-  // 모션 최소화 설정이면 정지된 한 프레임만 그린다
-  if (still.matches) paint(); else draw();
+  // 프로필 드롭다운 — 트리거 클릭으로 열고, 바깥 클릭·Esc로 닫는다.
+  const menu = document.getElementById('profile-menu');
+  if (menu) {
+    const trigger = menu.querySelector('.profile-trigger');
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const open = menu.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', function () {
+      menu.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        menu.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
 })();
 </script>
 

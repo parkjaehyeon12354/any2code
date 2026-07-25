@@ -1,0 +1,288 @@
+/* ── Design Tokens (design-system.md 기준) ── */
+:root {
+  /* Colors */
+  --primary: #cc785c;
+  --primary-active: #a9583e;
+  --ink: #141413;
+  --body: #3d3d3a;
+  --muted: #6c6a64;
+  --muted-soft: #8e8b82;
+  --hairline: #e6dfd8;
+  --canvas: #faf9f5;
+  --surface-soft: #f5f0e8;
+  --surface-dark: #181715;
+  --surface-dark-elevated: #252320;
+  --on-primary: #ffffff;
+  --on-dark: #faf9f5;
+  --on-dark-soft: #a09d96;
+  --error: #c64545;
+
+  /* Typography — Copernicus/StyreneB = design MD 1순위, 웹폰트 = 실제 렌더링 담당
+     라틴은 Cormorant, 한글은 고운바탕이 받는다 (Cormorant에 한글 글리프 없음) */
+  --font-display: "Copernicus", "Tiempos Headline", "Cormorant Garamond", "Gowun Batang", Georgia, serif;
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Rounded */
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
+  --rounded-pill: 9999px;
+
+  /* Spacing */
+  --sp-xs: 8px;
+  --sp-sm: 12px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+  --sp-xxl: 48px;
+  --sp-section: 96px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { overflow-x: hidden; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* 키보드 사용자에게는 초점이 반드시 보여야 한다 */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ── Container ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--sp-lg); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500; line-height: 1;
+  padding: 12px 20px; height: 40px; border-radius: var(--rounded-md);
+  border: none; cursor: pointer; white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:active { background: var(--primary-active); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
+
+/* ── Top Nav ── */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.nav-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  margin: 0 auto;
+}
+.nav-links > li { position: relative; padding-bottom: 18px; margin-bottom: -18px; }
+.nav-links > li > a {
+  position: relative;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: var(--rounded-md);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.nav-links > li > a:hover,
+.nav-links > li.active > a {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+/* Active underline indicator */
+.nav-links > li.active > a::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--primary);
+}
+
+/* ── Mega Dropdown ── */
+.mega-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 560px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  padding: var(--sp-lg) var(--sp-xl);
+  padding-top: calc(var(--sp-lg) + 8px);
+  display: none;
+  z-index: 200;
+}
+.mega-dropdown.open { display: flex; gap: var(--sp-xl); }
+
+.mega-col { flex: 1; min-width: 0; }
+.mega-col h5 {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted-soft);
+  margin-bottom: var(--sp-sm);
+}
+.mega-col a {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body);
+  padding: 6px 0;
+  transition: color 0.15s;
+}
+.mega-col a:hover { color: var(--primary); }
+
+.nav-cta { display: flex; align-items: center; gap: var(--sp-sm); }
+.nav-cta a {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-primary);
+  background: var(--primary);
+  padding: 7px 16px;
+  border-radius: var(--rounded-pill);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.nav-cta a:hover { background: var(--primary-active); }
+
+/* 로그인 상태의 네비 — 이름을 누르면 드롭다운 (mega-dropdown과 같은 패턴) */
+.profile-menu { position: relative; }
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--rounded-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background .15s;
+}
+.profile-trigger:hover { background: var(--surface-soft); }
+.profile-trigger svg { width: 10px; height: 7px; color: var(--muted); transition: transform .15s; }
+.profile-menu.open .profile-trigger svg { transform: rotate(180deg); }
+
+.profile-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  min-width: 160px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+  padding: 6px;
+  z-index: 200;
+}
+.profile-menu.open .profile-dropdown { display: block; }
+.profile-dropdown a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--rounded-md);
+  font-size: 14px;
+  color: var(--body);
+}
+.profile-dropdown a:hover { background: var(--surface-soft); color: var(--ink); }
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px;
+}
+.hamburger svg { width: 24px; height: 24px; }
+
+/* ── Footer ── */
+.site-footer { background: var(--surface-dark); padding: 64px 0; margin-top: var(--sp-section); }
+.footer-top {
+  display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-xxl);
+  font-size: 18px; font-weight: 500; color: var(--on-dark);
+}
+.footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-xl); }
+.footer-col h4 { font-size: 14px; font-weight: 500; color: var(--on-dark); margin-bottom: var(--sp-md); }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-xs); }
+.footer-col li a { font-size: 14px; color: var(--on-dark-soft); }
+.footer-bottom {
+  margin-top: var(--sp-xxl); padding-top: var(--sp-lg);
+  border-top: 1px solid var(--surface-dark-elevated);
+  font-size: 14px; color: var(--on-dark-soft);
+}
+
+/* ── Mobile Nav ── */
+.mobile-menu {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: var(--canvas); padding: var(--sp-xl); flex-direction: column;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-xxl); }
+.mobile-menu-close { background: none; border: none; cursor: pointer; width: 36px; height: 36px; }
+.mobile-menu nav { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.mobile-menu nav a { font-size: 22px; font-weight: 500; color: var(--ink); }
+.mobile-menu-actions { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-sm); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+
+  :root { --sp-section: 64px; }
+}
+
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
