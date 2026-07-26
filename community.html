@@ -456,6 +456,9 @@
 
   renderChannels();
   renderPosts();
+
+  // 서버 세션을 확인해 캐시를 맞춘다 (추천 버튼의 로그인 판정이 이 값을 본다)
+  Session.refresh();
 })();
 </script>
 

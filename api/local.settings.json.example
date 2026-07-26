@@ -1,0 +1,25 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "",
+
+    "_주석": "아래 값을 실제 값으로 채운 뒤 이 파일을 local.settings.json 으로 복사하세요.",
+    "_경고": "local.settings.json 은 .gitignore 에 있습니다. 절대 커밋하지 마세요.",
+
+    "SESSION_SECRET": "여기에 32자 이상 무작위 문자열 (예: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\")",
+    "ADMIN_EMAILS": "본인이메일@example.com",
+
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_SECRET": "",
+
+    "KAKAO_CLIENT_ID": "",
+    "KAKAO_CLIENT_SECRET": "",
+
+    "GITHUB_CLIENT_ID": "",
+    "GITHUB_CLIENT_SECRET": "",
+
+    "DISCORD_CLIENT_ID": "",
+    "DISCORD_CLIENT_SECRET": ""
+  }
+}

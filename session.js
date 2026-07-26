@@ -1,43 +1,73 @@
-/* 로그인 세션 — login.html 이 쓰고 Index.html 이 읽는다.
-   키 이름을 한 곳에만 두려고 파일로 뺐다.
+/* 로그인 세션 — 서버(/api/me)가 유일한 근거.
 
-   ⚠ 이건 "화면 표시용" 상태일 뿐 인증이 아니다.
-   sessionStorage 는 사용자가 개발자도구로 얼마든지 고칠 수 있으므로
-   권한 판단(관리자 여부, 데이터 접근 허용)에 절대 쓰면 안 된다.
-   실제 검증은 서버가 토큰을 확인해서 해야 한다. */
-/* HTML 이스케이프 — 구글 프로필 이름·신고 내용 등 외부에서 온 문자열을
-   innerHTML 에 넣기 전에 반드시 거친다. nav-user.js 와 admin.html 이 공유. */
+   설계:
+   - 서버가 확인해 준 사용자는 모듈 스코프 변수(verified)에만 둔다.
+     sessionStorage 는 "첫 화면을 즉시 그리기 위한 캐시"일 뿐이다.
+   - isAdmin() 은 verified 만 본다 → 개발자도구로 sessionStorage 를 고쳐도
+     서버 확인이 끝나는 순간 무효가 된다.
+   - 애초에 진짜 차단은 /api 엔드포인트가 httpOnly 세션 쿠키를 검증해서 한다.
+     여기 값을 아무리 바꿔도 API 는 데이터를 내주지 않는다. */
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const Session = (function () {
-  const KEY = 'ans2quest_user';
+  const KEY = 'ans2quest_user';   // 표시용 캐시. 권한 근거가 아니다.
+  let verified = null;            // 서버가 확인해 준 사용자
+  let checked = false;            // 서버에 한 번이라도 물어봤는지
+  let inflight = null;
 
-  // ponytail: 서버 없는 지금 단계의 임시 목록. 관리자 화면 레이아웃을
-  // 테스트하려고 이메일로만 구분한다. 백엔드가 생기면 이 배열 전체를
-  // 지우고 서버가 내려주는 role 을 그대로 신뢰하도록 바꿀 것.
-  const MOCK_ADMIN_EMAILS = ['yuyubao123ascii@gmail.com'];
+  const readCache = () => {
+    try { return JSON.parse(sessionStorage.getItem(KEY)); } catch { return null; }
+  };
 
   return {
-    save: function (profile) {
-      const withRole = Object.assign({}, profile, {
-        role: MOCK_ADMIN_EMAILS.includes(profile.email) ? 'admin' : 'user'
-      });
-      sessionStorage.setItem(KEY, JSON.stringify(withRole));
+    /** 화면 표시용 사용자. 서버 확인 전에는 캐시로 즉시 그린다. */
+    load() { return checked ? verified : readCache(); },
+
+    /** 관리자 여부 — 서버가 확인해 준 값만 인정한다 */
+    isAdmin() { return !!verified && verified.role === 'admin'; },
+
+    /** 서버에 현재 세션을 묻는다. 페이지당 한 번만 실제 요청이 나간다. */
+    async refresh() {
+      if (inflight) return inflight;
+      inflight = (async () => {
+        let user = null;
+        try {
+          const res = await fetch('/api/me', { credentials: 'same-origin' });
+          if (res.ok) {
+            const me = await res.json();
+            if (me.authenticated) user = me;
+          }
+        } catch {
+          // 네트워크 실패 = 확인 불가. 캐시를 믿지 않고 비로그인으로 취급한다.
+          user = null;
+        }
+        verified = user;
+        checked = true;
+        if (user) sessionStorage.setItem(KEY, JSON.stringify(user));
+        else sessionStorage.removeItem(KEY);
+        return user;
+      })();
+      return inflight;
     },
-    load: function () {
-      try {
-        return JSON.parse(sessionStorage.getItem(KEY));
-      } catch (e) {
-        return null;   // 저장값이 깨졌으면 비로그인으로 취급
-      }
-    },
-    clear: function () {
+
+    async logout() {
+      try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); }
+      catch { /* 서버가 없어도 화면 상태는 정리한다 */ }
+      verified = null;
+      checked = true;
       sessionStorage.removeItem(KEY);
     },
-    isAdmin: function () {
-      const user = this.load();
-      return !!user && user.role === 'admin';
+
+    /** 로그인 시작 — 서버가 state 를 발급하고 제공자로 보낸다 */
+    startLogin(provider) {
+      window.location.href = '/api/auth/' + encodeURIComponent(provider) + '/start';
+    },
+
+    clear() {
+      verified = null;
+      checked = true;
+      sessionStorage.removeItem(KEY);
     }
   };
 })();

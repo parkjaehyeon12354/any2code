@@ -715,18 +715,21 @@ mark {
 
 <script src="session.js"></script>
 <script>
-// 접근 가드. session.js 의 경고 그대로 — UI 를 숨길 뿐 진짜 보안이 아니다.
-// 개발자도구로 role 을 바꾸면 이 페이지도 열린다. 서버가 붙기 전까지
-// 이 파일에 진짜 회원 데이터를 두면 안 된다.
-if (!Session.isAdmin()) window.location.replace('Index.html');
+// 화면 가드. 서버(/api/me)가 내려준 role 로 판정한다.
+// 이건 "관리자가 아닌 사람에게 화면을 안 보여주는" 편의이지 보안 경계가 아니다 —
+// 진짜 차단은 각 /api 엔드포인트가 세션 쿠키를 검증해서 한다.
+Session.refresh().then(function (user) {
+  if (!user || user.role !== 'admin') window.location.replace('Index.html');
+});
 </script>
 <script src="nav-user.js"></script>
 <script>
-(function () {
-  if (!Session.isAdmin()) return;
+(async function () {
+  const me = await Session.refresh();
+  if (!me || me.role !== 'admin') return;
 
   document.getElementById('whoami').textContent =
-    Session.load().name + '님으로 로그인됨 · 오늘의 운영 현황입니다.';
+    me.name + '님으로 로그인됨 · 오늘의 운영 현황입니다.';
 
   // ⚠ 전부 가짜 데이터. 이메일은 예약된 예시 도메인(example.com)만 썼다.
   // 서버가 붙으면 이 배열들을 fetch('/api/admin/...') 응답으로 갈아끼운다.

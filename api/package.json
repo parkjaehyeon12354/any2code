@@ -1,0 +1,17 @@
+{
+  "name": "ans2quest-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ans2Quest 백엔드 — Azure Functions (Node.js v4 프로그래밍 모델)",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

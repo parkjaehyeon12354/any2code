@@ -1,0 +1,44 @@
+# ── 비밀값 (이게 이 파일의 존재 이유) ──
+# Azure Functions 는 로컬 개발용 연결 문자열·클라이언트 시크릿을 여기 저장한다.
+# 커밋되면 카카오/GitHub/Discord client secret 과 DB 접속 정보가 그대로 공개된다.
+local.settings.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ── 의존성 ──
+node_modules/
+package-lock.json.bak
+
+# ── Azure Functions 빌드 산출물 ──
+bin/
+obj/
+appsettings.json
+appsettings.*.json
+.python_packages/
+__pycache__/
+*.pyc
+
+# ── Static Web Apps CLI ──
+.swa/
+swa-cli.config.json.bak
+
+# ── 빌드/배포 ──
+dist/
+build/
+.vercel/
+.netlify/
+
+# ── 에디터·OS ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── 로그 ──
+*.log
+npm-debug.log*
