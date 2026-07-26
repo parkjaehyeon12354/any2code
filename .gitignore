@@ -32,7 +32,8 @@ build/
 .vercel/
 .netlify/
 
-# ── 에디터·OS ──
+# ── 에디터·OS·도구 로컬 상태 ──
+.impeccable/
 .vscode/
 .idea/
 .DS_Store

@@ -5,13 +5,6 @@
     "apiRuntime": "node:20"
   },
 
-  "//주의": [
-    "SWA 내장 인증(/.auth)은 쓰지 않는다. Free 플랜은 커스텀 OIDC 를 지원하지 않아",
-    "카카오를 못 붙이기 때문이다. 따라서 allowedRoles: ['authenticated'] 규칙을 여기 두면",
-    "SWA 입장에서는 모두가 anonymous 라 아무도 못 들어간다.",
-    "권한 판정은 전부 /api 쪽 세션 쿠키로 한다 — admin.html 은 열리되 데이터는 API 가 막는다."
-  ],
-
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
