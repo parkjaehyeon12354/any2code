@@ -1,25 +1,27 @@
-/* ── Design Tokens (design-system.md 기준) ── */
+/* ── Design Tokens — Ans2Quest 고유 팔레트 ──
+   Discovery Teal(#167a63) 중심의 쿨 뉴트럴. 프라이머리가 흰 글자 기준
+   5.25:1 이라 채운 버튼에 그대로 쓴다 (예전처럼 active 로 우회할 필요 없음). */
 :root {
   /* Colors */
-  --primary: #cc785c;
-  --primary-active: #a9583e;
-  --ink: #141413;
-  --body: #3d3d3a;
-  --muted: #6c6a64;
-  --muted-soft: #8e8b82;
-  --hairline: #e6dfd8;
-  --canvas: #faf9f5;
-  --surface-soft: #f5f0e8;
-  --surface-dark: #181715;
-  --surface-dark-elevated: #252320;
+  --primary: #167a63;
+  --primary-active: #0f5c4a;
+  --ink: #1a201d;
+  --body: #3d4642;
+  --muted: #5d6963;
+  --muted-soft: #88938c;
+  --hairline: #dde4e0;
+  --canvas: #f7f9f8;
+  --surface-soft: #edf2ef;
+  --surface-dark: #14201b;
+  --surface-dark-elevated: #24352c;
   --on-primary: #ffffff;
-  --on-dark: #faf9f5;
-  --on-dark-soft: #a09d96;
-  --error: #c64545;
+  --on-dark: #f2f7f4;
+  --on-dark-soft: #a9bbb1;
+  --error: #bd3b3b;
 
-  /* Typography — Copernicus/StyreneB = design MD 1순위, 웹폰트 = 실제 렌더링 담당
-     라틴은 Cormorant, 한글은 고운바탕이 받는다 (Cormorant에 한글 글리프 없음) */
-  --font-display: "Copernicus", "Tiempos Headline", "Cormorant Garamond", "Gowun Batang", Georgia, serif;
+  /* Typography — 디스플레이는 Noto Serif KR 700 (한글+라틴을 한 서체가 커버,
+     묵직한 학술지 톤). 본문은 Pretendard. */
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", Georgia, serif;
   --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Rounded */
@@ -66,11 +68,10 @@ a { color: inherit; text-decoration: none; }
   padding: 12px 20px; height: 40px; border-radius: var(--rounded-md);
   border: none; cursor: pointer; white-space: nowrap;
 }
-/* 채워진 코랄 버튼은 --primary(#cc785c)로는 흰 글자 대비가 3.28:1 이라 AA 미달.
-   --primary-active(#a9583e)는 5.06:1 로 통과한다. --primary 는 링크·강조 텍스트용으로 남긴다. */
-.btn-primary { background: var(--primary-active); color: var(--on-primary); }
-.btn-primary:hover { background: #944c35; }
-.btn-primary:active { background: #82412d; }
+/* 새 프라이머리는 흰 글자 5.25:1 로 그 자체가 AA 통과 — 버튼에 바로 쓴다 */
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary-active); }
+.btn-primary:active { background: #0a4234; }
 .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
 
 /* ── Top Nav ── */
@@ -187,13 +188,13 @@ a { color: inherit; text-decoration: none; }
   font-size: 14px;
   font-weight: 500;
   color: var(--on-primary);
-  background: var(--primary-active);   /* 흰 글자 대비 5.06:1 (--primary 는 3.28:1 로 미달) */
+  background: var(--primary);   /* 흰 글자 대비 5.25:1 — AA 통과 */
   padding: 7px 16px;
   border-radius: var(--rounded-pill);
   white-space: nowrap;
   transition: background 0.15s;
 }
-.nav-cta > a:hover { background: #944c35; }
+.nav-cta > a:hover { background: var(--primary-active); }
 
 /* 로그인 상태의 네비 — 이름을 누르면 드롭다운 (mega-dropdown과 같은 패턴) */
 .profile-menu { position: relative; }
@@ -250,6 +251,19 @@ a { color: inherit; text-decoration: none; }
 }
 .hamburger svg { width: 24px; height: 24px; }
 
+/* 서버 미연결 안내 — 저장되지 않는 동작임을 명시할 때 */
+.mock-notice {
+  margin-bottom: var(--sp-lg);
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  word-break: keep-all;
+}
+
 /* ── Footer ── */
 .site-footer { background: var(--surface-dark); padding: 64px 0; margin-top: var(--sp-section); }
 .footer-top {
@@ -257,7 +271,9 @@ a { color: inherit; text-decoration: none; }
   font-size: 18px; font-weight: 500; color: var(--on-dark);
 }
 .footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-xl); }
-.footer-col h4 { font-size: 14px; font-weight: 500; color: var(--on-dark); margin-bottom: var(--sp-md); }
+/* h2 인 이유: h1(히어로) 다음 단계여야 제목 계층이 안 끊긴다.
+   시각적 크기는 링크와 비슷하게 두고 굵기·색으로만 구분한다. */
+.footer-col h2 { font-size: 14px; font-weight: 600; color: var(--on-dark); margin-bottom: var(--sp-xs); }
 .footer-col ul { list-style: none; display: flex; flex-direction: column; }
 /* 16px 짜리 텍스트 링크는 손가락으로 못 누른다 — 세로 패딩으로 44px 터치 영역 확보 */
 .footer-col li a {
@@ -267,11 +283,16 @@ a { color: inherit; text-decoration: none; }
   color: var(--on-dark-soft);
 }
 .footer-col li a:hover { color: var(--on-dark); }
+/* 개인정보처리방침은 국내 서비스 관례상 다른 약관보다 눈에 띄게 둔다 */
+.footer-col li a.footer-strong { color: var(--on-dark); font-weight: 500; }
+
 .footer-bottom {
   margin-top: var(--sp-xxl); padding-top: var(--sp-lg);
   border-top: 1px solid var(--surface-dark-elevated);
   font-size: 14px; color: var(--on-dark-soft);
 }
+.footer-bottom p { word-break: keep-all; }
+.footer-copy { margin-top: var(--sp-xs); font-size: 13px; }
 
 /* ── Mobile Nav ── */
 .mobile-menu {

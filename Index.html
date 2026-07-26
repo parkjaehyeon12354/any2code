@@ -7,7 +7,7 @@
 <title>Ans2Quest — 탐구의 시작</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
@@ -37,9 +37,9 @@
 .hero h1 {
   font-family: var(--font-display);
   font-size: 56px;
-  font-weight: 400;
+  font-weight: 700;
   line-height: 1.18;
-  /* 한글(고운바탕)은 라틴 디스플레이 세리프만큼 음수 자간을 못 견딘다 */
+  /* Noto Serif KR 700 — 묵직한 학술지 톤. 한글 세리프라 음수 자간은 약하게만 */
   letter-spacing: -0.3px;
   word-break: keep-all;
   color: var(--ink);
@@ -68,10 +68,10 @@
   <div class="nav-inner">
     <a href="#" class="nav-brand">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
-        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
       </svg>
       Ans2Quest
     </a>
@@ -140,7 +140,7 @@
           </div>
         </div>
       </li>
-      <li><a href="/community.html">커뮤니티</a></li>
+      <li><a href="community.html">커뮤니티</a></li>
       <li>
         <a href="#" data-dropdown="research">심화 탐구</a>
         <div class="mega-dropdown">
@@ -176,10 +176,10 @@
   <div class="mobile-menu-header">
     <span class="nav-brand" style="color: var(--ink);">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
-        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
       </svg>
       Ans2Quest
     </span>
@@ -194,7 +194,7 @@
     <a href="#">화학</a>
     <a href="#">생명과학</a>
     <a href="#">지구과학</a>
-    <a href="/community.html">커뮤니티</a>
+    <a href="community.html">커뮤니티</a>
     <a href="#">심화 탐구</a>
     <a href="#">가이드</a>
   </nav>
@@ -226,102 +226,60 @@
   <div class="container">
     <div class="footer-top">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true" style="width: 24px; height: 24px; margin-right: 8px;">
-        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
-        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
       </svg>
       Ans2Quest
     </div>
+    <!-- 상단 네비와 같은 구조를 따른다. 푸터가 사이트맵 역할을 하므로
+         네비에 없는 항목을 여기 새로 만들면 안 된다. -->
     <div class="footer-grid">
       <div class="footer-col">
-        <h4>Product</h4>
+        <h2>실험</h2>
         <ul>
-          <li><a href="#">Claude</a></li>
-          <li><a href="#">Claude Code</a></li>
-          <li><a href="#">API</a></li>
-          <li><a href="#">Pricing</a></li>
+          <li><a href="#">물리학</a></li>
+          <li><a href="#">화학</a></li>
+          <li><a href="#">생명과학</a></li>
+          <li><a href="#">지구과학</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Company</h4>
+        <h2>탐구</h2>
         <ul>
-          <li><a href="#">소개 (About)</a></li>
-          <li><a href="#">블로그 (Blog)</a></li>
-          <li><a href="#">Careers</a></li>
-          <li><a href="#">News</a></li>
-          <li><a href="#">Contact</a></li>
+          <li><a href="community.html">커뮤니티</a></li>
+          <li><a href="#">심화 탐구</a></li>
+          <li><a href="#">주제 탐색</a></li>
+          <li><a href="#">보고서 템플릿</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Resources</h4>
+        <h2>이용 안내</h2>
         <ul>
-          <li><a href="#">Documentation</a></li>
-          <li><a href="#">Research</a></li>
-          <li><a href="#">Status</a></li>
-          <li><a href="#">Changelog</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">이용 가이드</a></li>
+          <li><a href="#">자주 묻는 질문</a></li>
+          <li><a href="#">문의하기</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Legal</h4>
+        <h2>약관 · 정책</h2>
         <ul>
-          <li><a href="#">Terms of Service</a></li>
-          <li><a href="#">Privacy Policy</a></li>
-          <li><a href="#">Acceptable Use</a></li>
-          <li><a href="#">Responsible Disclosure</a></li>
+          <li><a href="#">이용약관</a></li>
+          <li><a href="#" class="footer-strong">개인정보처리방침</a></li>
+          <li><a href="#">커뮤니티 운영원칙</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      © 2026 Ans2Quest. All rights reserved.
+      <p>Ans2Quest는 고등학생이 과학 실험을 직접 체험하고 함께 탐구하는 학습 서비스입니다.</p>
+      <p class="footer-copy">© 2026 투코드(TwoCode) · 박재현, 최윤지</p>
     </div>
   </div>
 </footer>
 
-<script>
-(function() {
-  const navLinks = document.getElementById('nav-links');
-  let closeTimer = null;
-
-  function closeAll() {
-    clearTimeout(closeTimer);
-    navLinks.querySelectorAll('.open,.active').forEach(el => el.classList.remove('open', 'active'));
-  }
-
-  function openDropdown(li) {
-    clearTimeout(closeTimer);
-    const panel = li.querySelector('.mega-dropdown');
-    if (!panel || panel.classList.contains('open')) return;
-    closeAll();
-    panel.classList.add('open');
-    li.classList.add('active');
-  }
-
-  const listItems = navLinks.querySelectorAll('li');
-  listItems.forEach(li => {
-    li.addEventListener('mouseenter', function() {
-      clearTimeout(closeTimer);
-      openDropdown(li);
-    });
-
-    li.addEventListener('mouseleave', function() {
-      closeTimer = setTimeout(closeAll, 250);
-    });
-  });
-
-  // Prevent top-level dropdown links from navigating or jumping to top
-  navLinks.addEventListener('click', function(e) {
-    const link = e.target.closest('[data-dropdown]');
-    if (link) {
-      e.preventDefault();
-    }
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAll();
-  });
-})();
-</script>
+<script src="nav-dropdown.js"></script>
 
 </body>
 </html>

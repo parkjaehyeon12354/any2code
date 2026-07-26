@@ -7,13 +7,13 @@
 <title>관리자 — Ans2Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
 /* 이 페이지 전용. 공용 토큰/네비는 styles.css 에 있다.
    운영 화면이라 랜딩과 목적이 반대다 — 파티클·큰 여백 대신 밀도와 스캔 가능성.
-   크림/코랄 팔레트는 유지해서 같은 제품으로 읽히게 한다. */
+   틸 팔레트는 유지해서 같은 제품으로 읽히게 한다. */
 
 .admin-badge {
   margin-left: var(--sp-sm);
@@ -69,7 +69,7 @@
 .page-head h1 {
   font-family: var(--font-display);
   font-size: 26px;
-  font-weight: 400;
+  font-weight: 700;
   color: var(--ink);
   margin-bottom: 2px;
 }
@@ -91,13 +91,18 @@
   color: var(--body);
   word-break: keep-all;
 }
-/* --primary(2.89:1)도 --primary-active(4.46:1)도 13px 에서 AA 미달.
-   surface-soft 위에서 4.5:1 을 넘기려면 한 단계 더 어두워야 한다. */
-.mock-banner .mark { color: #8f4a33; font-weight: 600; flex-shrink: 0; }
+/* 앰버 강조 텍스트 — surface-soft 위 4.5:1 확보값 */
+.mock-banner .mark { color: #8a5c08; font-weight: 600; flex-shrink: 0; }
 .mock-banner strong { color: var(--ink); font-weight: 600; }
 
 /* ── 지표 카드 ── */
-.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-md); margin-bottom: var(--sp-xl); }
+/* auto-fit — 카드가 늘거나 줄어도 브레이크포인트를 안 고쳐도 된다 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-md);
+  margin-bottom: var(--sp-xl);
+}
 .stat {
   padding: var(--sp-lg);
   background: var(--canvas);
@@ -108,7 +113,7 @@
 .stat-value { font-size: 26px; font-weight: 600; color: var(--ink); margin-top: 6px; line-height: 1.1; }
 /* 12px 보조 문구에 --muted-soft(3.23:1)·--primary(3.11:1)는 AA 미달 */
 .stat-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.stat-note.warn { color: #8f4a33; font-weight: 500; }
+.stat-note.warn { color: #8a5c08; font-weight: 500; }
 
 /* ── 표 ── */
 .panel {
@@ -167,7 +172,7 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(204, 120, 92, .18);
+  box-shadow: 0 0 0 3px rgba(22, 122, 99, .18);
 }
 
 /* 상태 배지 */
@@ -179,9 +184,9 @@
   font-weight: 500;
 }
 .badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
-/* --error(#c64545)는 이 연한 배경 위에서 4.02:1 → 한 단계 어둡게 */
-.badge-hold { background: rgba(198, 69, 69, .1); color: #a33434; }
-.badge-wait { background: rgba(204, 120, 92, .14); color: #8f4a33; }
+/* 새 --error(#bd3b3b) 기준 배지 배경·텍스트 */
+.badge-hold { background: rgba(189, 59, 59, .1); color: #9c3030; }
+.badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
 
 /* 제공자 칩 — 색으로 구분하면 표를 훑을 때 빨리 잡힌다 */
 .chip { display: inline-block; padding: 2px 8px; border-radius: var(--rounded-pill); font-size: 12px; font-weight: 500; }
@@ -215,6 +220,9 @@
    전부 해주므로 직접 구현하지 않는다. */
 .modal {
   padding: 0;
+  /* styles.css 의 전역 리셋(*{margin:0})이 <dialog> 의 기본 margin:auto 를 지워서
+     모달이 좌상단에 붙는다. 여기서 되살려야 화면 중앙에 온다. */
+  margin: auto;
   width: calc(100% - 32px);
   max-width: 460px;
   color: var(--body);
@@ -273,6 +281,41 @@
 /* 표 안의 해제일 보조 표기 */
 .cell-sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
 
+/* 항소 본문 — 회원이 쓴 글이라 관리자 UI 문구와 구분되어야 한다 */
+.ap-quote {
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-radius: var(--rounded-md);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--body);
+  word-break: keep-all;
+  white-space: pre-wrap;
+}
+/* 표 안에서 긴 항소 사유는 줄바꿈 허용 (다른 셀은 nowrap) */
+.table td.cell-wrap { white-space: normal; min-width: 200px; max-width: 340px; word-break: keep-all; }
+
+/* 감지된 금칙어 강조 — 문맥을 보고 오탐인지 바로 판단할 수 있어야 한다 */
+mark {
+  background: rgba(189, 59, 59, .16);
+  color: #8a2a2a;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.word-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--rounded-pill);
+  background: rgba(189, 59, 59, .1);
+  color: #9c3030;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.row-action.danger { color: #9c3030; border-color: rgba(189, 59, 59, .35); }
+.row-action.danger:hover { background: rgba(189, 59, 59, .08); color: #8a2a2a; }
+
 .field-row { margin-bottom: var(--sp-lg); }
 .field-row:last-child { margin-bottom: 0; }
 .field-row legend, .field-row .legend {
@@ -327,7 +370,7 @@
 .modal textarea:focus-visible {
   outline: none;
   border-color: var(--primary-active);
-  box-shadow: 0 0 0 3px rgba(169, 88, 62, .18);
+  box-shadow: 0 0 0 3px rgba(15, 92, 74, .18);
 }
 .modal textarea[disabled] { background: var(--surface-soft); color: var(--muted); }
 
@@ -346,9 +389,6 @@
   word-break: break-word;
 }
 
-@media (max-width: 900px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 768px) {
   .admin-layout { flex-direction: column; }
   .admin-side {
@@ -372,10 +412,10 @@
   <div class="nav-inner">
     <a href="Index.html" class="nav-brand">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
-        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#5db8a6" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="11.5" cy="17" r="1.2" fill="#cc785c" opacity="0.9"/>
-        <circle cx="15" cy="19" r="0.9" fill="#5db8a6" opacity="0.8"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
       </svg>
       Ans2Quest
     </a>
@@ -390,6 +430,8 @@
     <a href="#overview" data-nav="overview">개요</a>
     <a href="#users" data-nav="users">회원</a>
     <a href="#reports" data-nav="reports">신고</a>
+    <a href="#appeals" data-nav="appeals">항소</a>
+    <a href="#held" data-nav="held">보류 게시물</a>
   </nav>
 
   <main class="admin-main">
@@ -421,6 +463,16 @@
           <div class="stat-label">처리 대기 신고</div>
           <div class="stat-value" id="pending-count">3</div>
           <div class="stat-note warn" id="pending-note">확인 필요</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">대기 중 항소</div>
+          <div class="stat-value" id="appeal-count">2</div>
+          <div class="stat-note warn" id="appeal-note">확인 필요</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">보류 게시물</div>
+          <div class="stat-value" id="held-count">0</div>
+          <div class="stat-note warn" id="held-note">확인 필요</div>
         </div>
       </div>
 
@@ -488,6 +540,60 @@
         </div>
       </div>
     </section>
+
+    <!-- ── 항소 ── -->
+    <section id="appeals">
+      <div class="page-head">
+        <h1>항소</h1>
+        <p>제재를 받은 회원이 낸 이의를 검토합니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>샘플 데이터입니다.</strong> 제재 안내 메시지가 "이의가 있으면 회신"으로
+        끝나므로, 그 회신이 도착하는 곳이 여기입니다.</span>
+      </p>
+
+      <pre class="mod-result" id="ap-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head"><h3>접수된 항소</h3></div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">신청자</th><th scope="col">원 제재</th><th scope="col">항소 사유</th><th scope="col">접수일</th><th scope="col">결과</th><th scope="col"></th></tr></thead>
+            <tbody id="appeal-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 보류 게시물 ── -->
+    <section id="held">
+      <div class="page-head">
+        <h1>보류 게시물</h1>
+        <p>금칙어가 감지되어 자동으로 가려진 글입니다. 확인 후 공개하거나 제재하세요.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>샘플 데이터입니다.</strong> 자동 필터는 오탐이 생깁니다 —
+        감지된 단어를 <mark>강조</mark>해 두었으니 문맥을 보고 판단하세요.</span>
+      </p>
+
+      <pre class="mod-result" id="held-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>보류 중 <span class="cell-muted" id="held-total"></span></h3>
+        </div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">작성자</th><th scope="col">내용</th><th scope="col">감지어</th><th scope="col">작성일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
+            <tbody id="held-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -548,6 +654,65 @@
   </div>
 </dialog>
 
+<!-- 항소 처리 모달 — 신고 모달과 CSS 는 공유하고 결정 항목만 다르다 -->
+<dialog class="modal" id="ap-dialog" aria-labelledby="ap-title">
+  <div class="modal-head">
+    <h3 id="ap-title">항소 처리</h3>
+    <button type="button" class="modal-close" id="ap-x" aria-label="닫기">×</button>
+  </div>
+
+  <div class="modal-body">
+    <dl class="mod-summary">
+      <div><dt>신청자</dt><dd id="ap-who"></dd></div>
+      <div><dt>원 제재</dt><dd id="ap-orig"></dd></div>
+      <div><dt>사유</dt><dd id="ap-reason"></dd></div>
+    </dl>
+
+    <div class="field-row">
+      <span class="legend">항소 내용</span>
+      <p class="ap-quote" id="ap-text"></p>
+    </div>
+
+    <div class="field-row">
+      <fieldset>
+        <legend>결정</legend>
+        <div class="opt-row" id="ap-decisions">
+          <label class="opt"><input type="radio" name="decision" value="denied" checked><span>기각 · 제재 유지</span></label>
+          <label class="opt"><input type="radio" name="decision" value="reduced"><span>감경</span></label>
+          <label class="opt"><input type="radio" name="decision" value="granted"><span>인용 · 즉시 해제</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="field-row" id="ap-reduce-row" hidden>
+      <fieldset>
+        <legend>감경 후 기간</legend>
+        <div class="opt-row">
+          <label class="opt"><input type="radio" name="newdays" value="1" checked><span>1일</span></label>
+          <label class="opt"><input type="radio" name="newdays" value="3"><span>3일</span></label>
+          <label class="opt"><input type="radio" name="newdays" value="7"><span>7일</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <p class="mod-effect" id="ap-effect"></p>
+
+    <div class="field-row">
+      <label class="legend" for="ap-message">회신 메시지</label>
+      <textarea id="ap-message"></textarea>
+      <label class="check">
+        <input type="checkbox" id="ap-send" checked>
+        결정 후 이 메시지를 신청자에게 발송
+      </label>
+    </div>
+  </div>
+
+  <div class="modal-foot">
+    <button type="button" class="btn btn-ghost" id="ap-cancel">취소</button>
+    <button type="button" class="btn btn-primary" id="ap-confirm">결정하기</button>
+  </div>
+</dialog>
+
 <script src="session.js"></script>
 <script>
 // 접근 가드. session.js 의 경고 그대로 — UI 를 숨길 뿐 진짜 보안이 아니다.
@@ -583,12 +748,71 @@ if (!Session.isAdmin()) window.location.replace('Index.html');
     { target: '게시글 #470', reason: '타인 자료 무단 게시', by: 'student07@example.com', ip: '203.0.113.88', at: '2026-07-24', status: 'wait' }
   ];
 
+  // 제재 대상 회원의 항소. 원 제재를 함께 들고 있어야 검토가 가능하다.
+  const MOCK_APPEALS = [
+    {
+      who: 'student04@example.com',
+      orig: { days: 7, ip: true, until: '2026-07-31' },
+      reason: '광고성 게시물',
+      at: '2026-07-25',
+      text: '해당 글은 광고가 아니라 제가 직접 만든 실험 정리본 링크였습니다.\n외부 링크가 있어서 오해가 있었던 것 같습니다. 확인 부탁드립니다.',
+      status: 'wait'
+    },
+    {
+      who: 'student02@example.com',
+      orig: { days: 3, ip: false, until: '2026-07-27' },
+      reason: '욕설·비방',
+      at: '2026-07-24',
+      text: '친구랑 장난친 댓글인데 신고가 들어간 것 같습니다. 앞으로 조심하겠습니다.',
+      status: 'wait'
+    }
+  ];
+
+  // ── 자동 보류 필터 ──
+  // 학생 커뮤니티라 욕설은 사람이 보기 전에 먼저 가린다.
+  // '고아' 처럼 정상 문맥에도 쓰이는 단어가 섞여 있어 오탐이 반드시 생긴다 —
+  // 그래서 자동 삭제가 아니라 '보류' 이고, 사람이 최종 판단한다.
+  // ponytail: 단순 포함 검사. 우회 표기(ㅅㅂ, 시1발 등)까지 잡으려면 정규화가
+  // 필요한데 오탐이 더 늘어난다. 실제 데이터를 보고 나서 정할 것.
+  const BANNED_WORDS = ['씨발', '시발', '병신', '개새끼', '좆', '지랄', '새끼', '꺼져', '고아'];
+
+  const findBanned = (text) => BANNED_WORDS.filter((w) => text.includes(w));
+
+  // 감지어를 강조해서 보여준다. esc 를 먼저 걸고 그 다음 <mark> 를 넣어야
+  // 사용자가 쓴 태그가 실행되지 않는다.
+  function highlight(text, words) {
+    let html = esc(text);
+    words.forEach((w) => {
+      html = html.split(esc(w)).join('<mark>' + esc(w) + '</mark>');
+    });
+    return html;
+  }
+
+  const MOCK_POSTS = [
+    { id: '게시글 #503', author: 'student06@example.com', ip: '203.0.113.51', at: '2026-07-26',
+      text: '이 문제 진짜 씨발 모르겠다 도와줘', status: 'held' },
+    // 오탐 예시 — '고아원' 이 금칙어 '고아' 에 걸린다. 공개 처리되어야 하는 글.
+    { id: '게시글 #504', author: 'student01@example.com', ip: '203.0.113.12', at: '2026-07-26',
+      text: '이번 주말에 고아원 봉사활동 가는데 같이 가실 분 계신가요? 과학 실험 보여주려고요.', status: 'held' },
+    { id: '댓글 #1201', author: 'student08@example.com', ip: '203.0.113.77', at: '2026-07-25',
+      text: '아 진짜 병신같은 문제네 이거', status: 'held' },
+    // 역시 오탐 — '새끼' 가 생물 용어로 쓰인 경우
+    { id: '게시글 #499', author: 'student03@example.com', ip: '203.0.113.31', at: '2026-07-25',
+      text: '초파리 새끼가 부화하는 데 며칠 걸리나요? 실험 일정 짜는 중입니다.', status: 'held' }
+  ];
+
   const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', github: 'GitHub', discord: 'Discord' };
   const STATUS = {
-    ok:    { cls: 'badge-ok',    text: '정상' },
-    hold:  { cls: 'badge-hold',  text: '정지' },
-    wait:  { cls: 'badge-wait',  text: '대기' },
-    done:  { cls: 'badge-ok',    text: '처리됨' }   // text 는 제재 내용으로 덮어쓴다
+    ok:      { cls: 'badge-ok',    text: '정상' },
+    hold:    { cls: 'badge-hold',  text: '정지' },
+    wait:    { cls: 'badge-wait',  text: '대기' },
+    done:    { cls: 'badge-ok',    text: '처리됨' },  // text 는 제재 내용으로 덮어쓴다
+    denied:  { cls: 'badge-hold',  text: '기각' },
+    granted: { cls: 'badge-ok',    text: '인용' },
+    reduced: { cls: 'badge-wait',  text: '감경' },
+    held:      { cls: 'badge-wait', text: '보류' },
+    published: { cls: 'badge-ok',   text: '공개됨' },
+    blocked:   { cls: 'badge-hold', text: '차단됨' }
   };
 
   const esc = escapeHtml;   // session.js 제공
@@ -667,14 +891,109 @@ if (!Session.isAdmin()) window.location.replace('Index.html');
   renderReports();
   updatePendingCount();
 
+  // ── 항소 ──
+  function updateAppealCount() {
+    const n = MOCK_APPEALS.filter((a) => a.status === 'wait').length;
+    document.getElementById('appeal-count').textContent = n;
+    const note = document.getElementById('appeal-note');
+    note.textContent = n ? '확인 필요' : '모두 처리됨';
+    note.classList.toggle('warn', n > 0);
+  }
+
+  function renderAppeals() {
+    fill('appeal-body', MOCK_APPEALS.map((a, i) =>
+      '<tr><td class="cell-name">' + esc(a.who) + '</td>' +
+      '<td class="cell-muted">' + sanctionText(a.orig.days, a.orig.ip) +
+      '<div class="cell-sub">' + esc(a.reason) + '</div></td>' +
+      '<td class="cell-wrap">' + esc(a.text.split('\n')[0]) + '</td>' +
+      '<td class="cell-muted">' + a.at + '</td>' +
+      '<td>' + badge(a.status, a.decided && a.decided.label) +
+      (a.decided && a.decided.until ? '<div class="cell-sub">' + a.decided.until + ' 해제</div>' : '') + '</td>' +
+      '<td><button type="button" class="row-action" data-appeal="' + i + '">' +
+      (a.decided ? '다시 결정' : '검토') + '</button></td></tr>'
+    ), '접수된 항소가 없습니다.');
+  }
+  renderAppeals();
+  updateAppealCount();
+
+  // ── 보류 게시물 ──
+  function updateHeldCount() {
+    const n = MOCK_POSTS.filter((p) => p.status === 'held').length;
+    document.getElementById('held-count').textContent = n;
+    document.getElementById('held-total').textContent = n + '건';
+    const note = document.getElementById('held-note');
+    note.textContent = n ? '확인 필요' : '모두 처리됨';
+    note.classList.toggle('warn', n > 0);
+  }
+
+  function renderHeld() {
+    fill('held-body', MOCK_POSTS.map((p, i) => {
+      const words = findBanned(p.text);
+      const acted = p.status !== 'held';
+      return '<tr><td class="cell-muted">' + esc(p.author) +
+        '<div class="cell-sub">' + esc(p.id) + '</div></td>' +
+        '<td class="cell-wrap">' + highlight(p.text, words) + '</td>' +
+        '<td>' + words.map((w) => '<span class="word-tag">' + esc(w) + '</span>').join(' ') + '</td>' +
+        '<td class="cell-muted">' + p.at + '</td>' +
+        '<td>' + badge(p.status) + '</td>' +
+        '<td>' + (acted
+          ? '<button type="button" class="row-action" data-held-undo="' + i + '">되돌리기</button>'
+          : '<button type="button" class="row-action" data-held-ok="' + i + '">공개</button> ' +
+            '<button type="button" class="row-action danger" data-held-block="' + i + '">차단·제재</button>') +
+        '</td></tr>';
+    }), '보류 중인 게시물이 없습니다.');
+  }
+  renderHeld();
+  updateHeldCount();
+
+  const heldResult = document.getElementById('held-result');
+
+  document.getElementById('held-body').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-held-ok],[data-held-block],[data-held-undo]');
+    if (!btn) return;
+
+    // 오탐 공개 — 필터가 잘못 잡은 글을 그대로 내보낸다
+    if (btn.dataset.heldOk !== undefined) {
+      const p = MOCK_POSTS[Number(btn.dataset.heldOk)];
+      p.status = 'published';
+      heldResult.textContent = '[서버 미연결 — 저장되지 않았습니다]\n\n' +
+        p.id + ' 을(를) 공개했습니다. 작성자에게는 알림이 가지 않습니다.';
+      heldResult.hidden = false;
+      renderHeld();
+      updateHeldCount();
+      return;
+    }
+
+    // 되돌리기 — 잘못 눌렀을 때 복구. 저장 전이니 부담 없이 되돌릴 수 있어야 한다
+    if (btn.dataset.heldUndo !== undefined) {
+      const p = MOCK_POSTS[Number(btn.dataset.heldUndo)];
+      p.status = 'held';
+      heldResult.hidden = true;
+      renderHeld();
+      updateHeldCount();
+      return;
+    }
+
+    // 차단 + 제재 — 신고와 같은 제재 모달을 연다
+    const idx = Number(btn.dataset.heldBlock);
+    const p = MOCK_POSTS[idx];
+    openSanction(
+      { target: p.id, reason: '욕설·비방 (' + findBanned(p.text).join(', ') + ')', ip: p.ip },
+      function () { p.status = 'blocked'; renderHeld(); updateHeldCount(); },
+      heldResult
+    );
+  });
+
   // ── 신고 처리 모달 ──
   const dlg = document.getElementById('mod-dialog');
   const msgBox = document.getElementById('mod-message');
   const sendBox = document.getElementById('mod-send');
   const ipBox = document.getElementById('mod-ipblock');
   const resultBox = document.getElementById('mod-result');
-  let current = null;
-  let msgEdited = false;   // 관리자가 직접 고쳤으면 템플릿으로 덮어쓰지 않는다
+  let current = null;            // { target, reason, ip, applied? } — 신고 또는 보류 게시물
+  let onApply = null;            // 확정 시 실행. 어디서 열었느냐에 따라 다르게 처리한다
+  let onApplyResultBox = null;   // 결과를 띄울 곳 (연 화면에 따라 다름)
+  let msgEdited = false;         // 관리자가 직접 고쳤으면 템플릿으로 덮어쓰지 않는다
 
   const days = () => Number(dlg.querySelector('input[name="duration"]:checked').value);
 
@@ -714,10 +1033,12 @@ if (!Session.isAdmin()) window.location.replace('Index.html');
     msgBox.disabled = !sendBox.checked;   // 발송 안 할 거면 입력칸도 잠근다
   });
 
-  document.getElementById('report-body').addEventListener('click', function (e) {
-    const btn = e.target.closest('[data-report]');
-    if (!btn) return;
-    current = MOCK_REPORTS[Number(btn.dataset.report)];
+  // 신고와 보류 게시물이 같은 제재 모달을 쓴다. 다른 건 "확정했을 때 뭘 할지"뿐이라
+  // 그것만 콜백으로 받는다 — 모달을 하나 더 만들 이유가 없다.
+  function openSanction(ctx, apply, resultBoxEl) {
+    current = ctx;
+    onApply = apply;
+    onApplyResultBox = resultBoxEl || null;
 
     document.getElementById('mod-target').textContent = current.target;
     document.getElementById('mod-reason').textContent = current.reason;
@@ -741,6 +1062,18 @@ if (!Session.isAdmin()) window.location.replace('Index.html');
     refreshAll();
 
     dlg.showModal();   // 초점 가둠·Esc 닫기는 네이티브가 처리
+  }
+
+  document.getElementById('report-body').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-report]');
+    if (!btn) return;
+    const r = MOCK_REPORTS[Number(btn.dataset.report)];
+    openSanction(r, function (d, ip) {
+      r.status = 'done';
+      r.applied = { days: d, ip: ip, until: d > 0 ? untilDate(d) : null };
+      renderReports();
+      updatePendingCount();
+    });
   });
 
   const close = () => dlg.close();
@@ -762,21 +1095,119 @@ if (!Session.isAdmin()) window.location.replace('Index.html');
       메시지발송: sendBox.checked ? '예' : '아니오'
     };
 
-    resultBox.textContent =
+    // 결과는 연 곳 옆에 띄운다 (신고 화면에서 열었으면 신고 화면에)
+    const box = onApplyResultBox || resultBox;
+    box.textContent =
       '[서버 미연결 — 저장되지 않았습니다]\n\n' +
       Object.entries(payload).map(([k, v]) => k + ': ' + v).join('\n') +
       (sendBox.checked ? '\n\n─ 발송될 메시지 ─\n' + msgBox.value : '');
-    resultBox.hidden = false;
+    box.hidden = false;
 
     // 화면 상태만 갱신한다. 새로고침하면 사라진다 —
     // 처리 후 화면이 어떻게 보이는지 확인하기 위한 것이지 저장이 아니다.
-    current.status = 'done';
-    current.applied = { days: d, ip: ipBox.checked, until: d > 0 ? untilDate(d) : null };
-    renderReports();
-    updatePendingCount();
+    onApply(d, ipBox.checked);
 
     close();
-    resultBox.scrollIntoView({ block: 'nearest' });
+    box.scrollIntoView({ block: 'nearest' });
+  });
+
+  // ── 항소 처리 모달 ──
+  const apDlg = document.getElementById('ap-dialog');
+  const apMsg = document.getElementById('ap-message');
+  const apSend = document.getElementById('ap-send');
+  const apReduceRow = document.getElementById('ap-reduce-row');
+  const apResult = document.getElementById('ap-result');
+  let apCurrent = null;
+  let apMsgEdited = false;
+
+  const decision = () => apDlg.querySelector('input[name="decision"]:checked').value;
+  const newDays = () => Number(apDlg.querySelector('input[name="newdays"]:checked').value);
+
+  // 결정별로 최종 제재가 무엇이 되는지 한 곳에서 계산한다
+  function outcome() {
+    const d = decision();
+    if (d === 'granted') return { days: 0, label: '인용 · 즉시 해제', until: null };
+    if (d === 'reduced') {
+      const n = newDays();
+      return { days: n, label: n + '일로 감경', until: untilDate(n) };
+    }
+    return { days: apCurrent.orig.days, label: '기각 · 제재 유지', until: apCurrent.orig.until };
+  }
+
+  function apTemplate() {
+    const o = outcome();
+    const body = decision() === 'granted'
+      ? '검토 결과 제재를 해제했습니다. 불편을 드려 죄송합니다.'
+      : decision() === 'reduced'
+        ? '검토 결과 제재 기간을 ' + o.days + '일로 줄였습니다. ' + o.until + '에 해제됩니다.'
+        : '검토 결과 원래 제재를 유지합니다.' +
+          (apCurrent.orig.days > 0 ? ' ' + apCurrent.orig.until + '에 해제됩니다.' : '');
+    return '안녕하세요, Ans2Quest 운영팀입니다.\n\n' +
+      '‘' + apCurrent.reason + '’ 제재에 대한 이의를 접수해 검토했습니다.\n' +
+      body + '\n\n추가로 궁금한 점이 있으면 회신해 주세요.';
+  }
+
+  function apRefresh() {
+    apReduceRow.hidden = decision() !== 'reduced';
+    const o = outcome();
+    document.getElementById('ap-effect').innerHTML =
+      '결과: <strong>' + esc(o.label) + '</strong>' +
+      (o.until ? ' · <strong>' + o.until + '</strong>에 해제' : '');
+    if (!apMsgEdited) apMsg.value = apTemplate();
+  }
+
+  apMsg.addEventListener('input', function () { apMsgEdited = true; });
+  apDlg.querySelectorAll('input[name="decision"], input[name="newdays"]')
+    .forEach((r) => r.addEventListener('change', apRefresh));
+  apSend.addEventListener('change', function () { apMsg.disabled = !apSend.checked; });
+
+  document.getElementById('appeal-body').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-appeal]');
+    if (!btn) return;
+    apCurrent = MOCK_APPEALS[Number(btn.dataset.appeal)];
+
+    document.getElementById('ap-who').textContent = apCurrent.who;
+    document.getElementById('ap-orig').textContent =
+      sanctionText(apCurrent.orig.days, apCurrent.orig.ip) +
+      (apCurrent.orig.until ? ' (' + apCurrent.orig.until + ' 해제)' : '');
+    document.getElementById('ap-reason').textContent = apCurrent.reason;
+    document.getElementById('ap-text').textContent = apCurrent.text;
+
+    const prev = apCurrent.decided;
+    apDlg.querySelector('input[name="decision"][value="' + (prev ? prev.type : 'denied') + '"]').checked = true;
+    apSend.checked = true;
+    apMsg.disabled = false;
+    apMsgEdited = false;
+    apRefresh();
+
+    apDlg.showModal();
+  });
+
+  const apClose = () => apDlg.close();
+  document.getElementById('ap-x').addEventListener('click', apClose);
+  document.getElementById('ap-cancel').addEventListener('click', apClose);
+  apDlg.addEventListener('click', function (e) { if (e.target === apDlg) apClose(); });
+
+  document.getElementById('ap-confirm').addEventListener('click', function () {
+    const o = outcome();
+    // ⚠ 저장되지 않는다. 서버가 붙으면 POST /api/admin/appeals/{id}/decide 를 호출한다.
+    apResult.textContent =
+      '[서버 미연결 — 저장되지 않았습니다]\n\n' +
+      '신청자: ' + apCurrent.who + '\n' +
+      '원 제재: ' + sanctionText(apCurrent.orig.days, apCurrent.orig.ip) + '\n' +
+      '결정: ' + o.label + (o.until ? ' (' + o.until + ' 해제)' : '') + '\n' +
+      '메시지발송: ' + (apSend.checked ? '예' : '아니오') +
+      (apSend.checked ? '\n\n─ 발송될 메시지 ─\n' + apMsg.value : '');
+    apResult.hidden = false;
+
+    // 화면 상태만 갱신 (신고 처리와 동일 — 새로고침하면 사라진다)
+    apCurrent.status = decision();
+    apCurrent.decided = { type: decision(), label: o.label, until: o.until };
+    renderAppeals();
+    updateAppealCount();
+
+    apClose();
+    apResult.scrollIntoView({ block: 'nearest' });
   });
 
   // ── 섹션 전환 ──

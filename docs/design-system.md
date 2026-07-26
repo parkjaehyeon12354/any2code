@@ -1,110 +1,53 @@
 ---
-version: alpha
-name: Claude-design-analysis
-description: A warm-canvas editorial interface for Anthropic's Claude product. The system anchors on a tinted cream canvas with serif display headlines, warm coral CTAs, and dark navy product surfaces (code editor mockups, model showcase cards). Brand voltage comes from the cream/coral pairing — deliberately warm and humanist where most AI brands use cool blue + slate. Type voice runs a slab-serif display ("Copernicus" / Tiempos Headline) for h1/h2 and a humanist sans for body. The signature Anthropic black-radial-spike mark anchors the wordmark.
-
-colors:
-  primary: "#cc785c"
-  primary-active: "#a9583e"
-  primary-disabled: "#e6dfd8"
-  ink: "#141413"
-  body: "#3d3d3a"
-  body-strong: "#252523"
-  muted: "#6c6a64"
-  muted-soft: "#8e8b82"
-  hairline: "#e6dfd8"
-  hairline-soft: "#ebe6df"
-  canvas: "#faf9f5"
-  surface-soft: "#f5f0e8"
-  surface-card: "#efe9de"
-  surface-cream-strong: "#e8e0d2"
-  surface-dark: "#181715"
-  surface-dark-elevated: "#252320"
-  surface-dark-soft: "#1f1e1b"
-  on-primary: "#ffffff"
-  on-dark: "#faf9f5"
-  on-dark-soft: "#a09d96"
-  accent-teal: "#5db8a6"
-  accent-amber: "#e8a55a"
-  success: "#5db872"
-  warning: "#d4a017"
-  error: "#c64545"
-
-typography:
-  display-xl:
-    fontFamily: "Copernicus, Tiempos Headline, serif"
-    fontSize: 64px
-    fontWeight: 400
-    lineHeight: 1.05
-    letterSpacing: -1.5px
-  display-lg:
-    fontFamily: "Copernicus, Tiempos Headline, serif"
-    fontSize: 48px
-    fontWeight: 400
-    lineHeight: 1.1
-    letterSpacing: -1px
-  display-md:
-    fontFamily: "Copernicus, Tiempos Headline, serif"
-    fontSize: 36px
-    fontWeight: 400
-    lineHeight: 1.15
-    letterSpacing: -0.5px
-  display-sm:
-    fontFamily: "Copernicus, Tiempos Headline, serif"
-    fontSize: 28px
-    fontWeight: 400
-    lineHeight: 1.2
-    letterSpacing: -0.3px
-  title-lg:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 22px
-    fontWeight: 500
-    lineHeight: 1.3
-  title-md:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 18px
-    fontWeight: 500
-    lineHeight: 1.4
-  title-sm:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 16px
-    fontWeight: 500
-    lineHeight: 1.4
-  body-md:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 16px
-    fontWeight: 400
-    lineHeight: 1.55
-  body-sm:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 14px
-    fontWeight: 400
-    lineHeight: 1.55
-  button:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 14px
-    fontWeight: 500
-    lineHeight: 1
-  nav-link:
-    fontFamily: "StyreneB, Inter, sans-serif"
-    fontSize: 14px
-    fontWeight: 500
-    lineHeight: 1.4
-
-rounded:
-  sm: 6px
-  md: 8px
-  lg: 12px
-  xl: 16px
-  pill: 9999px
-
-spacing:
-  xxs: 4px
-  xs: 8px
-  sm: 12px
-  md: 16px
-  lg: 24px
-  xl: 32px
-  xxl: 48px
-  section: 96px
+version: 1.0
+name: Ans2Quest-design-system
+description: Ans2Quest 고유 디자인 시스템. Discovery Teal(#167a63)을 중심으로 한 쿨 뉴트럴 팔레트 — 과학 탐구(발견)의 색. 디스플레이는 Noto Serif KR 700(묵직한 학술지 톤), 본문은 Pretendard. 프라이머리가 흰 글자 기준 5.25:1이라 채운 버튼에 그대로 사용하며, 모든 텍스트 색은 WCAG AA(4.5:1)를 통과하도록 계산해 선정했다.
 ---
+
+# Ans2Quest 디자인 시스템
+
+## 색 (styles.css `:root` 와 1:1 대응)
+
+| 토큰 | 값 | 용도 | 대비 근거 |
+|---|---|---|---|
+| `--primary` | `#167a63` | 채운 버튼·링크·브랜드 | 흰 글자 5.25:1, 캔버스 위 4.97:1 |
+| `--primary-active` | `#0f5c4a` | hover/선택 상태 | 흰 글자 7.92:1 |
+| `--ink` | `#1a201d` | 제목 | 캔버스 위 15.66:1 |
+| `--body` | `#3d4642` | 본문 | 9.22:1 |
+| `--muted` | `#5d6963` | 보조 텍스트 | 캔버스 5.42:1 · surface-soft 5.06:1 |
+| `--muted-soft` | `#88938c` | 장식성 텍스트 전용 (본문 금지) | — |
+| `--hairline` | `#dde4e0` | 경계선 | — |
+| `--canvas` | `#f7f9f8` | 페이지 배경 | — |
+| `--surface-soft` | `#edf2ef` | 패널·배너 배경 | — |
+| `--surface-dark` | `#14201b` | 푸터·다크 밴드 | — |
+| `--surface-dark-elevated` | `#24352c` | 다크 위 경계선 | — |
+| `--on-dark` | `#f2f7f4` | 다크 위 제목 | 15.48:1 |
+| `--on-dark-soft` | `#a9bbb1` | 다크 위 본문·링크 | 8.33:1 |
+| `--error` | `#bd3b3b` | 오류 | 캔버스 위 5.16:1 |
+
+### 파생 고정값 (연한 배지 배경 위 텍스트 — 합성 후 4.5:1 확보)
+
+| 값 | 쓰는 곳 |
+|---|---|
+| `#8a5c08` | 앰버 강조 (대기 배지, 경고 노트, 실험 태그 아님) — `rgba(217,119,6,.14)` 배경 |
+| `#9c3030` | 정지/차단 배지 — `rgba(189,59,59,.1)` 배경 |
+| `#0e5745` | 실험 첨부 태그 — `rgba(22,122,99,.14)` 배경 |
+| `#d97706` | 로고 앰버 점, 파티클 악센트 (장식 전용) |
+
+### 과목 식별색 (community — 장식 보조 신호, 이름 텍스트 필수 동반)
+
+물리학 `#2f4bd6` · 화학 `#c2410c` · 생명과학 `#167a63` · 지구과학 `#b45309`
+
+## 타이포그래피
+
+| 역할 | 서체 | 굵기 | 비고 |
+|---|---|---|---|
+| 디스플레이(h1) | Noto Serif KR | **700** | 한글+라틴 단일 서체. 자간 -0.3px 이하로만 |
+| 본문/UI | Pretendard Variable | 400/500/600 | CDN dynamic subset |
+
+## 규칙
+
+- 색은 반드시 토큰으로. 위 파생 고정값 외 하드코딩 금지 (소셜 로그인 버튼의 각 사 브랜드 규격 제외).
+- 채운 프라이머리 버튼은 `--primary` 그대로 사용 — 대비 우회 불필요.
+- `--muted-soft` 는 12px 이상 본문에 쓰지 않는다 (AA 미달).
+- 파티클 구(sphere.js) 팔레트는 네이비 질량 + 위 악센트 4색(`#2f4bd6/#167a63/#d97706/#c2410c`)만.
