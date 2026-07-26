@@ -10,7 +10,23 @@ on:
       - main
 
 jobs:
+  test:
+    name: API 테스트
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --prefix api || npm install --prefix api
+      # 세션 서명이 뚫리면 인증 전체가 무너진다 — 배포 전에 반드시 통과해야 한다
+      - name: 세션 보안 테스트
+        run: node --test src/lib/session.test.js
+        working-directory: api
+
   build_and_deploy_job:
+    needs: test
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
