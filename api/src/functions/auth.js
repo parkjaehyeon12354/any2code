@@ -2,10 +2,19 @@ const { app } = require('@azure/functions');
 const session = require('../lib/session');
 const { PROVIDERS, credentials, exchangeCode, fetchProfile } = require('../lib/providers');
 
-/** 콜백 주소는 요청 자신의 오리진에서 만든다 — 스테이징 환경마다 도메인이 달라서
-    하드코딩하면 프리뷰 배포에서 깨진다. */
-const redirectUri = (request, provider) =>
-  `${new URL(request.url).origin}/api/auth/${provider}/callback`;
+/** 콜백 주소.
+
+    SWA 는 Functions 를 내부 호스트(<guid>.azurewebsites.net)로 호출한다.
+    그래서 request.url 의 오리진을 쓰면 제공자에 등록해 둔 주소와 달라져
+    "등록되지 않은 redirect_uri" 로 로그인이 거부된다.
+
+    공개 도메인은 PUBLIC_ORIGIN 으로 명시한다. 어차피 OAuth 제공자는
+    사전 등록된 주소만 받으므로 자동 추론해 봐야 쓸 수 있는 값이 아니다.
+    로컬 개발에서는 없어도 request.url 로 맞는다. */
+const redirectUri = (request, provider) => {
+  const origin = process.env.PUBLIC_ORIGIN?.replace(/\/+$/, '') || new URL(request.url).origin;
+  return `${origin}/api/auth/${provider}/callback`;
+};
 
 /* ── 1) 로그인 시작 ──
    프론트엔드는 <a href="/api/auth/kakao/start"> 링크 하나면 된다.

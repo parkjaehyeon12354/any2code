@@ -31,6 +31,7 @@ Free 플랜이 커스텀 OIDC 를 지원하지 않아 카카오를 붙일 수 �
 |---|---|
 | `SESSION_SECRET` | 세션 쿠키 서명 키. 32자 이상, 로컬과 다른 값 |
 | `ADMIN_EMAILS` | 관리자 이메일. 쉼표로 구분 |
+| `PUBLIC_ORIGIN` | 공개 도메인. 없으면 OAuth 콜백이 내부 호스트로 나가 로그인이 거부된다 |
 | `{KAKAO,GOOGLE,GITHUB,DISCORD}_CLIENT_ID` | OAuth 앱 ID |
 | `{KAKAO,GOOGLE,GITHUB,DISCORD}_CLIENT_SECRET` | OAuth 앱 시크릿 |
 

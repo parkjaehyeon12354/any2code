@@ -74,6 +74,21 @@ test('로그인 시작 — 인가 URL 과 state 쿠키를 함께 낸다', async 
   assert.strictEqual(c.value, u.searchParams.get('state'), '쿠키와 URL 의 state 가 같아야 대조가 된다');
 });
 
+test('PUBLIC_ORIGIN 이 있으면 콜백 주소는 그걸 쓴다 — 내부 호스트가 새면 안 된다', async () => {
+  // SWA 는 Functions 를 <guid>.azurewebsites.net 으로 호출한다. 그 주소가
+  // redirect_uri 로 나가면 제공자가 등록된 주소와 다르다며 로그인을 거부한다.
+  process.env.PUBLIC_ORIGIN = 'https://ans2quest.kr/';   // 뒤 슬래시도 흘려보내면 안 된다
+  try {
+    const res = await routes.authStart.handler(
+      mkReq({ url: 'https://abc123.azurewebsites.net/api/x', params: { provider: 'kakao' } }), ctx);
+    const uri = new URL(res.headers.Location).searchParams.get('redirect_uri');
+    assert.strictEqual(uri, 'https://ans2quest.kr/api/auth/kakao/callback');
+    assert.ok(!uri.includes('azurewebsites.net'), '내부 호스트가 제공자에게 노출됐다');
+  } finally {
+    delete process.env.PUBLIC_ORIGIN;
+  }
+});
+
 test('콜백 — state 가 없거나 어긋나면 교환을 시도조차 하지 않는다', async () => {
   const bad = await routes.authCallback.handler(
     mkReq({ params: { provider: 'kakao' }, query: 'code=abc&state=위조' }), ctx);
