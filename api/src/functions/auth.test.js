@@ -27,6 +27,14 @@ const mkReq = ({ url = 'https://ans2quest.com/api/x', params = {}, cookie = null
 });
 const ctx = { error: () => {}, log: () => {} };
 
+test('런타임 진입점이 테스트 파일을 끌어들이지 않는다', () => {
+  // main 이 글로브면 이 파일까지 프로덕션에서 로드된다.
+  // 그러면 위쪽 process.env 대입이 실행돼 진짜 SESSION_SECRET 이
+  // 'yyyy…' 로 덮이고, 공개된 값이라 관리자 쿠키를 누구나 위조할 수 있다.
+  const pkg = require('../../package.json');
+  assert.ok(!pkg.main.includes('*'), `main 에 글로브 금지 (현재: ${pkg.main})`);
+});
+
 test('네 엔드포인트가 모두 등록된다', () => {
   assert.deepStrictEqual(Object.keys(routes).sort(), ['authCallback', 'authStart', 'logout', 'me']);
   assert.strictEqual(routes.authStart.route, 'auth/{provider}/start');
