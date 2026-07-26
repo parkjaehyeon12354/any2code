@@ -6,11 +6,24 @@
 
 `main` 에 push → GitHub Actions → Azure Static Web Apps.
 
-Actions 를 못 쓸 때는 로컬에서 직접 올린다:
+Actions 를 못 쓸 때는 로컬에서 직접 올린다. 저장소를 그대로 올리지 않고
+`deploy-ans2quest/` 에 배포할 파일만 복사한 뒤 **한 단계 위 폴더에서** 실행한다.
 
 ```
-npx -y @azure/static-web-apps-cli deploy ./ --api-location api --env production --deployment-token <토큰>
+cd /d "D:\코딩"
+set SWA_CLI_DEPLOYMENT_TOKEN=<토큰>
+npx -y @azure/static-web-apps-cli deploy ./deploy-ans2quest --api-location ./deploy-ans2quest/api --env production
 ```
+
+두 가지를 지켜야 한다.
+
+**현재 폴더가 배포 대상과 같으면 안 된다.** StaticSitesClient 가
+`Current directory cannot be identical to or contained within artifact folders`
+로 거부한다. 저장소 루트에서 루트를 배포했을 때는 `.git` 이 깨지기까지 했다.
+
+**저장소를 통째로 올리지 않는다.** `.git`, `docs/`, `README.md`, `*.test.js`,
+`local.settings.json` 이 정적 파일로 서빙되면 안 된다. `SKIP_API_BUILD` 라
+서버에서 npm install 을 하지 않으므로 `api/node_modules` 는 반드시 포함한다.
 
 ## staticwebapp.config.json 을 고칠 때
 
