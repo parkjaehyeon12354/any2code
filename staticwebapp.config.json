@@ -14,6 +14,10 @@
 
   "routes": [
     {
+      "route": "/",
+      "rewrite": "/Index.html"
+    },
+    {
       "route": "/api/me",
       "headers": { "Cache-Control": "no-store" }
     }
