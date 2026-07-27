@@ -87,7 +87,7 @@ app.http('authCallback', {
       // 세션 발급과 state 쿠키 폐기를 한 응답에 함께 싣는다
       return {
         status: 302,
-        headers: { Location: '/Index.html' },
+        headers: { Location: '/' },
         cookies: [session.issue(user), session.clearState()]
       };
     } catch (e) {

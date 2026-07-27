@@ -410,7 +410,7 @@ mark {
 
 <header class="top-nav">
   <div class="nav-inner">
-    <a href="Index.html" class="nav-brand">
+    <a href="/" class="nav-brand">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
@@ -719,7 +719,7 @@ mark {
 // 이건 "관리자가 아닌 사람에게 화면을 안 보여주는" 편의이지 보안 경계가 아니다 —
 // 진짜 차단은 각 /api 엔드포인트가 세션 쿠키를 검증해서 한다.
 Session.refresh().then(function (user) {
-  if (!user || user.role !== 'admin') window.location.replace('Index.html');
+  if (!user || user.role !== 'admin') window.location.replace('/');
 });
 </script>
 <script src="nav-user.js"></script>

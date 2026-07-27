@@ -36,7 +36,7 @@
       el.addEventListener('click', async function (e) {
         e.preventDefault();
         await Session.logout();          // 서버 쿠키까지 폐기해야 진짜 로그아웃이다
-        window.location.href = 'Index.html';
+        window.location.href = '/';
       });
     });
 

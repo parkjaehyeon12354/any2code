@@ -136,7 +136,7 @@
 
 <header class="top-nav auth-bar">
   <div class="nav-inner">
-    <a href="Index.html" class="nav-brand">
+    <a href="/" class="nav-brand">
       <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
         <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
@@ -243,7 +243,7 @@
 
   // 이미 로그인 상태면 로그인 화면에 머물 이유가 없다
   Session.refresh().then(function (user) {
-    if (user) window.location.replace('Index.html');
+    if (user) window.location.replace('/');
   });
 })();
 </script>
