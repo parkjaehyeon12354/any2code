@@ -4,7 +4,7 @@
   "private": true,
   "description": "Ans2Quest 백엔드 — Azure Functions (Node.js v4 프로그래밍 모델)",
   "_main주의": "글로브(*.js)를 쓰면 auth.test.js 까지 런타임이 로드해 SESSION_SECRET 을 테스트값으로 덮어쓴다. 함수 파일을 추가하면 여기에 직접 적을 것.",
-  "main": "{src/functions/auth.js,src/functions/posts.js}",
+  "main": "{src/functions/auth.js,src/functions/posts.js,src/functions/admin.js}",
   "scripts": {
     "start": "func start",
     "test": "node --test"

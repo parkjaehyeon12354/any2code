@@ -539,8 +539,9 @@ mark {
 
       <p class="mock-banner">
         <span class="mark">ⓘ</span>
-        <span><strong>샘플 데이터입니다.</strong> 자동 필터는 오탐이 생깁니다 —
-        감지된 단어를 <mark>강조</mark>해 두었으니 문맥을 보고 판단하세요.</span>
+        <span><strong>자동 필터는 오탐이 생깁니다.</strong>
+        감지된 단어를 <mark>강조</mark>해 두었으니 문맥을 보고 판단하세요.
+        차단해도 글은 지워지지 않으니 언제든 되돌릴 수 있습니다.</span>
       </p>
 
       <pre class="mod-result" id="held-result" hidden></pre>
@@ -734,15 +735,9 @@ Session.refresh().then(function (user) {
     }
   ];
 
-  // ── 자동 보류 필터 ──
-  // 학생 커뮤니티라 욕설은 사람이 보기 전에 먼저 가린다.
-  // '고아' 처럼 정상 문맥에도 쓰이는 단어가 섞여 있어 오탐이 반드시 생긴다 —
-  // 그래서 자동 삭제가 아니라 '보류' 이고, 사람이 최종 판단한다.
-  // ponytail: 단순 포함 검사. 우회 표기(ㅅㅂ, 시1발 등)까지 잡으려면 정규화가
-  // 필요한데 오탐이 더 늘어난다. 실제 데이터를 보고 나서 정할 것.
-  const BANNED_WORDS = ['씨발', '시발', '병신', '개새끼', '좆', '지랄', '새끼', '꺼져', '고아'];
-
-  const findBanned = (text) => BANNED_WORDS.filter((w) => text.includes(w));
+  // 금칙어 목록과 판정은 서버(api/src/functions/posts.js)에만 둔다.
+  // 화면에서 다시 계산하면 두 목록이 갈라지고, 감지어가 실제 보류 사유와
+  // 달라져서 판단을 그르친다. 여기서는 서버가 저장해 둔 words 를 표시만 한다.
 
   // 감지어를 강조해서 보여준다. esc 를 먼저 걸고 그 다음 <mark> 를 넣어야
   // 사용자가 쓴 태그가 실행되지 않는다.
@@ -754,18 +749,7 @@ Session.refresh().then(function (user) {
     return html;
   }
 
-  const MOCK_POSTS = [
-    { id: '게시글 #503', author: 'student06@example.com', ip: '203.0.113.51', at: '2026-07-26',
-      text: '이 문제 진짜 씨발 모르겠다 도와줘', status: 'held' },
-    // 오탐 예시 — '고아원' 이 금칙어 '고아' 에 걸린다. 공개 처리되어야 하는 글.
-    { id: '게시글 #504', author: 'student01@example.com', ip: '203.0.113.12', at: '2026-07-26',
-      text: '이번 주말에 고아원 봉사활동 가는데 같이 가실 분 계신가요? 과학 실험 보여주려고요.', status: 'held' },
-    { id: '댓글 #1201', author: 'student08@example.com', ip: '203.0.113.77', at: '2026-07-25',
-      text: '아 진짜 병신같은 문제네 이거', status: 'held' },
-    // 역시 오탐 — '새끼' 가 생물 용어로 쓰인 경우
-    { id: '게시글 #499', author: 'student03@example.com', ip: '203.0.113.31', at: '2026-07-25',
-      text: '초파리 새끼가 부화하는 데 며칠 걸리나요? 실험 일정 짜는 중입니다.', status: 'held' }
-  ];
+  let HELD = [];   // GET /api/admin/held 로 채운다
 
   const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', github: 'GitHub', discord: 'Discord' };
   const STATUS = {
@@ -776,9 +760,10 @@ Session.refresh().then(function (user) {
     denied:  { cls: 'badge-hold',  text: '기각' },
     granted: { cls: 'badge-ok',    text: '인용' },
     reduced: { cls: 'badge-wait',  text: '감경' },
-    held:      { cls: 'badge-wait', text: '보류' },
-    published: { cls: 'badge-ok',   text: '공개됨' },
-    blocked:   { cls: 'badge-hold', text: '차단됨' }
+    // 아래 셋은 서버가 글 문서에 저장하는 status 값과 이름이 같아야 한다
+    held:    { cls: 'badge-wait', text: '보류' },
+    public:  { cls: 'badge-ok',   text: '공개됨' },
+    blocked: { cls: 'badge-hold', text: '차단됨' }
   };
 
   const esc = escapeHtml;   // session.js 제공
@@ -883,71 +868,112 @@ Session.refresh().then(function (user) {
   updateAppealCount();
 
   // ── 보류 게시물 ──
+  const heldResult = document.getElementById('held-result');
+  let heldLoading = true;
+
   function updateHeldCount() {
-    const n = MOCK_POSTS.filter((p) => p.status === 'held').length;
+    const n = HELD.filter((p) => p.status === 'held').length;
     document.getElementById('held-count').textContent = n;
-    document.getElementById('held-total').textContent = n + '건';
+    document.getElementById('held-total').textContent = heldLoading ? '' : n + '건';
     const note = document.getElementById('held-note');
-    note.textContent = n ? '확인 필요' : '모두 처리됨';
-    note.classList.toggle('warn', n > 0);
+    note.textContent = heldLoading ? '불러오는 중' : (n ? '확인 필요' : '모두 처리됨');
+    note.classList.toggle('warn', !heldLoading && n > 0);
   }
 
+  const shortDate = (iso) => (iso ? iso.slice(0, 10) : '—');
+
   function renderHeld() {
-    fill('held-body', MOCK_POSTS.map((p, i) => {
-      const words = findBanned(p.text);
-      const acted = p.status !== 'held';
-      return '<tr><td class="cell-muted">' + esc(p.author) +
-        '<div class="cell-sub">' + esc(p.id) + '</div></td>' +
+    if (heldLoading) { fill('held-body', [], '불러오는 중…'); return; }
+    fill('held-body', HELD.map((p) => {
+      // 감지어는 걸릴 당시 기준으로 서버가 저장해 둔 값을 쓴다 —
+      // 금칙어 목록이 바뀌어도 "왜 걸렸는지" 는 그대로 남아야 판단할 수 있다
+      const words = p.words || [];
+      const blocked = p.status === 'blocked';
+      return '<tr><td class="cell-muted">' + esc(p.author || '알 수 없음') +
+        '<div class="cell-sub">' + esc(p.title) + '</div></td>' +
         '<td class="cell-wrap">' + highlight(p.text, words) + '</td>' +
         '<td>' + words.map((w) => '<span class="word-tag">' + esc(w) + '</span>').join(' ') + '</td>' +
-        '<td class="cell-muted">' + p.at + '</td>' +
-        '<td>' + badge(p.status) + '</td>' +
-        '<td>' + (acted
-          ? '<button type="button" class="row-action" data-held-undo="' + i + '">되돌리기</button>'
-          : '<button type="button" class="row-action" data-held-ok="' + i + '">공개</button> ' +
-            '<button type="button" class="row-action danger" data-held-block="' + i + '">차단·제재</button>') +
+        '<td class="cell-muted">' + esc(shortDate(p.createdAt)) + '</td>' +
+        '<td>' + badge(p.status) +
+          (p.moderatedBy ? '<div class="cell-sub">' + esc(p.moderatedBy) + '</div>' : '') + '</td>' +
+        '<td>' + (blocked
+          ? '<button type="button" class="row-action" data-held-undo="' + esc(p.id) + '">되돌리기</button>'
+          : '<button type="button" class="row-action" data-held-ok="' + esc(p.id) + '">공개</button> ' +
+            '<button type="button" class="row-action danger" data-held-block="' + esc(p.id) + '">차단·제재</button>') +
         '</td></tr>';
     }), '보류 중인 게시물이 없습니다.');
   }
+
+  function heldSay(msg) { heldResult.textContent = msg; heldResult.hidden = false; }
+
+  /** 서버에 처리를 맡기고, 성공했을 때만 화면을 바꾼다 */
+  async function moderate(id, action) {
+    const res = await fetch('/api/admin/posts/' + encodeURIComponent(id) + '/moderate', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: action })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '처리하지 못했습니다.');
+
+    const p = HELD.find((x) => x.id === id);
+    if (p) { p.status = data.status; p.moderatedBy = data.moderatedBy; p.moderatedAt = data.moderatedAt; }
+    renderHeld();
+    updateHeldCount();
+    return data;
+  }
+
+  async function loadHeld() {
+    try {
+      const res = await fetch('/api/admin/held', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      HELD = (await res.json()).posts || [];
+      heldResult.hidden = true;
+    } catch (e) {
+      HELD = [];
+      heldSay('보류 목록을 불러오지 못했습니다: ' + e.message);
+    } finally {
+      heldLoading = false;
+      renderHeld();
+      updateHeldCount();
+    }
+  }
+
   renderHeld();
   updateHeldCount();
+  loadHeld();   // 관리자 확인이 끝난 뒤라 여기서 부른다
 
-  const heldResult = document.getElementById('held-result');
-
-  document.getElementById('held-body').addEventListener('click', function (e) {
+  document.getElementById('held-body').addEventListener('click', async function (e) {
     const btn = e.target.closest('[data-held-ok],[data-held-block],[data-held-undo]');
     if (!btn) return;
 
-    // 오탐 공개 — 필터가 잘못 잡은 글을 그대로 내보낸다
-    if (btn.dataset.heldOk !== undefined) {
-      const p = MOCK_POSTS[Number(btn.dataset.heldOk)];
-      p.status = 'published';
-      heldResult.textContent = '[서버 미연결 — 저장되지 않았습니다]\n\n' +
-        p.id + ' 을(를) 공개했습니다. 작성자에게는 알림이 가지 않습니다.';
-      heldResult.hidden = false;
-      renderHeld();
-      updateHeldCount();
+    const id = btn.dataset.heldOk || btn.dataset.heldUndo || btn.dataset.heldBlock;
+    const p = HELD.find((x) => x.id === id);
+    if (!p) return;
+
+    // 차단·제재는 신고와 같은 모달을 거친다 (제재 내용을 함께 정하기 위해)
+    if (btn.dataset.heldBlock !== undefined) {
+      openSanction(
+        { target: p.title, reason: '욕설·비방 (' + (p.words || []).join(', ') + ')', ip: null },
+        function () { moderate(id, 'block').catch((err) => heldSay(err.message)); },
+        heldResult
+      );
       return;
     }
 
-    // 되돌리기 — 잘못 눌렀을 때 복구. 저장 전이니 부담 없이 되돌릴 수 있어야 한다
-    if (btn.dataset.heldUndo !== undefined) {
-      const p = MOCK_POSTS[Number(btn.dataset.heldUndo)];
-      p.status = 'held';
-      heldResult.hidden = true;
-      renderHeld();
-      updateHeldCount();
-      return;
+    const action = btn.dataset.heldOk !== undefined ? 'publish' : 'hold';
+    btn.disabled = true;
+    try {
+      await moderate(id, action);
+      heldSay(action === 'publish'
+        ? '"' + p.title + '" 을(를) 공개했습니다. 커뮤니티 목록에 바로 나타납니다.'
+        : '"' + p.title + '" 을(를) 다시 보류로 되돌렸습니다.');
+    } catch (err) {
+      heldSay(err.message);
+    } finally {
+      btn.disabled = false;
     }
-
-    // 차단 + 제재 — 신고와 같은 제재 모달을 연다
-    const idx = Number(btn.dataset.heldBlock);
-    const p = MOCK_POSTS[idx];
-    openSanction(
-      { target: p.id, reason: '욕설·비방 (' + findBanned(p.text).join(', ') + ')', ip: p.ip },
-      function () { p.status = 'blocked'; renderHeld(); updateHeldCount(); },
-      heldResult
-    );
   });
 
   // ── 신고 처리 모달 ──
