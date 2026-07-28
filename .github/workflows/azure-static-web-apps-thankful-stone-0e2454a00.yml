@@ -21,7 +21,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Azure Functions 가 실제로 쓰는 버전과 맞춘다 (배포 로그의
+          # FUNCTION_LANGUAGE_VERSION: 22). 다른 버전에서 테스트하면
+          # 통과해도 프로덕션에서 다르게 동작할 수 있다.
+          node-version: 22
       - run: npm ci --prefix api || npm install --prefix api
       # 세션 서명이 뚫리면 인증 전체가 무너진다 — 배포 전에 반드시 통과해야 한다
       - name: 인증 보안 테스트
