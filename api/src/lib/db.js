@@ -22,7 +22,11 @@ function container() {
   const conn = process.env.COSMOS_CONNECTION;
   if (!conn) {
     // 조용히 빈 목록을 돌려주면 "글이 하나도 없네" 로 오해한다. 크게 실패시킨다.
-    throw new Error('COSMOS_CONNECTION 이 없습니다. Azure 앱 설정에 등록하세요.');
+    // code 를 붙여야 핸들러가 "설정 누락" 과 "쿼리 실패" 를 구분해 안내할 수 있다 —
+    // 관리형 Functions 는 로그를 보기 번거로워서, 응답만 보고 원인을 알아야 한다.
+    const e = new Error('COSMOS_CONNECTION 이 없습니다. Azure 앱 설정에 등록하세요.');
+    e.code = 'NO_COSMOS_CONFIG';
+    throw e;
   }
   cached = new CosmosClient(conn).database(DB).container(CONTAINER);
   return cached;

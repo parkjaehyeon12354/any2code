@@ -71,6 +71,20 @@ const ctx = { error: () => {}, log: () => {} };
 
 const okPost = { subject: 'physics', title: '단진자 주기 질문', body: '측정값이 계속 짧게 나옵니다.' };
 
+test('COSMOS_CONNECTION 이 없으면 원인을 알려준다', async () => {
+  // 관리형 Functions 는 로그 보기가 번거롭다. 응답만 보고 설정 누락을 알아야
+  // "DB가 비었나?" 하고 엉뚱한 데를 뒤지지 않는다.
+  db._setContainer(null);
+  delete process.env.COSMOS_CONNECTION;
+  try {
+    const res = await routes.postsList.handler(req({}), ctx);
+    assert.strictEqual(res.status, 503);
+    assert.match(res.jsonBody.error, /COSMOS_CONNECTION/);
+  } finally {
+    db._setContainer(fake);
+  }
+});
+
 test('세 엔드포인트가 등록된다', () => {
   assert.deepStrictEqual(Object.keys(routes).sort(), ['postsCreate', 'postsList', 'postsVote']);
   assert.strictEqual(routes.postsVote.route, 'posts/{id}/vote');
