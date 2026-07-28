@@ -177,6 +177,22 @@ test('차단된 글은 공개 목록에 안 나오고 관리자 목록에는 남
   assert.strictEqual(adm.jsonBody.posts.length, 1, '차단 후 화면에서 사라지면 되돌릴 수 없다');
 });
 
+test('킬 스위치 — 관리자도 예외 없이 503', async () => {
+  // 잠그는 상황은 보통 "관리자 계정이 이상하다" 일 때다. 관리자를 예외로 두면
+  // 탈취된 관리자 세션이 잠금을 뚫고 계속 활동한다.
+  const p = await seedHeld();
+  process.env.LOCKDOWN = '1';
+  try {
+    const list = await routes.adminHeld.handler(req({ cookie: asAdmin() }), ctx);
+    const act = await routes.adminModerate.handler(
+      req({ cookie: asAdmin(), body: { action: 'publish' }, params: { id: p.id } }), ctx);
+    assert.deepStrictEqual([list.status, act.status], [503, 503]);
+    assert.strictEqual(docs[0].status, 'held', '잠금 중에 상태가 바뀌면 안 된다');
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+});
+
 test('알 수 없는 처리와 없는 글은 거부한다', async () => {
   const p = await seedHeld();
   for (const action of ['delete', '', 'DROP TABLE', undefined]) {

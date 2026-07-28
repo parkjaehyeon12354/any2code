@@ -127,6 +127,23 @@ test('/api/me — 정상 세션은 role 을 그대로 돌려준다', async () =>
   assert.strictEqual(res.headers['Cache-Control'], 'no-store', '세션 응답이 캐시되면 안 된다');
 });
 
+test('킬 스위치 — 로그인 경로는 막히고 로그아웃은 살아있다', async () => {
+  process.env.KAKAO_CLIENT_ID = 'kid';
+  process.env.KAKAO_CLIENT_SECRET = 'ksec';
+  process.env.LOCKDOWN = '1';
+  try {
+    const start = await routes.authStart.handler(mkReq({ params: { provider: 'kakao' } }), ctx);
+    const me = await routes.me.handler(mkReq({}), ctx);
+    assert.strictEqual(start.status, 503, '잠금 중 새 로그인은 막아야 한다');
+    assert.strictEqual(me.status, 503);
+    // 자기 세션을 끊는 것만은 언제나 허용된다
+    const out = await routes.logout.handler(mkReq({}), ctx);
+    assert.strictEqual(out.status, 204);
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+});
+
 test('로그아웃 — 쿠키를 즉시 만료시킨다', async () => {
   const res = await routes.logout.handler(mkReq({}), ctx);
   assert.strictEqual(res.status, 204);

@@ -1,5 +1,6 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
+const { lockdown } = require('../lib/lockdown');
 const { PROVIDERS, credentials, exchangeCode, fetchProfile } = require('../lib/providers');
 
 /** 콜백 주소.
@@ -25,6 +26,7 @@ app.http('authStart', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request) => {
+    const locked = lockdown(); if (locked) return locked;
     const provider = request.params.provider;
     if (!PROVIDERS[provider]) return { status: 404, body: '알 수 없는 로그인 제공자입니다.' };
 
@@ -53,6 +55,7 @@ app.http('authCallback', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const provider = request.params.provider;
     if (!PROVIDERS[provider]) return { status: 404, body: '알 수 없는 로그인 제공자입니다.' };
 
@@ -104,6 +107,7 @@ app.http('me', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request) => {
+    const locked = lockdown(); if (locked) return locked;
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { authenticated: false } };
     return {
@@ -122,7 +126,9 @@ app.http('me', {
   }
 });
 
-/* ── 4) 로그아웃 ── */
+/* ── 4) 로그아웃 ──
+   킬 스위치 중에도 살려둔다 — 자기 세션을 끊는 건 언제나 허용돼야 하고,
+   DB 를 건드리지 않아 막을 이유가 없다. */
 app.http('logout', {
   route: 'auth/logout',
   methods: ['POST'],

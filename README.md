@@ -45,6 +45,16 @@ Free 플랜이 커스텀 OIDC 를 지원하지 않아 카카오를 붙일 수 �
 | `SESSION_SECRET` | 세션 쿠키 서명 키. 32자 이상, 로컬과 다른 값 |
 | `ADMIN_EMAILS` | 관리자 이메일. 쉼표로 구분 |
 | `PUBLIC_ORIGIN` | 공개 도메인. 없으면 OAuth 콜백이 내부 호스트로 나가 로그인이 거부된다 |
+| `COSMOS_CONNECTION` | Cosmos DB 기본 연결 문자열 |
+| `LOCKDOWN` | **킬 스위치.** `1` 로 설정하면 모든 API 가 503 — 로그인·글쓰기·조회·관리자 전부 멈춘다 (로그아웃만 예외). 변수를 지우면 복구. 배포 불필요, 포털에서 저장하면 수십 초 내 반영 |
+
+## 비상시 (계정 탈취 의심 등)
+
+1. **사이트 정지**: Azure 포털 → 환경 변수 → `LOCKDOWN=1` 추가 → 저장.
+   관리자 쿠키가 탈취돼도 이 스위치는 Azure 계정으로만 조작할 수 있다.
+2. **전 세션 강제 로그아웃**: `SESSION_SECRET` 을 새 값으로 교체 → 저장.
+   기존 쿠키 서명이 전부 무효가 되어 모두 다시 로그인해야 한다.
+3. 원인 파악 후 `LOCKDOWN` 삭제로 복구.
 | `{KAKAO,GOOGLE,GITHUB,DISCORD}_CLIENT_ID` | OAuth 앱 ID |
 | `{KAKAO,GOOGLE,GITHUB,DISCORD}_CLIENT_SECRET` | OAuth 앱 시크릿 |
 

@@ -1,5 +1,6 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
+const { lockdown } = require('../lib/lockdown');
 const { container, query } = require('../lib/db');
 
 /* 관리자 전용 엔드포인트.
@@ -42,6 +43,7 @@ app.http('adminHeld', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const { error } = requireAdmin(request);
     if (error) return error;
 
@@ -68,6 +70,7 @@ app.http('adminModerate', {
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const { user, error } = requireAdmin(request);
     if (error) return error;
 

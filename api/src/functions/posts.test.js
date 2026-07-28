@@ -259,6 +259,23 @@ test('없는 글에 투표하면 404', async () => {
   assert.strictEqual(res.status, 404);
 });
 
+test('킬 스위치 — LOCKDOWN=1 이면 읽기·쓰기·투표 전부 503', async () => {
+  docs = [];
+  process.env.LOCKDOWN = '1';
+  try {
+    const list = await routes.postsList.handler(req({}), ctx);
+    const create = await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+    const vote = await routes.postsVote.handler(req({ cookie: login(), body: { dir: 1 }, params: { id: 'x' } }), ctx);
+    assert.deepStrictEqual([list.status, create.status, vote.status], [503, 503, 503]);
+    assert.strictEqual(docs.length, 0, '잠금 중에 저장되면 안 된다');
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+  // 변수를 지우면 즉시 복구된다
+  const after = await routes.postsList.handler(req({}), ctx);
+  assert.strictEqual(after.status ?? 200, 200);
+});
+
 test('로그인하면 내 투표 상태가 함께 온다', async () => {
   docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);

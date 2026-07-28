@@ -1,5 +1,6 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
+const { lockdown } = require('../lib/lockdown');
 const { container, query } = require('../lib/db');
 
 /* 과목은 서버가 정한 목록만 받는다. 클라이언트가 보낸 값을 그대로 파티션 키로
@@ -57,6 +58,7 @@ app.http('postsList', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const channel = new URL(request.url).searchParams.get('channel') || 'all';
     const user = session.current(request);
 
@@ -99,6 +101,7 @@ app.http('postsCreate', {
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
@@ -174,6 +177,7 @@ app.http('postsVote', {
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (!voteAllowed(user.sub)) {
