@@ -218,45 +218,8 @@
 /* ── 신고 처리 모달 ──
    네이티브 <dialog>. showModal() 이 초점 가둠·Esc 닫기·배경 스크롤 잠금을
    전부 해주므로 직접 구현하지 않는다. */
-.modal {
-  padding: 0;
-  /* styles.css 의 전역 리셋(*{margin:0})이 <dialog> 의 기본 margin:auto 를 지워서
-     모달이 좌상단에 붙는다. 여기서 되살려야 화면 중앙에 온다. */
-  margin: auto;
-  width: calc(100% - 32px);
-  max-width: 460px;
-  color: var(--body);
-  background: var(--canvas);
-  border: 1px solid var(--hairline);
-  border-radius: var(--rounded-lg);
-  box-shadow: 0 16px 48px rgba(20, 20, 19, .18);
-}
-.modal::backdrop { background: rgba(20, 20, 19, .45); }
-
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-md) var(--sp-lg);
-  border-bottom: 1px solid var(--hairline);
-}
-.modal-head h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
-.modal-close {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer;
-  border-radius: var(--rounded-md);
-  color: var(--muted); font-size: 18px; line-height: 1;
-}
-.modal-close:hover { background: var(--surface-soft); color: var(--ink); }
-
-.modal-body { padding: var(--sp-lg); max-height: 62vh; overflow-y: auto; }
-.modal-foot {
-  display: flex; justify-content: flex-end; gap: var(--sp-xs);
-  padding: var(--sp-md) var(--sp-lg);
-  border-top: 1px solid var(--hairline);
-  background: var(--surface-soft);
-}
+/* .modal / .modal-head / .modal-body / .modal-foot 는 styles.css 에 있다
+   (community.html 의 글쓰기 폼과 공용). 여기서는 내용만 꾸민다. */
 
 /* 신고 요약 */
 .mod-summary {
