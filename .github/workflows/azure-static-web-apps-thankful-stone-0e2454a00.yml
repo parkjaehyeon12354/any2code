@@ -37,7 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
-      - uses: actions/checkout@v3
+      # v3 는 Node 20 런타임이라 GitHub 이 지원 종료 경고를 띄운다 (Azure 자동 생성분)
+      - uses: actions/checkout@v4
         with:
           submodules: true
           lfs: false
