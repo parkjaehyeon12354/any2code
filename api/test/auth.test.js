@@ -16,9 +16,9 @@ require.cache[azPath] = {
     app: { http: (name, cfg) => { routes[name] = cfg; } }
   }
 };
-require('./auth.js');
+require('../src/functions/auth.js');
 
-const session = require('../lib/session');
+const session = require('../src/lib/session');
 
 const mkReq = ({ url = 'https://ans2quest.com/api/x', params = {}, cookie = null, query = '' } = {}) => ({
   url: url + (query ? '?' + query : ''),
@@ -28,11 +28,23 @@ const mkReq = ({ url = 'https://ans2quest.com/api/x', params = {}, cookie = null
 const ctx = { error: () => {}, log: () => {} };
 
 test('런타임 진입점이 테스트 파일을 끌어들이지 않는다', () => {
-  // main 이 글로브면 이 파일까지 프로덕션에서 로드된다.
-  // 그러면 위쪽 process.env 대입이 실행돼 진짜 SESSION_SECRET 이
+  // main 글로브 범위 안에 테스트가 있으면 프로덕션에서 함께 로드된다.
+  // 그러면 이 파일 위쪽의 process.env 대입이 실행돼 진짜 SESSION_SECRET 이
   // 'yyyy…' 로 덮이고, 공개된 값이라 관리자 쿠키를 누구나 위조할 수 있다.
-  const pkg = require('../../package.json');
-  assert.ok(!pkg.main.includes('*'), `main 에 글로브 금지 (현재: ${pkg.main})`);
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const pkg = require('../package.json');
+
+  const dir = path.dirname(pkg.main);                       // 'src/functions'
+  const loaded = fs.readdirSync(path.join(__dirname, '..', dir));
+  const tests = loaded.filter((f) => f.includes('.test.'));
+  assert.deepStrictEqual(tests, [], `${dir} 안에 테스트 파일이 있다: ${tests.join(', ')}`);
+
+  // src/ 전체에도 두지 않는다 — 로드는 안 되더라도 배포본에 실려 나간다
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true })
+    .flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+  const strays = walk(path.join(__dirname, '..', 'src')).filter((f) => f.includes('.test.'));
+  assert.deepStrictEqual(strays, [], '테스트는 test/ 에 둔다');
 });
 
 test('네 엔드포인트가 모두 등록된다', () => {

@@ -6,7 +6,7 @@ const assert = require('node:assert');
 process.env.SESSION_SECRET = 'x'.repeat(48);
 process.env.ADMIN_EMAILS = 'boss@example.com, Other@Example.com';
 
-const session = require('./session');
+const session = require('../src/lib/session');
 
 /** request.headers.get(...) 만 흉내내는 최소 목 */
 const req = (cookieHeader) => ({

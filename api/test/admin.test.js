@@ -13,11 +13,11 @@ require.cache[azPath] = {
   id: azPath, filename: azPath, loaded: true,
   exports: { app: { http: (name, cfg) => { routes[name] = cfg; } } }
 };
-require('./admin.js');
-require('./posts.js');   // 공개 후 실제로 목록에 뜨는지 함께 확인한다
+require('../src/functions/admin.js');
+require('../src/functions/posts.js');   // 공개 후 실제로 목록에 뜨는지 함께 확인한다
 
-const session = require('../lib/session');
-const db = require('../lib/db');
+const session = require('../src/lib/session');
+const db = require('../src/lib/db');
 
 let docs = [];
 const fake = {

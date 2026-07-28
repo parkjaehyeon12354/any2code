@@ -13,10 +13,10 @@ require.cache[azPath] = {
   id: azPath, filename: azPath, loaded: true,
   exports: { app: { http: (name, cfg) => { routes[name] = cfg; } } }
 };
-require('./posts.js');
+require('../src/functions/posts.js');
 
-const session = require('../lib/session');
-const db = require('../lib/db');
+const session = require('../src/lib/session');
+const db = require('../src/lib/db');
 
 // ── 메모리 가짜 컨테이너 ──
 let docs = [];
@@ -229,7 +229,7 @@ test('글 도배 — 10분 안에 5개를 넘기면 429', async () => {
 });
 
 test('투표 연타 — 분당 30번을 넘기면 막힌다', () => {
-  const { _voteAllowed } = require('./posts.js');
+  const { _voteAllowed } = require('../src/functions/posts.js');
   const now = Date.now();
   for (let i = 0; i < 30; i++) assert.ok(_voteAllowed('연타꾼', now + i), i + '번째가 막혔다');
   assert.strictEqual(_voteAllowed('연타꾼', now + 30), false);
