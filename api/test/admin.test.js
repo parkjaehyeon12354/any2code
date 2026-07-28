@@ -67,7 +67,7 @@ const asUser = () => cookieFor({});
 const asAdmin = () => cookieFor({ sub: 'google:9', email: 'boss@example.com', role: 'admin' });
 
 const req = ({ cookie = null, body = null, params = {} } = {}) => ({
-  url: 'https://ans2quest.com/api/admin/held',
+  url: 'https://ans2quest.com/api/moderation/held',
   params,
   headers: { get: (k) => (k.toLowerCase() === 'cookie' ? cookie : null) },
   json: async () => { if (body === null) throw new Error('no body'); return body; }
@@ -86,7 +86,16 @@ async function seedHeld() {
 
 test('두 엔드포인트가 등록된다', () => {
   assert.ok(routes.adminHeld && routes.adminModerate);
-  assert.strictEqual(routes.adminModerate.route, 'admin/posts/{id}/moderate');
+  assert.strictEqual(routes.adminHeld.route, 'moderation/held');
+  assert.strictEqual(routes.adminModerate.route, 'moderation/posts/{id}/moderate');
+});
+
+test("라우트가 'admin/' 으로 시작하지 않는다 — Functions 예약 접두사", () => {
+  // Azure Functions 런타임이 자기 관리 API 용으로 admin/ 을 예약했다.
+  // 그 접두사를 쓰면 등록이 조용히 거부된다 — 파일은 로드되는데 라우트만
+  // 사라지고 로그에도 안 남아서, 배포 후 404 를 보고서야 알게 된다.
+  const bad = Object.entries(routes).filter(([, c]) => /^admin(\/|$)/.test(c.route || ''));
+  assert.deepStrictEqual(bad.map(([n]) => n), [], "'admin/' 접두사는 프로덕션에서 404 가 된다");
 });
 
 test('비로그인은 보류 목록을 못 본다', async () => {

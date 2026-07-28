@@ -6,7 +6,11 @@ const { container, query } = require('../lib/db');
 /* 관리자 전용 엔드포인트.
 
    권한 판정은 여기서만 한다. admin.html 은 누구나 열 수 있고, 화면을 그리는
-   자바스크립트도 얼마든지 고칠 수 있다 — 데이터를 안 내주는 것이 유일한 방어선이다. */
+   자바스크립트도 얼마든지 고칠 수 있다 — 데이터를 안 내주는 것이 유일한 방어선이다.
+
+   ⚠ 경로에 'admin/' 을 쓰지 말 것. Azure Functions 런타임이 자기 관리 API 용으로
+   예약한 접두사라, 등록이 조용히 거부된다 — 파일은 정상 로드되는데 라우트만
+   사라져서 404 가 나고 로그에도 남지 않는다. 그래서 'moderation/' 을 쓴다. */
 function requireAdmin(request) {
   const user = session.current(request);
   if (!user) return { error: { status: 401, jsonBody: { error: '로그인이 필요합니다.' } } };
@@ -39,7 +43,7 @@ const heldView = (p) => ({
    공개 처리한 것도 함께 돌려준다. 방금 누른 결과가 화면에서 사라지면
    잘못 눌렀을 때 되돌릴 수가 없다. */
 app.http('adminHeld', {
-  route: 'admin/held',
+  route: 'moderation/held',
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
@@ -66,7 +70,7 @@ app.http('adminHeld', {
 const ACTIONS = { publish: 'public', block: 'blocked', hold: 'held' };
 
 app.http('adminModerate', {
-  route: 'admin/posts/{id}/moderate',
+  route: 'moderation/posts/{id}/moderate',
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: async (request, context) => {

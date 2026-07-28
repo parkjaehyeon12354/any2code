@@ -696,7 +696,7 @@ Session.refresh().then(function (user) {
     me.name + '님으로 로그인됨 · 오늘의 운영 현황입니다.';
 
   // ⚠ 전부 가짜 데이터. 이메일은 예약된 예시 도메인(example.com)만 썼다.
-  // 서버가 붙으면 이 배열들을 fetch('/api/admin/...') 응답으로 갈아끼운다.
+  // 서버가 붙으면 이 배열들을 fetch('/api/moderation/...') 응답으로 갈아끼운다.
   const MOCK_USERS = [
     { name: '김서연', email: 'student01@example.com', provider: 'google',  joined: '2026-07-25', status: 'ok' },
     { name: '이준호', email: 'student02@example.com', provider: 'kakao',   joined: '2026-07-25', status: 'ok' },
@@ -749,7 +749,7 @@ Session.refresh().then(function (user) {
     return html;
   }
 
-  let HELD = [];   // GET /api/admin/held 로 채운다
+  let HELD = [];   // GET /api/moderation/held 로 채운다
 
   const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', github: 'GitHub', discord: 'Discord' };
   const STATUS = {
@@ -908,7 +908,7 @@ Session.refresh().then(function (user) {
 
   /** 서버에 처리를 맡기고, 성공했을 때만 화면을 바꾼다 */
   async function moderate(id, action) {
-    const res = await fetch('/api/admin/posts/' + encodeURIComponent(id) + '/moderate', {
+    const res = await fetch('/api/moderation/posts/' + encodeURIComponent(id) + '/moderate', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -926,7 +926,7 @@ Session.refresh().then(function (user) {
 
   async function loadHeld() {
     try {
-      const res = await fetch('/api/admin/held', { credentials: 'same-origin' });
+      const res = await fetch('/api/moderation/held', { credentials: 'same-origin' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
       HELD = (await res.json()).posts || [];
       heldResult.hidden = true;
@@ -1078,7 +1078,7 @@ Session.refresh().then(function (user) {
     const d = days();
     // ⚠ 서버가 없으므로 아무것도 저장·발송되지 않는다.
     // 실제로 보낼 내용만 그대로 보여준다 — 처리된 척하면 안 된다.
-    // 서버가 붙으면 이 자리에서 POST /api/admin/reports/{id}/resolve 를 호출한다.
+    // 서버가 붙으면 이 자리에서 POST /api/moderation/reports/{id}/resolve 를 호출한다.
     const payload = {
       대상: current.target,
       사유: current.reason,
@@ -1182,7 +1182,7 @@ Session.refresh().then(function (user) {
 
   document.getElementById('ap-confirm').addEventListener('click', function () {
     const o = outcome();
-    // ⚠ 저장되지 않는다. 서버가 붙으면 POST /api/admin/appeals/{id}/decide 를 호출한다.
+    // ⚠ 저장되지 않는다. 서버가 붙으면 POST /api/moderation/appeals/{id}/decide 를 호출한다.
     apResult.textContent =
       '[서버 미연결 — 저장되지 않았습니다]\n\n' +
       '신청자: ' + apCurrent.who + '\n' +
