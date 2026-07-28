@@ -16,6 +16,26 @@ const findBanned = (text) => BANNED_WORDS.filter((w) => text.includes(w));
 
 const rid = (prefix) => prefix + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
+/* ── 도배 방지 ──
+   글: 최근 10분 내 5개까지. DB 를 세므로 인스턴스가 재시작해도 유지된다.
+   투표: 분당 30번까지. 표는 사람당 하나라 남는 건 RU 소모뿐이니
+   인스턴스 메모리로 충분하다 (재시작하면 초기화 — 감수한다). */
+const POST_WINDOW_MS = 10 * 60 * 1000;
+const POST_MAX_IN_WINDOW = 5;
+
+const voteLog = new Map();   // sub → [timestamp]
+function voteAllowed(sub, now = Date.now()) {
+  const arr = (voteLog.get(sub) || []).filter((t) => now - t < 60_000);
+  if (arr.length >= 30) { voteLog.set(sub, arr); return false; }
+  arr.push(now);
+  voteLog.set(sub, arr);
+  return true;
+}
+
+/* 본문 상한(4000자)보다 훨씬 큰 요청은 파싱 전에 자른다 —
+   수십 MB JSON 을 받아서 파싱한 뒤에야 거절하면 그 자체가 부하다. */
+const tooBig = (request) => Number(request.headers.get('content-length') || 0) > 32 * 1024;
+
 /** 목록에 나갈 형태. 작성자 식별자(sub)는 밖으로 내보내지 않는다. */
 const publicPost = (p) => ({
   id: p.id,
@@ -81,6 +101,7 @@ app.http('postsCreate', {
   handler: async (request, context) => {
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
 
     let body;
     try { body = await request.json(); } catch { return bad('요청 형식이 잘못됐습니다.'); }
@@ -94,6 +115,21 @@ app.http('postsCreate', {
     if (title.length > LIMIT.title) return bad(`제목은 ${LIMIT.title}자까지 쓸 수 있습니다.`);
     if (!text) return bad('내용을 입력해 주세요.');
     if (text.length > LIMIT.body) return bad(`내용은 ${LIMIT.body}자까지 쓸 수 있습니다.`);
+
+    // 도배 확인 — 이 사용자가 최근 10분간 쓴 글 수
+    try {
+      const since = new Date(Date.now() - POST_WINDOW_MS).toISOString();
+      const [n] = await query({
+        query: "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'post' AND c.authorSub = @u AND c.createdAt > @since",
+        parameters: [{ name: '@u', value: user.sub }, { name: '@since', value: since }]
+      });
+      if (n >= POST_MAX_IN_WINDOW) {
+        return { status: 429, jsonBody: { error: '잠시 후에 다시 작성해 주세요. 10분에 5개까지 올릴 수 있습니다.' } };
+      }
+    } catch (e) {
+      context.error('도배 확인 실패:', e.message);
+      return fail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
 
     const hits = findBanned(title + '\n' + text);
     const doc = {
@@ -140,6 +176,9 @@ app.http('postsVote', {
   handler: async (request, context) => {
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    if (!voteAllowed(user.sub)) {
+      return { status: 429, jsonBody: { error: '너무 빠르게 누르고 있습니다. 잠시 후 다시 시도해 주세요.' } };
+    }
 
     const postId = request.params.id;
     let body;
@@ -197,4 +236,4 @@ function fail(e, message) {
   return { status: 503, jsonBody: { error: message } };
 }
 
-module.exports = { SUBJECTS, LIMIT, findBanned, publicPost };
+module.exports = { SUBJECTS, LIMIT, findBanned, publicPost, _voteAllowed: voteAllowed };

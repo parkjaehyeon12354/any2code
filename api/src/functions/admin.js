@@ -9,7 +9,9 @@ const { container, query } = require('../lib/db');
 function requireAdmin(request) {
   const user = session.current(request);
   if (!user) return { error: { status: 401, jsonBody: { error: '로그인이 필요합니다.' } } };
-  if (user.role !== 'admin') {
+  // 쿠키의 role 은 안 본다. 로그인 시점 값이 14일 박제되므로, ADMIN_EMAILS 에서
+  // 뺀 사람이 만료까지 관리자로 남는다. 매 요청 현재 목록으로 판정한다.
+  if (!session.isAdmin(user.email)) {
     // 403 이 아니라 404 로 숨기는 방법도 있지만, 관리자 화면의 존재는 이미 공개돼
     // 있으므로 숨겨서 얻는 게 없다. 이유를 알려주는 편이 낫다.
     return { error: { status: 403, jsonBody: { error: '관리자만 접근할 수 있습니다.' } } };

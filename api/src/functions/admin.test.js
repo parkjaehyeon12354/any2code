@@ -36,6 +36,9 @@ const fake = {
         }
         if (spec.query.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
         if (spec.query.includes('c.userSub = @u')) out = out.filter((d) => d.userSub === p('@u'));
+        if (spec.query.includes('c.authorSub = @u')) out = out.filter((d) => d.authorSub === p('@u'));
+        if (spec.query.includes('c.createdAt > @since')) out = out.filter((d) => d.createdAt > p('@since'));
+        if (spec.query.includes('VALUE COUNT')) return { resources: [out.length] };
         return { resources: out };
       }
     })
@@ -95,6 +98,14 @@ test('일반 사용자는 403 — 화면 코드를 고쳐도 데이터가 안 �
   const res = await routes.adminHeld.handler(req({ cookie: asUser() }), ctx);
   assert.strictEqual(res.status, 403);
   assert.ok(!res.jsonBody.posts, '거부 응답에 데이터가 섞이면 안 된다');
+});
+
+test('쿠키 role 이 admin 이어도 ADMIN_EMAILS 에 없으면 403 — 해임 즉시 반영', async () => {
+  // 로그인 당시엔 관리자였지만 이후 목록에서 빠진 경우. 쿠키는 14일 살아있으므로
+  // 쿠키의 role 을 믿으면 해임이 만료일까지 늦어진다.
+  const fired = cookieFor({ sub: 'google:2', email: 'former@example.com', role: 'admin' });
+  const res = await routes.adminHeld.handler(req({ cookie: fired }), ctx);
+  assert.strictEqual(res.status, 403);
 });
 
 test('서명 없는 admin 주장은 통하지 않는다', async () => {

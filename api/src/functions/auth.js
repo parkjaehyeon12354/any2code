@@ -113,7 +113,9 @@ app.http('me', {
         email: user.email,
         picture: user.picture,
         provider: user.provider,
-        role: user.role
+        // 쿠키에 박힌 role 이 아니라 지금 기준으로 판정한다 — ADMIN_EMAILS 에서
+        // 빠진 사람은 다음 새로고침부터 관리자 메뉴가 사라진다
+        role: session.isAdmin(user.email) ? 'admin' : 'user'
       },
       headers: { 'Cache-Control': 'no-store' }
     };

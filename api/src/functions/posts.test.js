@@ -38,6 +38,9 @@ const fake = {
         if (spec.query.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));
         if (spec.query.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
         if (spec.query.includes('c.userSub = @u')) out = out.filter((d) => d.userSub === p('@u'));
+        if (spec.query.includes('c.authorSub = @u')) out = out.filter((d) => d.authorSub === p('@u'));
+        if (spec.query.includes('c.createdAt > @since')) out = out.filter((d) => d.createdAt > p('@since'));
+        if (spec.query.includes('VALUE COUNT')) return { resources: [out.length] };
         return { resources: out };
       }
     })
@@ -205,6 +208,48 @@ test('한 사람이 여러 번 눌러도 표는 하나만 남는다', async () =
   const votes = docs.filter((d) => d.type === 'vote');
   assert.strictEqual(votes.length, 1, '투표가 중복 저장되면 점수를 부풀릴 수 있다');
   assert.strictEqual(docs.find((d) => d.type === 'post').score, 1);
+});
+
+test('글 도배 — 10분 안에 5개를 넘기면 429', async () => {
+  docs = [];
+  const cookie = login({ sub: 'discord:spam' });
+  for (let i = 0; i < 5; i++) {
+    const res = await routes.postsCreate.handler(
+      req({ cookie, body: { ...okPost, title: '질문 ' + i } }), ctx);
+    assert.strictEqual(res.status, 201, i + '번째가 막혔다');
+  }
+  const sixth = await routes.postsCreate.handler(req({ cookie, body: okPost }), ctx);
+  assert.strictEqual(sixth.status, 429);
+  assert.strictEqual(docs.filter((d) => d.type === 'post').length, 5, '429 인데 저장되면 안 된다');
+
+  // 다른 사용자는 영향받지 않는다
+  const other = await routes.postsCreate.handler(
+    req({ cookie: login({ sub: 'discord:clean' }), body: okPost }), ctx);
+  assert.strictEqual(other.status, 201);
+});
+
+test('투표 연타 — 분당 30번을 넘기면 막힌다', () => {
+  const { _voteAllowed } = require('./posts.js');
+  const now = Date.now();
+  for (let i = 0; i < 30; i++) assert.ok(_voteAllowed('연타꾼', now + i), i + '번째가 막혔다');
+  assert.strictEqual(_voteAllowed('연타꾼', now + 30), false);
+  assert.ok(_voteAllowed('무고한사람', now), '남의 연타에 내가 막히면 안 된다');
+  // 1분 지나면 다시 허용된다
+  assert.ok(_voteAllowed('연타꾼', now + 61_000));
+});
+
+test('본문 상한보다 훨씬 큰 요청은 파싱 전에 413', async () => {
+  const cookie = login();
+  const res = await routes.postsCreate.handler({
+    url: 'https://ans2quest.com/api/posts',
+    params: {},
+    headers: {
+      get: (k) => k.toLowerCase() === 'content-length' ? String(1024 * 1024)
+        : k.toLowerCase() === 'cookie' ? cookie : null
+    },
+    json: async () => { throw new Error('파싱까지 갔다 — 크기 검사가 늦다'); }
+  }, ctx);
+  assert.strictEqual(res.status, 413);
 });
 
 test('없는 글에 투표하면 404', async () => {
