@@ -18,47 +18,8 @@ require('../src/functions/posts.js');
 const session = require('../src/lib/session');
 const db = require('../src/lib/db');
 
-// ── 메모리 가짜 컨테이너 ──
-let docs = [];
-const fake = {
-  items: {
-    create: async (d) => { docs.push(d); return { resource: d }; },
-    upsert: async (d) => {
-      docs = docs.filter((x) => x.id !== d.id);
-      docs.push(d);
-      return { resource: d };
-    },
-    query: (spec) => ({
-      fetchAll: async () => {
-        const p = (n) => (spec.parameters || []).find((x) => x.name === n)?.value;
-        let out = docs;
-        if (spec.query.includes("c.type = 'post'")) out = out.filter((d) => d.type === 'post');
-        if (spec.query.includes("c.type = 'vote'")) out = out.filter((d) => d.type === 'vote');
-        if (spec.query.includes("c.type = 'comment'")) out = out.filter((d) => d.type === 'comment');
-        if (spec.query.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
-        if (spec.query.includes("c.status = 'public'")) out = out.filter((d) => d.status === 'public');
-        if (spec.query.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));
-        if (spec.query.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
-        if (spec.query.includes('c.userSub = @u')) out = out.filter((d) => d.userSub === p('@u'));
-        if (spec.query.includes('c.authorSub = @u')) out = out.filter((d) => d.authorSub === p('@u'));
-        if (spec.query.includes('c.createdAt > @since')) out = out.filter((d) => d.createdAt > p('@since'));
-        if (spec.query.includes('VALUE COUNT')) return { resources: [out.length] };
-        return { resources: out };
-      }
-    })
-  },
-  item: (id, pk) => ({
-    read: async () => ({ resource: docs.find((d) => d.id === id && d.pk === pk) || undefined }),
-    delete: async () => { docs = docs.filter((d) => d.id !== id); },
-    patch: async (ops) => {
-      const d = docs.find((x) => x.id === id && x.pk === pk);
-      ops.forEach((o) => {
-        if (o.op === 'incr') d[o.path.slice(1)] = (d[o.path.slice(1)] || 0) + o.value;
-      });
-      return { resource: d };
-    }
-  })
-};
+const { createFake } = require('./fake-container');
+const { fake, state } = createFake();
 db._setContainer(fake);
 
 const login = (over = {}) => {
@@ -130,7 +91,7 @@ test('빈 제목·빈 내용·길이 초과는 거부한다', async () => {
 });
 
 test('정상 글은 저장되고 목록에 나온다', async () => {
-  docs = [];
+  state.docs = [];
   const res = await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
   assert.strictEqual(res.status, 201);
   assert.strictEqual(res.jsonBody.held, false);
@@ -142,7 +103,7 @@ test('정상 글은 저장되고 목록에 나온다', async () => {
 });
 
 test('작성자 식별자는 목록에 노출되지 않는다', async () => {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
   const list = await routes.postsList.handler(req({}), ctx);
   const json = JSON.stringify(list.jsonBody);
@@ -151,7 +112,7 @@ test('작성자 식별자는 목록에 노출되지 않는다', async () => {
 });
 
 test('욕설이 있으면 보류되고 목록에서 빠진다', async () => {
-  docs = [];
+  state.docs = [];
   const res = await routes.postsCreate.handler(
     req({ cookie: login(), body: { ...okPost, body: '이 병신 같은 실험' } }), ctx);
   assert.strictEqual(res.jsonBody.held, true);
@@ -159,11 +120,11 @@ test('욕설이 있으면 보류되고 목록에서 빠진다', async () => {
 
   const list = await routes.postsList.handler(req({}), ctx);
   assert.strictEqual(list.jsonBody.posts.length, 0);
-  assert.strictEqual(docs[0].status, 'held', '삭제가 아니라 보류여야 사람이 되살릴 수 있다');
+  assert.strictEqual(state.docs[0].status, 'held', '삭제가 아니라 보류여야 사람이 되살릴 수 있다');
 });
 
 test('과목 필터가 동작한다', async () => {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
   await routes.postsCreate.handler(req({ cookie: login(), body: { ...okPost, subject: 'chem' } }), ctx);
 
@@ -184,9 +145,9 @@ test('투표 — 비로그인 401, 잘못된 방향 400', async () => {
 });
 
 test('투표 — 누르고, 다시 누르면 취소되고, 점수가 맞게 움직인다', async () => {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
-  const id = docs[0].id;
+  const id = state.docs[0].id;
   const cookie = login();
 
   const up = await routes.postsVote.handler(req({ cookie, body: { dir: 1 }, params: { id } }), ctx);
@@ -200,9 +161,9 @@ test('투표 — 누르고, 다시 누르면 취소되고, 점수가 맞게 움�
 });
 
 test('한 사람이 여러 번 눌러도 표는 하나만 남는다', async () => {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
-  const id = docs[0].id;
+  const id = state.docs[0].id;
   const cookie = login();
 
   await routes.postsVote.handler(req({ cookie, body: { dir: 1 }, params: { id } }), ctx);
@@ -210,13 +171,13 @@ test('한 사람이 여러 번 눌러도 표는 하나만 남는다', async () =
   await routes.postsVote.handler(req({ cookie, body: { dir: -1 }, params: { id } }), ctx);
   await routes.postsVote.handler(req({ cookie, body: { dir: 1 }, params: { id } }), ctx);
 
-  const votes = docs.filter((d) => d.type === 'vote');
+  const votes = state.docs.filter((d) => d.type === 'vote');
   assert.strictEqual(votes.length, 1, '투표가 중복 저장되면 점수를 부풀릴 수 있다');
-  assert.strictEqual(docs.find((d) => d.type === 'post').score, 1);
+  assert.strictEqual(state.docs.find((d) => d.type === 'post').score, 1);
 });
 
 test('글 도배 — 10분 안에 5개를 넘기면 429', async () => {
-  docs = [];
+  state.docs = [];
   const cookie = login({ sub: 'discord:spam' });
   for (let i = 0; i < 5; i++) {
     const res = await routes.postsCreate.handler(
@@ -225,7 +186,7 @@ test('글 도배 — 10분 안에 5개를 넘기면 429', async () => {
   }
   const sixth = await routes.postsCreate.handler(req({ cookie, body: okPost }), ctx);
   assert.strictEqual(sixth.status, 429);
-  assert.strictEqual(docs.filter((d) => d.type === 'post').length, 5, '429 인데 저장되면 안 된다');
+  assert.strictEqual(state.docs.filter((d) => d.type === 'post').length, 5, '429 인데 저장되면 안 된다');
 
   // 다른 사용자는 영향받지 않는다
   const other = await routes.postsCreate.handler(
@@ -258,18 +219,18 @@ test('본문 상한보다 훨씬 큰 요청은 파싱 전에 413', async () => {
 });
 
 test('보류·차단된 글에는 투표할 수 없다 — 목록에서 가리는 것만으로는 차단이 아니다', async () => {
-  docs = [];
+  state.docs = [];
   // 욕설이 섞인 글은 보류로 저장된다
   await routes.postsCreate.handler(
     req({ cookie: login(), body: { ...okPost, body: '이 병신 같은 실험' } }), ctx);
-  const post = docs.find((d) => d.type === 'post');
+  const post = state.docs.find((d) => d.type === 'post');
   assert.strictEqual(post.status, 'held');
 
   const held = await routes.postsVote.handler(
     req({ cookie: login(), body: { dir: 1 }, params: { id: post.id } }), ctx);
   assert.strictEqual(held.status, 404, 'id 를 아는 사람이 계속 투표할 수 있으면 안 된다');
   assert.strictEqual(post.score, 0, '거부됐는데 점수가 움직이면 안 된다');
-  assert.strictEqual(docs.filter((d) => d.type === 'vote').length, 0);
+  assert.strictEqual(state.docs.filter((d) => d.type === 'vote').length, 0);
 
   // 차단 상태도 동일
   post.status = 'blocked';
@@ -285,21 +246,21 @@ test('보류·차단된 글에는 투표할 수 없다 — 목록에서 가리�
 });
 
 test('없는 글에 투표하면 404', async () => {
-  docs = [];
+  state.docs = [];
   const res = await routes.postsVote.handler(
     req({ cookie: login(), body: { dir: 1 }, params: { id: '없음' } }), ctx);
   assert.strictEqual(res.status, 404);
 });
 
 test('킬 스위치 — LOCKDOWN=1 이면 읽기·쓰기·투표 전부 503', async () => {
-  docs = [];
+  state.docs = [];
   process.env.LOCKDOWN = '1';
   try {
     const list = await routes.postsList.handler(req({}), ctx);
     const create = await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
     const vote = await routes.postsVote.handler(req({ cookie: login(), body: { dir: 1 }, params: { id: 'x' } }), ctx);
     assert.deepStrictEqual([list.status, create.status, vote.status], [503, 503, 503]);
-    assert.strictEqual(docs.length, 0, '잠금 중에 저장되면 안 된다');
+    assert.strictEqual(state.docs.length, 0, '잠금 중에 저장되면 안 된다');
   } finally {
     delete process.env.LOCKDOWN;
   }
@@ -309,9 +270,9 @@ test('킬 스위치 — LOCKDOWN=1 이면 읽기·쓰기·투표 전부 503', as
 });
 
 test('로그인하면 내 투표 상태가 함께 온다', async () => {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
-  const id = docs[0].id;
+  const id = state.docs[0].id;
   const cookie = login();
   await routes.postsVote.handler(req({ cookie, body: { dir: 1 }, params: { id } }), ctx);
 
@@ -327,9 +288,9 @@ test('로그인하면 내 투표 상태가 함께 온다', async () => {
 
 /** 공개 상태의 글을 하나 만들어 id 를 돌려준다 */
 async function seedPost() {
-  docs = [];
+  state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
-  return docs.find((d) => d.type === 'post');
+  return state.docs.find((d) => d.type === 'post');
 }
 
 test('댓글 — 비로그인은 못 쓰고, 목록은 누구나 본다', async () => {
@@ -382,7 +343,7 @@ test('댓글 — 욕설은 보류되고 답변 수도 오르지 않는다', asyn
   const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
   assert.strictEqual(list.jsonBody.comments.length, 0);
   assert.strictEqual(post.answers, 0, '보류 중인 답변을 세면 "답변 1" 인데 아무것도 안 보인다');
-  assert.strictEqual(docs.find((d) => d.type === 'comment').status, 'held');
+  assert.strictEqual(state.docs.find((d) => d.type === 'comment').status, 'held');
 });
 
 test('댓글 — 보류·차단된 글에는 달 수 없다', async () => {
@@ -401,7 +362,7 @@ test('댓글 — 보류·차단된 글에는 달 수 없다', async () => {
 test('댓글 — 다른 글의 댓글이 섞이지 않는다', async () => {
   const a = await seedPost();
   await routes.postsCreate.handler(req({ cookie: login(), body: { ...okPost, title: '두번째' } }), ctx);
-  const b = docs.filter((d) => d.type === 'post')[1];
+  const b = state.docs.filter((d) => d.type === 'post')[1];
 
   await routes.commentsCreate.handler(
     req({ cookie: login(), body: { body: 'A 의 답변' }, params: { id: a.id } }), ctx);

@@ -1,7 +1,7 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
 const { lockdown } = require('../lib/lockdown');
-const { container, query } = require('../lib/db');
+const { container, query, dbFail } = require('../lib/db');
 
 /* 과목은 서버가 정한 목록만 받는다. 클라이언트가 보낸 값을 그대로 파티션 키로
    쓰면 아무 문자열이나 새 파티션이 되어 데이터가 흩어진다. */
@@ -48,8 +48,7 @@ const publicPost = (p) => ({
   author: p.authorName,
   createdAt: p.createdAt,
   score: p.score || 0,
-  answers: p.answers || 0,
-  lab: !!p.lab
+  answers: p.answers || 0
 });
 
 /* ── 목록 ──
@@ -92,7 +91,7 @@ app.http('postsList', {
       };
     } catch (e) {
       context.error('목록 조회 실패:', e.message);
-      return fail(e, '목록을 불러오지 못했습니다.');
+      return dbFail(e, '목록을 불러오지 못했습니다.');
     }
   }
 });
@@ -133,7 +132,7 @@ app.http('postsCreate', {
       }
     } catch (e) {
       context.error('도배 확인 실패:', e.message);
-      return fail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return dbFail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
     const hits = findBanned(title + '\n' + text);
@@ -149,7 +148,6 @@ app.http('postsCreate', {
       createdAt: new Date().toISOString(),
       score: 0,
       answers: 0,
-      lab: false,
       status: hits.length ? 'held' : 'public',
       ...(hits.length ? { heldWords: hits } : {})
     };
@@ -158,7 +156,7 @@ app.http('postsCreate', {
       await container().items.create(doc);
     } catch (e) {
       context.error('작성 실패:', e.message);
-      return fail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return dbFail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
     // 보류된 글은 목록에 안 나온다 — 사라진 것처럼 보이지 않게 이유를 알려준다
@@ -230,7 +228,7 @@ app.http('postsVote', {
       return { jsonBody: { dir: next, score } };
     } catch (e) {
       context.error('투표 실패:', e.message);
-      return fail(e, '처리하지 못했습니다.');
+      return dbFail(e, '처리하지 못했습니다.');
     }
   }
 });
@@ -261,7 +259,7 @@ app.http('commentsList', {
       return { jsonBody: { comments: rows.map(publicComment) }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
       context.error('댓글 조회 실패:', e.message);
-      return fail(e, '댓글을 불러오지 못했습니다.');
+      return dbFail(e, '댓글을 불러오지 못했습니다.');
     }
   }
 });
@@ -332,20 +330,13 @@ app.http('commentsCreate', {
       };
     } catch (e) {
       context.error('댓글 작성 실패:', e.message);
-      return fail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return dbFail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }
 });
 
 function bad(message) { return { status: 400, jsonBody: { error: message } }; }
 
-/* DB 실패를 돌려준다. 설정 누락은 따로 알려준다 — 값이 아니라 "무엇을 등록해야
-   하는지"만 말하므로 비밀이 새지 않고, 배포 후 원인을 응답만 보고 알 수 있다. */
-function fail(e, message) {
-  if (e && e.code === 'NO_COSMOS_CONFIG') {
-    return { status: 503, jsonBody: { error: '서버에 데이터베이스가 연결되지 않았습니다. (COSMOS_CONNECTION 미설정)' } };
-  }
-  return { status: 503, jsonBody: { error: message } };
-}
 
-module.exports = { SUBJECTS, LIMIT, findBanned, publicPost, _voteAllowed: voteAllowed };
+// 테스트가 레이트 리밋만 직접 부른다 — 나머지는 이 파일 안에서만 쓴다
+module.exports = { _voteAllowed: voteAllowed };

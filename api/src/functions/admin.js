@@ -1,7 +1,7 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
 const { lockdown } = require('../lib/lockdown');
-const { container, query } = require('../lib/db');
+const { container, query, dbFail } = require('../lib/db');
 
 /* 관리자 전용 엔드포인트.
 
@@ -129,11 +129,4 @@ app.http('adminModerate', {
   }
 });
 
-function dbFail(e) {
-  if (e && e.code === 'NO_COSMOS_CONFIG') {
-    return { status: 503, jsonBody: { error: '서버에 데이터베이스가 연결되지 않았습니다. (COSMOS_CONNECTION 미설정)' } };
-  }
-  return { status: 503, jsonBody: { error: '처리하지 못했습니다.' } };
-}
 
-module.exports = { ACTIONS, heldView };

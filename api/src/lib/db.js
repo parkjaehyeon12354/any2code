@@ -37,4 +37,15 @@ function _setContainer(c) { cached = c; }
 
 const query = async (spec) => (await container().items.query(spec).fetchAll()).resources;
 
-module.exports = { container, query, _setContainer, DB, CONTAINER };
+/* DB 실패 응답. 설정 누락은 따로 알려준다 — 값이 아니라 "무엇을 등록해야
+   하는지"만 말하므로 비밀이 새지 않고, 배포 후 원인을 응답만 보고 알 수 있다. */
+const dbFail = (e, message = '처리하지 못했습니다.') => ({
+  status: 503,
+  jsonBody: {
+    error: e && e.code === 'NO_COSMOS_CONFIG'
+      ? '서버에 데이터베이스가 연결되지 않았습니다. (COSMOS_CONNECTION 미설정)'
+      : message
+  }
+});
+
+module.exports = { container, query, dbFail, _setContainer };
