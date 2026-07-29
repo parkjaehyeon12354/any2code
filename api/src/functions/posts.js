@@ -7,7 +7,7 @@ const { container, query } = require('../lib/db');
    쓰면 아무 문자열이나 새 파티션이 되어 데이터가 흩어진다. */
 const SUBJECTS = ['physics', 'chem', 'bio', 'earth'];
 
-const LIMIT = { title: 120, body: 4000 };
+const LIMIT = { title: 120, body: 4000, comment: 2000 };
 
 /* 자동 보류 필터. admin.html 과 같은 목록이다.
    '고아' 처럼 정상 문맥에도 쓰이는 단어가 있어 오탐이 반드시 생긴다 —
@@ -37,12 +37,14 @@ function voteAllowed(sub, now = Date.now()) {
    수십 MB JSON 을 받아서 파싱한 뒤에야 거절하면 그 자체가 부하다. */
 const tooBig = (request) => Number(request.headers.get('content-length') || 0) > 32 * 1024;
 
-/** 목록에 나갈 형태. 작성자 식별자(sub)는 밖으로 내보내지 않는다. */
+/** 목록에 나갈 형태. 작성자 식별자(sub)는 밖으로 내보내지 않는다.
+    요약은 따로 보내지 않는다 — 본문을 자르면 되는데 둘 다 보내면 중복이고,
+    글을 펼쳤을 때 잘린 요약을 본문 자리에 보여주는 사고가 난다. */
 const publicPost = (p) => ({
   id: p.id,
   subject: p.subject,
   title: p.title,
-  excerpt: p.body.length > 200 ? p.body.slice(0, 200) + '…' : p.body,
+  body: p.body,
   author: p.authorName,
   createdAt: p.createdAt,
   score: p.score || 0,
@@ -229,6 +231,108 @@ app.http('postsVote', {
     } catch (e) {
       context.error('투표 실패:', e.message);
       return fail(e, '처리하지 못했습니다.');
+    }
+  }
+});
+
+/* ── 댓글 ──
+   파티션 키가 글 id 라 한 글의 댓글은 한 파티션에서 한 번에 읽힌다. */
+
+const publicComment = (c) => ({
+  id: c.id,
+  body: c.body,
+  author: c.authorName,
+  createdAt: c.createdAt
+});
+
+app.http('commentsList', {
+  route: 'posts/{id}/comments',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const postId = request.params.id;
+
+    try {
+      const rows = await query({
+        query: "SELECT * FROM c WHERE c.type = 'comment' AND c.pk = @p AND c.status = 'public' ORDER BY c.createdAt ASC",
+        parameters: [{ name: '@p', value: postId }]
+      });
+      return { jsonBody: { comments: rows.map(publicComment) }, headers: { 'Cache-Control': 'no-store' } };
+    } catch (e) {
+      context.error('댓글 조회 실패:', e.message);
+      return fail(e, '댓글을 불러오지 못했습니다.');
+    }
+  }
+});
+
+app.http('commentsCreate', {
+  route: 'posts/{id}/comments',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
+
+    let body;
+    try { body = await request.json(); } catch { return bad('요청 형식이 잘못됐습니다.'); }
+
+    const text = String(body.body || '').trim();
+    if (!text) return bad('내용을 입력해 주세요.');
+    if (text.length > LIMIT.comment) return bad(`답변은 ${LIMIT.comment}자까지 쓸 수 있습니다.`);
+
+    const postId = request.params.id;
+    const c = container();
+
+    try {
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: postId }]
+      }))[0];
+      // 보류·차단된 글에는 답변을 달 수 없다. 없는 글과 같은 404 를 준다
+      if (!post || post.status !== 'public') return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+
+      // 도배 확인 — 글과 같은 기준(10분 5개)
+      const since = new Date(Date.now() - POST_WINDOW_MS).toISOString();
+      const [n] = await query({
+        query: "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'comment' AND c.authorSub = @u AND c.createdAt > @since",
+        parameters: [{ name: '@u', value: user.sub }, { name: '@since', value: since }]
+      });
+      if (n >= POST_MAX_IN_WINDOW) {
+        return { status: 429, jsonBody: { error: '잠시 후에 다시 작성해 주세요. 10분에 5개까지 올릴 수 있습니다.' } };
+      }
+
+      const hits = findBanned(text);
+      const doc = {
+        id: rid('c'),
+        type: 'comment',
+        pk: postId,
+        postId,
+        body: text,
+        authorSub: user.sub,
+        authorName: user.name,
+        createdAt: new Date().toISOString(),
+        status: hits.length ? 'held' : 'public',
+        ...(hits.length ? { heldWords: hits } : {})
+      };
+      await c.items.create(doc);
+
+      // 답변 수는 공개된 것만 센다 — 보류 중인 걸 세면 "답변 1" 인데 아무것도 안 보인다
+      if (doc.status === 'public') {
+        await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: 1 }]);
+      }
+
+      return {
+        status: 201,
+        jsonBody: doc.status === 'held'
+          ? { held: true, message: '부적절한 표현이 감지되어 검토 대기 중입니다. 오탐이면 곧 공개됩니다.' }
+          : { held: false, comment: publicComment(doc) }
+      };
+    } catch (e) {
+      context.error('댓글 작성 실패:', e.message);
+      return fail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }
 });

@@ -28,8 +28,9 @@ function requireAdmin(request) {
    "왜 이 글이 걸렸는지" 는 걸릴 당시 기준으로 남아야 판단할 수 있다. */
 const heldView = (p) => ({
   id: p.id,
-  subject: p.subject,
-  title: p.title,
+  kind: p.type,                                   // 'post' | 'comment'
+  subject: p.subject || null,
+  title: p.type === 'comment' ? '답변' : p.title,
   text: p.body,
   author: p.authorName,
   createdAt: p.createdAt,
@@ -52,8 +53,10 @@ app.http('adminHeld', {
     if (error) return error;
 
     try {
+      // 댓글도 함께 본다. 같은 필터에 같은 오탐이 나는데 글만 되살릴 수 있으면
+      // 댓글 오탐은 영영 묻힌다.
       const rows = await query({
-        query: "SELECT * FROM c WHERE c.type = 'post' AND c.status IN ('held', 'blocked') ORDER BY c.createdAt DESC"
+        query: "SELECT * FROM c WHERE c.type IN ('post', 'comment') AND c.status IN ('held', 'blocked') ORDER BY c.createdAt DESC"
       });
       return { jsonBody: { posts: rows.map(heldView) }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
@@ -85,15 +88,19 @@ app.http('adminModerate', {
     if (!status) return { status: 400, jsonBody: { error: '알 수 없는 처리입니다.' } };
 
     try {
-      // 파티션 키(과목)를 모르면 patch 를 못 한다 — id 로 먼저 찾는다
-      const post = (await query({
-        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+      // 파티션 키를 모르면 patch 를 못 한다 — id 로 먼저 찾는다
+      const doc = (await query({
+        query: "SELECT * FROM c WHERE c.type IN ('post', 'comment') AND c.id = @id",
         parameters: [{ name: '@id', value: request.params.id }]
       }))[0];
-      if (!post) return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      if (!doc) return { status: 404, jsonBody: { error: '없는 글입니다.' } };
 
+      const c = container();
       const at = new Date().toISOString();
-      await container().item(post.id, post.pk).patch([
+      // 이전 상태를 patch 전에 붙잡아 둔다. 뒤에서 doc.status 를 읽으면 이미
+      // 갱신된 값이라 "바뀐 게 없다" 로 판정되어 답변 수 보정이 통째로 빠진다.
+      const before = doc.status;
+      await c.item(doc.id, doc.pk).patch([
         { op: 'set', path: '/status', value: status },
         // 누가 언제 풀어줬는지 남긴다. 오탐 공개는 되돌릴 일이 생기고,
         // 그때 "누가 판단했나" 를 모르면 같은 논쟁을 반복한다.
@@ -101,7 +108,20 @@ app.http('adminModerate', {
         { op: 'set', path: '/moderatedAt', value: at }
       ]);
 
-      return { jsonBody: { id: post.id, status, moderatedBy: user.email || user.sub, moderatedAt: at } };
+      // 댓글이면 원글의 답변 수도 맞춘다. 안 그러면 "답변 1" 인데 아무것도
+      // 안 보이거나, 되살렸는데 0 으로 남는다.
+      if (doc.type === 'comment' && before !== status) {
+        const delta = (status === 'public' ? 1 : 0) - (before === 'public' ? 1 : 0);
+        if (delta !== 0) {
+          const post = (await query({
+            query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+            parameters: [{ name: '@id', value: doc.postId }]
+          }))[0];
+          if (post) await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: delta }]);
+        }
+      }
+
+      return { jsonBody: { id: doc.id, kind: doc.type, status, moderatedBy: user.email || user.sub, moderatedAt: at } };
     } catch (e) {
       context.error('보류 처리 실패:', e.message);
       return dbFail(e);

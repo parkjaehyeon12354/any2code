@@ -14,7 +14,7 @@ require.cache[azPath] = {
   exports: { app: { http: (name, cfg) => { routes[name] = cfg; } } }
 };
 require('../src/functions/admin.js');
-require('../src/functions/posts.js');   // 공개 후 실제로 목록에 뜨는지 함께 확인한다
+require('../src/functions/posts.js');   // 댓글·공개 후 실제로 목록에 뜨는지 함께 확인한다
 
 const session = require('../src/lib/session');
 const db = require('../src/lib/db');
@@ -30,6 +30,11 @@ const fake = {
         let out = docs;
         if (spec.query.includes("c.type = 'post'")) out = out.filter((d) => d.type === 'post');
         if (spec.query.includes("c.type = 'vote'")) out = out.filter((d) => d.type === 'vote');
+        if (spec.query.includes("c.type = 'comment'")) out = out.filter((d) => d.type === 'comment');
+        if (spec.query.includes("c.type IN ('post', 'comment')")) {
+          out = out.filter((d) => d.type === 'post' || d.type === 'comment');
+        }
+        if (spec.query.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
         if (spec.query.includes("c.status = 'public'")) out = out.filter((d) => d.status === 'public');
         if (spec.query.includes("c.status IN ('held', 'blocked')")) {
           out = out.filter((d) => d.status === 'held' || d.status === 'blocked');
@@ -213,4 +218,40 @@ test('알 수 없는 처리와 없는 글은 거부한다', async () => {
   const missing = await routes.adminModerate.handler(
     req({ cookie: asAdmin(), body: { action: 'publish' }, params: { id: '없음' } }), ctx);
   assert.strictEqual(missing.status, 404);
+});
+
+test('보류된 댓글도 관리자 목록에 뜨고, 공개하면 답변 수가 오른다', async () => {
+  // 같은 필터에 같은 오탐이 난다. 글만 되살릴 수 있으면 댓글 오탐은 영영 묻힌다.
+  docs = [];
+  await routes.postsCreate.handler(req({
+    cookie: asUser(),
+    body: { subject: 'physics', title: '단진자 질문', body: '주기가 짧게 나옵니다.' }
+  }), ctx);
+  const post = docs.find((d) => d.type === 'post');
+
+  await routes.commentsCreate.handler(req({
+    cookie: asUser(), body: { body: '초파리 새끼 이야기라 걸립니다' }, params: { id: post.id }
+  }), ctx);
+  const comment = docs.find((d) => d.type === 'comment');
+  assert.strictEqual(comment.status, 'held');
+  assert.strictEqual(post.answers, 0, '보류 중인 답변은 세지 않는다');
+
+  const list = await routes.adminHeld.handler(req({ cookie: asAdmin() }), ctx);
+  const row = list.jsonBody.posts.find((x) => x.id === comment.id);
+  assert.ok(row, '보류된 댓글이 목록에 없다 — 되살릴 방법이 없어진다');
+  assert.strictEqual(row.kind, 'comment');
+  assert.deepStrictEqual(row.words, ['새끼']);
+
+  // 공개하면 답변 수가 따라 올라야 한다
+  await routes.adminModerate.handler(req({
+    cookie: asAdmin(), body: { action: 'publish' }, params: { id: comment.id }
+  }), ctx);
+  assert.strictEqual(comment.status, 'public');
+  assert.strictEqual(post.answers, 1, '공개했는데 답변 0 이면 목록이 거짓말을 한다');
+
+  // 다시 차단하면 되돌아간다
+  await routes.adminModerate.handler(req({
+    cookie: asAdmin(), body: { action: 'block' }, params: { id: comment.id }
+  }), ctx);
+  assert.strictEqual(post.answers, 0);
 });

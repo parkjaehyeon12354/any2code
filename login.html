@@ -107,35 +107,6 @@
   line-height: 1;
   transition: filter .15s;
 }
-/* 검증용 임시 로그인 — 기능이 꺼지면 폼째로 사라진다 */
-.test-login {
-  margin-top: var(--sp-lg); padding-top: var(--sp-lg);
-  border-top: 1px dashed var(--hairline);
-  text-align: left;
-}
-.test-login-warn {
-  margin-bottom: var(--sp-md); padding: 10px 12px;
-  background: rgba(217, 119, 6, .12); border-radius: var(--rounded-md);
-  font-size: 12.5px; line-height: 1.55; color: #8a5c08; word-break: keep-all;
-}
-.test-login-warn strong { color: #6b4706; }
-.test-login-warn code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
-}
-.test-login label {
-  display: block; margin-bottom: 5px;
-  font-size: 12.5px; font-weight: 600; color: var(--ink);
-}
-.test-login input {
-  width: 100%; margin-bottom: var(--sp-sm); padding: 9px 11px;
-  font-family: var(--font-body); font-size: 14px; color: var(--body);
-  background: #fff; border: 1px solid var(--hairline); border-radius: var(--rounded-md);
-}
-.test-login input:focus-visible {
-  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
-}
-.test-login button { width: 100%; margin-top: 4px; }
-
 .btn-oauth:hover { filter: brightness(.96); }
 .btn-oauth[disabled] { opacity: .6; cursor: progress; }
 .btn-oauth svg { width: 18px; height: 18px; flex-shrink: 0; }
@@ -221,20 +192,6 @@
       </button>
     </div>
 
-    <!-- 검증용 임시 로그인. 서버에 TEST_LOGIN_* 환경 변수가 있을 때만 나타난다.
-         변수를 지우면 이 블록도 함께 사라진다 — 지우는 걸 잊어도 노출되지 않는다. -->
-    <form class="test-login" id="test-login" hidden>
-      <p class="test-login-warn">
-        <strong>검증용 임시 로그인</strong>이 켜져 있습니다. 검증이 끝나면
-        Azure 앱 설정에서 <code>TEST_LOGIN_PASSWORD</code>를 삭제하세요.
-      </p>
-      <label for="tl-email">이메일</label>
-      <input type="email" id="tl-email" autocomplete="off" required>
-      <label for="tl-password">비밀번호</label>
-      <input type="password" id="tl-password" autocomplete="off" required>
-      <button type="submit" class="btn btn-primary" id="tl-submit">로그인</button>
-    </form>
-
     <p class="auth-hint">계속 진행하면 서비스 이용약관과 개인정보 처리방침에 동의하게 됩니다.</p>
 
     <p class="auth-result" id="result"></p>
@@ -282,44 +239,6 @@
         notice.classList.add('show');
       }, 4000);
     });
-  });
-
-  // ── 검증용 임시 로그인 ──
-  // 서버가 켜졌다고 답할 때만 폼을 보여준다. 꺼져 있으면 404 가 오고 폼은 계속 숨어 있다.
-  const testForm = document.getElementById('test-login');
-  fetch('/api/auth/test-login', { credentials: 'same-origin' })
-    .then(function (res) { if (res.ok) testForm.hidden = false; })
-    .catch(function () { /* 꺼져 있는 게 정상이다 */ });
-
-  testForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const submit = document.getElementById('tl-submit');
-    submit.disabled = true;
-    submit.textContent = '로그인 중…';
-    try {
-      const res = await fetch('/api/auth/test-login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById('tl-email').value,
-          password: document.getElementById('tl-password').value
-        })
-      });
-      const data = await res.json().catch(function () { return {}; });
-      if (!res.ok) {
-        notice.textContent = data.error || '로그인에 실패했습니다.';
-        notice.classList.add('show');
-        return;
-      }
-      window.location.replace(data.role === 'admin' ? '/admin.html' : '/');
-    } catch {
-      notice.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
-      notice.classList.add('show');
-    } finally {
-      submit.disabled = false;
-      submit.textContent = '로그인';
-    }
   });
 
   // 이미 로그인 상태면 로그인 화면에 머물 이유가 없다

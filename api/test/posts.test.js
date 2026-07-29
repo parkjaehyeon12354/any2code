@@ -34,6 +34,8 @@ const fake = {
         let out = docs;
         if (spec.query.includes("c.type = 'post'")) out = out.filter((d) => d.type === 'post');
         if (spec.query.includes("c.type = 'vote'")) out = out.filter((d) => d.type === 'vote');
+        if (spec.query.includes("c.type = 'comment'")) out = out.filter((d) => d.type === 'comment');
+        if (spec.query.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
         if (spec.query.includes("c.status = 'public'")) out = out.filter((d) => d.status === 'public');
         if (spec.query.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));
         if (spec.query.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
@@ -88,9 +90,11 @@ test('COSMOS_CONNECTION 이 없으면 원인을 알려준다', async () => {
   }
 });
 
-test('세 엔드포인트가 등록된다', () => {
-  assert.deepStrictEqual(Object.keys(routes).sort(), ['postsCreate', 'postsList', 'postsVote']);
+test('다섯 엔드포인트가 등록된다', () => {
+  assert.deepStrictEqual(Object.keys(routes).sort(),
+    ['commentsCreate', 'commentsList', 'postsCreate', 'postsList', 'postsVote']);
   assert.strictEqual(routes.postsVote.route, 'posts/{id}/vote');
+  assert.strictEqual(routes.commentsList.route, 'posts/{id}/comments');
 });
 
 test('비로그인은 글을 쓸 수 없다', async () => {
@@ -134,6 +138,7 @@ test('정상 글은 저장되고 목록에 나온다', async () => {
   const list = await routes.postsList.handler(req({}), ctx);
   assert.strictEqual(list.jsonBody.posts.length, 1);
   assert.strictEqual(list.jsonBody.posts[0].title, okPost.title);
+  assert.strictEqual(list.jsonBody.posts[0].body, okPost.body, '펼쳤을 때 보여줄 본문이 있어야 한다');
 });
 
 test('작성자 식별자는 목록에 노출되지 않는다', async () => {
@@ -316,4 +321,104 @@ test('로그인하면 내 투표 상태가 함께 온다', async () => {
   const other = await routes.postsList.handler(
     req({ cookie: login({ sub: 'discord:2' }) }), ctx);
   assert.deepStrictEqual(other.jsonBody.votes, {}, '남의 투표가 보이면 안 된다');
+});
+
+// ── 댓글 ──
+
+/** 공개 상태의 글을 하나 만들어 id 를 돌려준다 */
+async function seedPost() {
+  docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+  return docs.find((d) => d.type === 'post');
+}
+
+test('댓글 — 비로그인은 못 쓰고, 목록은 누구나 본다', async () => {
+  const post = await seedPost();
+  const anon = await routes.commentsCreate.handler(
+    req({ body: { body: '답변입니다' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(anon.status, 401);
+
+  const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
+  assert.deepStrictEqual(list.jsonBody.comments, []);
+});
+
+test('댓글 — 작성하면 목록에 뜨고 답변 수가 오른다', async () => {
+  const post = await seedPost();
+  const res = await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '공기저항 때문입니다.' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(res.jsonBody.held, false);
+
+  const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(list.jsonBody.comments.length, 1);
+  assert.strictEqual(list.jsonBody.comments[0].body, '공기저항 때문입니다.');
+  assert.strictEqual(post.answers, 1, '답변 수가 안 오르면 목록의 "답변 0" 이 거짓말이 된다');
+});
+
+test('댓글 — 빈 내용과 길이 초과는 거부한다', async () => {
+  const post = await seedPost();
+  for (const body of ['', '   ', 'ㄱ'.repeat(2001)]) {
+    const res = await routes.commentsCreate.handler(
+      req({ cookie: login(), body: { body }, params: { id: post.id } }), ctx);
+    assert.strictEqual(res.status, 400);
+  }
+});
+
+test('댓글 — 작성자 식별자는 노출되지 않는다', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변입니다' }, params: { id: post.id } }), ctx);
+  const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
+  const json = JSON.stringify(list.jsonBody);
+  assert.ok(!json.includes('discord:1') && !json.includes('authorSub'));
+});
+
+test('댓글 — 욕설은 보류되고 답변 수도 오르지 않는다', async () => {
+  const post = await seedPost();
+  const res = await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '이 병신아' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(res.jsonBody.held, true);
+
+  const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(list.jsonBody.comments.length, 0);
+  assert.strictEqual(post.answers, 0, '보류 중인 답변을 세면 "답변 1" 인데 아무것도 안 보인다');
+  assert.strictEqual(docs.find((d) => d.type === 'comment').status, 'held');
+});
+
+test('댓글 — 보류·차단된 글에는 달 수 없다', async () => {
+  const post = await seedPost();
+  for (const status of ['held', 'blocked']) {
+    post.status = status;
+    const res = await routes.commentsCreate.handler(
+      req({ cookie: login(), body: { body: '답변입니다' }, params: { id: post.id } }), ctx);
+    assert.strictEqual(res.status, 404, `${status} 인 글에 답변이 달렸다`);
+  }
+  const res = await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변입니다' }, params: { id: '없음' } }), ctx);
+  assert.strictEqual(res.status, 404);
+});
+
+test('댓글 — 다른 글의 댓글이 섞이지 않는다', async () => {
+  const a = await seedPost();
+  await routes.postsCreate.handler(req({ cookie: login(), body: { ...okPost, title: '두번째' } }), ctx);
+  const b = docs.filter((d) => d.type === 'post')[1];
+
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: 'A 의 답변' }, params: { id: a.id } }), ctx);
+
+  const listB = await routes.commentsList.handler(req({ params: { id: b.id } }), ctx);
+  assert.strictEqual(listB.jsonBody.comments.length, 0);
+});
+
+test('댓글 — 킬 스위치에 함께 막힌다', async () => {
+  const post = await seedPost();
+  process.env.LOCKDOWN = '1';
+  try {
+    const list = await routes.commentsList.handler(req({ params: { id: post.id } }), ctx);
+    const create = await routes.commentsCreate.handler(
+      req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
+    assert.deepStrictEqual([list.status, create.status], [503, 503]);
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
 });
