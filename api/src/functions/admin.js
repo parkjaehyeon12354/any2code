@@ -11,18 +11,7 @@ const { container, query, dbFail } = require('../lib/db');
    ⚠ 경로에 'admin/' 을 쓰지 말 것. Azure Functions 런타임이 자기 관리 API 용으로
    예약한 접두사라, 등록이 조용히 거부된다 — 파일은 정상 로드되는데 라우트만
    사라져서 404 가 나고 로그에도 남지 않는다. 그래서 'moderation/' 을 쓴다. */
-function requireAdmin(request) {
-  const user = session.current(request);
-  if (!user) return { error: { status: 401, jsonBody: { error: '로그인이 필요합니다.' } } };
-  // 쿠키의 role 은 안 본다. 로그인 시점 값이 14일 박제되므로, ADMIN_EMAILS 에서
-  // 뺀 사람이 만료까지 관리자로 남는다. 매 요청 현재 목록으로 판정한다.
-  if (!session.isAdmin(user.email)) {
-    // 403 이 아니라 404 로 숨기는 방법도 있지만, 관리자 화면의 존재는 이미 공개돼
-    // 있으므로 숨겨서 얻는 게 없다. 이유를 알려주는 편이 낫다.
-    return { error: { status: 403, jsonBody: { error: '관리자만 접근할 수 있습니다.' } } };
-  }
-  return { user };
-}
+const { requireAdmin } = session;
 
 /* 보류 사유를 다시 계산하지 않고 저장된 값을 쓴다. 금칙어 목록이 바뀌어도
    "왜 이 글이 걸렸는지" 는 걸릴 당시 기준으로 남아야 판단할 수 있다. */

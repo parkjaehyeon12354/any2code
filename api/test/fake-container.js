@@ -22,15 +22,15 @@ function createFake() {
           const q = spec.query;
           let out = state.docs;
 
-          if (q.includes("c.type = 'post'")) out = out.filter((d) => d.type === 'post');
-          if (q.includes("c.type = 'vote'")) out = out.filter((d) => d.type === 'vote');
-          if (q.includes("c.type = 'comment'")) out = out.filter((d) => d.type === 'comment');
-          if (q.includes("c.type IN ('post', 'comment')")) {
-            out = out.filter((d) => d.type === 'post' || d.type === 'comment');
+          /* c.<필드> = '<값>' 과 c.<필드> IN ('a', 'b') 를 일반적으로 처리한다.
+             종류를 하나씩 나열하면 새 문서 타입이 생길 때마다 여기를 잊고,
+             필터가 통째로 빠져 엉뚱한 문서가 섞인다 (실제로 그랬다). */
+          for (const [, field, value] of q.matchAll(/c\.(\w+)\s*=\s*'([^']*)'/g)) {
+            out = out.filter((d) => d[field] === value);
           }
-          if (q.includes("c.status = 'public'")) out = out.filter((d) => d.status === 'public');
-          if (q.includes("c.status IN ('held', 'blocked')")) {
-            out = out.filter((d) => d.status === 'held' || d.status === 'blocked');
+          for (const [, field, list] of q.matchAll(/c\.(\w+)\s+IN\s*\(([^)]*)\)/g)) {
+            const values = [...list.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+            out = out.filter((d) => values.includes(d[field]));
           }
           if (q.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
           if (q.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));

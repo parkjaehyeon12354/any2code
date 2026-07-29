@@ -2,6 +2,7 @@ const { app } = require('@azure/functions');
 const session = require('../lib/session');
 const { lockdown } = require('../lib/lockdown');
 const { PROVIDERS, credentials, exchangeCode, fetchProfile } = require('../lib/providers');
+const sanction = require('../lib/sanction');
 
 /** 콜백 주소.
 
@@ -110,9 +111,17 @@ app.http('me', {
     const locked = lockdown(); if (locked) return locked;
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { authenticated: false } };
+
+    // 제한 중이면 화면이 이유와 항소 경로를 안내할 수 있어야 한다.
+    // DB 가 없거나 실패해도 로그인 자체는 막지 않는다.
+    let suspended = null;
+    try { suspended = await sanction.active(user.sub); } catch { suspended = null; }
+
     return {
       jsonBody: {
         authenticated: true,
+        suspendedUntil: suspended ? suspended.until : null,
+        suspendedReason: suspended ? suspended.reason : null,
         name: user.name,
         email: user.email,
         picture: user.picture,

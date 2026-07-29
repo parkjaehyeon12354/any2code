@@ -107,4 +107,19 @@ function isAdmin(email) {
   return !!email && list.includes(email.toLowerCase());
 }
 
-module.exports = { issue, clear, current, issueState, checkState, clearState, isAdmin, COOKIE };
+/* 관리자 전용 핸들러의 첫 줄에 쓴다.
+   쿠키의 role 은 보지 않는다 — 로그인 시점 값이 14일 박제되므로,
+   ADMIN_EMAILS 에서 뺀 사람이 만료까지 관리자로 남는다. */
+function requireAdmin(request) {
+  const user = current(request);
+  if (!user) return { error: { status: 401, jsonBody: { error: '로그인이 필요합니다.' } } };
+  if (!isAdmin(user.email)) {
+    return { error: { status: 403, jsonBody: { error: '관리자만 접근할 수 있습니다.' } } };
+  }
+  return { user };
+}
+
+module.exports = {
+  issue, clear, current, issueState, checkState, clearState,
+  isAdmin, requireAdmin, COOKIE
+};
