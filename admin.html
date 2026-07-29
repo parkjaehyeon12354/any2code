@@ -487,8 +487,8 @@ mark {
 
       <p class="mock-banner">
         <span class="mark">ⓘ</span>
-        <span><strong>샘플 데이터입니다.</strong> 학생 대상 서비스라 신고 처리는
-        실제 운영에서 가장 먼저 필요해지는 기능입니다.</span>
+        <span><strong>제한을 걸면 즉시 적용됩니다.</strong> 해당 회원은 글·답변을
+        쓸 수 없게 되고, 기간이 지나면 자동으로 풀립니다. 이의가 있으면 항소로 들어옵니다.</span>
       </p>
 
       <pre class="mod-result" id="mod-result" hidden></pre>
@@ -497,7 +497,7 @@ mark {
         <div class="panel-head"><h3>접수된 신고</h3></div>
         <div class="panel-scroll">
           <table class="table">
-            <thead><tr><th scope="col">대상</th><th scope="col">사유</th><th scope="col">신고자</th><th scope="col">접속 IP</th><th scope="col">접수일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
+            <thead><tr><th scope="col">대상</th><th scope="col">내용</th><th scope="col">사유</th><th scope="col">신고자</th><th scope="col">접수일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
             <tbody id="report-body"></tbody>
           </table>
         </div>
@@ -595,20 +595,21 @@ mark {
     <div class="field-row">
       <span class="legend">추가 조치</span>
       <label class="check">
-        <input type="checkbox" id="mod-ipblock">
-        접속 IP도 함께 차단
+        <input type="checkbox" id="mod-blockcontent" checked>
+        신고된 글도 함께 차단
       </label>
-      <span class="check-note">같은 사람이 다른 계정으로 다시 들어오는 걸 막습니다.
-      공유 네트워크(학교·PC방)라면 무관한 학생까지 막힐 수 있어 신중히 쓰세요.</span>
+      <span class="check-note">글이 커뮤니티에서 즉시 사라집니다. 지워지지는 않으니
+      보류 게시물 화면에서 되돌릴 수 있습니다.</span>
     </div>
 
     <div class="field-row">
-      <label class="legend" for="mod-message">안내 메시지</label>
+      <label class="legend" for="mod-message">처리 사유 메모</label>
       <textarea id="mod-message"></textarea>
       <label class="check">
         <input type="checkbox" id="mod-send" checked>
-        처리 후 이 메시지를 대상에게 발송
+        결과 화면에 이 내용을 함께 표시
       </label>
+      <span class="check-note">발송 기능은 아직 없습니다. 판단 근거를 남겨두는 용도입니다.</span>
     </div>
   </div>
 
@@ -709,11 +710,7 @@ Session.refresh().then(function (user) {
   ];
 
   // IP 는 문서용 예약 대역(203.0.113.x, RFC 5737)만 썼다 — 실존 주소일 수 없다
-  const MOCK_REPORTS = [
-    { target: '게시글 #482', reason: '광고성 게시물',       by: 'student05@example.com', ip: '203.0.113.42', at: '2026-07-25', status: 'wait' },
-    { target: '댓글 #1173',  reason: '욕설·비방',           by: 'student02@example.com', ip: '203.0.113.17', at: '2026-07-25', status: 'wait' },
-    { target: '게시글 #470', reason: '타인 자료 무단 게시', by: 'student07@example.com', ip: '203.0.113.88', at: '2026-07-24', status: 'wait' }
-  ];
+  let REPORTS = [];   // GET /api/moderation/reports 로 채운다
 
   // 제재 대상 회원의 항소. 원 제재를 함께 들고 있어야 검토가 가능하다.
   const MOCK_APPEALS = [
@@ -772,8 +769,8 @@ Session.refresh().then(function (user) {
     '<span class="badge ' + STATUS[s].cls + '">' + esc(override || STATUS[s].text) + '</span>';
 
   // 제재 표기 — 표와 모달이 같은 문구를 쓰도록 한 곳에서 만든다
-  const sanctionText = (days, ip) =>
-    (days === 0 ? '경고' : days + '일 제한') + (ip ? ' · IP차단' : '');
+  const sanctionText = (days, blocked) =>
+    (days === 0 ? '경고' : days + '일 제한') + (blocked ? ' · 글 차단' : '');
 
   // 제한 해제일. 서버가 붙으면 서버 시각으로 계산해야 한다 (기기 시계는 못 믿는다)
   const untilDate = (days) => {
@@ -781,9 +778,12 @@ Session.refresh().then(function (user) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
   const fill = (id, rows, empty) => {
-    document.getElementById(id).innerHTML = rows.length
+    const tbody = document.getElementById(id);
+    // 표마다 열 수가 다르다. 고정값(6)을 쓰면 열이 늘어난 표에서 안내문이 어긋난다
+    const cols = tbody.closest('table').querySelectorAll('thead th').length;
+    tbody.innerHTML = rows.length
       ? rows.join('')
-      : '<tr><td colspan="6" class="empty">' + empty + '</td></tr>';
+      : '<tr><td colspan="' + cols + '" class="empty">' + empty + '</td></tr>';
   };
 
   // 개요 — 최근 가입 4명만
@@ -816,29 +816,55 @@ Session.refresh().then(function (user) {
   document.getElementById('user-search').addEventListener('input', (e) => renderUsers(e.target.value));
 
   // 개요의 대기 건수도 표와 같은 원본을 보게 한다 (숫자가 따로 놀면 신뢰를 잃는다)
+  let reportsLoading = true;
+
   function updatePendingCount() {
-    const n = MOCK_REPORTS.filter((r) => r.status === 'wait').length;
-    document.getElementById('pending-count').textContent = n;
+    const n = REPORTS.filter((r) => r.status === 'wait').length;
+    document.getElementById('pending-count').textContent = reportsLoading ? '–' : n;
     const note = document.getElementById('pending-note');
-    note.textContent = n ? '확인 필요' : '모두 처리됨';
-    note.classList.toggle('warn', n > 0);
+    note.textContent = reportsLoading ? '불러오는 중' : (n ? '확인 필요' : '모두 처리됨');
+    note.classList.toggle('warn', !reportsLoading && n > 0);
   }
 
   // 처리 후 상태가 바뀌므로 다시 그릴 수 있어야 한다
   function renderReports() {
-    fill('report-body', MOCK_REPORTS.map((r, i) =>
-      '<tr><td class="cell-name">' + esc(r.target) + '</td>' +
+    if (reportsLoading) { fill('report-body', [], '불러오는 중…'); return; }
+    fill('report-body', REPORTS.map((r) =>
+      '<tr><td class="cell-name">' + esc(r.target) +
+        '<div class="cell-sub">' + esc(r.targetAuthor || '') + '</div></td>' +
+      '<td class="cell-wrap">' + esc(clip(r.targetText)) + '</td>' +
       '<td>' + esc(r.reason) + '</td>' +
       '<td class="cell-muted">' + esc(r.by) + '</td>' +
-      '<td class="cell-muted">' + esc(r.ip) + '</td>' +
-      '<td class="cell-muted">' + r.at + '</td>' +
-      '<td>' + badge(r.status, r.applied && sanctionText(r.applied.days, r.applied.ip)) +
-      (r.applied && r.applied.days > 0
-        ? '<div class="cell-sub">' + r.applied.until + ' 해제</div>' : '') + '</td>' +
-      '<td><button type="button" class="row-action" data-report="' + i + '">' +
+      '<td class="cell-muted">' + esc(shortDate(r.createdAt)) + '</td>' +
+      '<td>' + badge(r.status, r.applied && sanctionText(r.applied.days, r.applied.blockedContent)) +
+      (r.applied && r.applied.until
+        ? '<div class="cell-sub">' + esc(shortDate(r.applied.until)) + ' 해제</div>' : '') + '</td>' +
+      '<td><button type="button" class="row-action" data-report="' + esc(r.id) + '">' +
       (r.applied ? '다시 처리' : '처리') + '</button></td></tr>'
     ), '접수된 신고가 없습니다.');
   }
+
+  /* 표에서는 길게 볼 이유가 없다 — 판단은 모달에서 전문을 보고 한다 */
+  const clip = (t) => (t || '').length > 60 ? t.slice(0, 60) + '…' : (t || '');
+
+  async function loadReports() {
+    try {
+      const res = await fetch('/api/moderation/reports', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      REPORTS = (await res.json()).reports || [];
+    } catch (e) {
+      REPORTS = [];
+      // resultBox 는 아래에서 const 로 선언된다 — 순서에 기대지 않고 직접 찾는다
+      const box = document.getElementById('mod-result');
+      box.textContent = '신고 목록을 불러오지 못했습니다: ' + e.message;
+      box.hidden = false;
+    } finally {
+      reportsLoading = false;
+      renderReports();
+      updatePendingCount();
+    }
+  }
+
   renderReports();
   updatePendingCount();
 
@@ -854,7 +880,7 @@ Session.refresh().then(function (user) {
   function renderAppeals() {
     fill('appeal-body', MOCK_APPEALS.map((a, i) =>
       '<tr><td class="cell-name">' + esc(a.who) + '</td>' +
-      '<td class="cell-muted">' + sanctionText(a.orig.days, a.orig.ip) +
+      '<td class="cell-muted">' + sanctionText(a.orig.days) +
       '<div class="cell-sub">' + esc(a.reason) + '</div></td>' +
       '<td class="cell-wrap">' + esc(a.text.split('\n')[0]) + '</td>' +
       '<td class="cell-muted">' + a.at + '</td>' +
@@ -942,7 +968,8 @@ Session.refresh().then(function (user) {
 
   renderHeld();
   updateHeldCount();
-  loadHeld();   // 관리자 확인이 끝난 뒤라 여기서 부른다
+  loadHeld();     // 관리자 확인이 끝난 뒤라 여기서 부른다
+  loadReports();
 
   document.getElementById('held-body').addEventListener('click', async function (e) {
     const btn = e.target.closest('[data-held-ok],[data-held-block],[data-held-undo]');
@@ -988,7 +1015,7 @@ Session.refresh().then(function (user) {
   const dlg = document.getElementById('mod-dialog');
   const msgBox = document.getElementById('mod-message');
   const sendBox = document.getElementById('mod-send');
-  const ipBox = document.getElementById('mod-ipblock');
+  const blockBox = document.getElementById('mod-blockcontent');
   const resultBox = document.getElementById('mod-result');
   let current = null;            // { target, reason, ip, applied? } — 신고 또는 보류 게시물
   let onApply = null;            // 확정 시 실행. 어디서 열었느냐에 따라 다르게 처리한다
@@ -1005,8 +1032,8 @@ Session.refresh().then(function (user) {
     return '안녕하세요, Ans2Quest 운영팀입니다.\n\n' +
       '회원님의 「' + current.target + '」이(가) ‘' + current.reason + '’ 사유로 신고 접수되어 검토했습니다.\n' +
       limit +
-      (ipBox.checked ? '\n접속 IP도 함께 차단되었습니다.' : '') +
-      '\n\n이의가 있으시면 이 메시지에 회신해 주세요.';
+      (blockBox.checked ? '\n신고된 글은 커뮤니티에서 가려졌습니다.' : '') +
+      '\n\n이의가 있으시면 항소를 접수해 주세요.';
   }
 
   function refreshTemplate() {
@@ -1016,11 +1043,10 @@ Session.refresh().then(function (user) {
   // 선택한 제재가 실제로 언제까지인지 즉시 보여준다 — "7일"만 보면 감이 안 온다
   function refreshEffect() {
     const d = days();
-    const ip = ipBox.checked;
+    const blocked = blockBox.checked ? ' · 신고된 글도 차단' : '';
     document.getElementById('mod-effect').innerHTML = d === 0
-      ? '<strong>경고</strong>만 기록됩니다. 이용 제한 없음.' + (ip ? ' IP는 차단됩니다.' : '')
-      : '<strong>' + d + '일 제한</strong> · <strong>' + untilDate(d) + '</strong>에 자동 해제' +
-        (ip ? ' · IP 차단 동시 적용' : '');
+      ? '<strong>경고</strong>만 기록됩니다. 이용 제한 없음.' + blocked
+      : '<strong>' + d + '일 제한</strong> · <strong>' + untilDate(d) + '</strong>에 자동 해제' + blocked;
   }
 
   const refreshAll = () => { refreshTemplate(); refreshEffect(); };
@@ -1028,7 +1054,7 @@ Session.refresh().then(function (user) {
   msgBox.addEventListener('input', function () { msgEdited = true; });
   dlg.querySelectorAll('input[name="duration"]').forEach((r) =>
     r.addEventListener('change', refreshAll));
-  ipBox.addEventListener('change', refreshAll);
+  blockBox.addEventListener('change', refreshAll);
   sendBox.addEventListener('change', function () {
     msgBox.disabled = !sendBox.checked;   // 발송 안 할 거면 입력칸도 잠근다
   });
@@ -1051,11 +1077,12 @@ Session.refresh().then(function (user) {
     prevRow.hidden = !prev;
     if (prev) {
       document.getElementById('mod-prev').textContent =
-        sanctionText(prev.days, prev.ip) + (prev.days > 0 ? ' (' + prev.until + ' 해제)' : '');
+        sanctionText(prev.days, prev.blockedContent) +
+        (prev.until ? ' (' + shortDate(prev.until) + ' 해제)' : '');
     }
 
     dlg.querySelector('input[name="duration"][value="' + (prev ? prev.days : 0) + '"]').checked = true;
-    ipBox.checked = prev ? prev.ip : false;
+    blockBox.checked = prev ? !!prev.blockedContent : true;
     sendBox.checked = true;
     msgBox.disabled = false;
     msgEdited = false;
@@ -1067,15 +1094,30 @@ Session.refresh().then(function (user) {
   document.getElementById('report-body').addEventListener('click', function (e) {
     const btn = e.target.closest('[data-report]');
     if (!btn) return;
-    const r = MOCK_REPORTS[Number(btn.dataset.report)];
-    // 신고 처리는 아직 서버가 없다 — 화면 상태만 바뀌고 새로고침하면 사라진다.
-    // 처리된 척하지 않도록 결과 문구에 명시한다.
-    openSanction(r, function (d, ip) {
+    const r = REPORTS.find((x) => x.id === btn.dataset.report);
+    if (!r) return;
+
+    openSanction(r, async function (d, blockContent) {
+      const res = await fetch('/api/moderation/reports/' + encodeURIComponent(r.id) + '/resolve', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: d, blockContent: blockContent })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '처리하지 못했습니다.');
+
       r.status = 'done';
-      r.applied = { days: d, ip: ip, until: d > 0 ? untilDate(d) : null };
+      r.applied = data.applied;
       renderReports();
       updatePendingCount();
-      return '[서버 미연결 — 저장되지 않았습니다]\n\n' + sanctionSummary(d);
+
+      // 무엇이 실제로 적용됐는지 서버 응답 기준으로 말한다
+      return (d === 0
+          ? '경고로 처리했습니다. 이용 제한은 걸지 않았습니다.'
+          : d + '일 이용 제한을 걸었습니다. ' + shortDate(data.applied.until) + ' 에 자동 해제됩니다.') +
+        (blockContent ? '\n신고된 글은 커뮤니티에서 가려졌습니다 (보류 게시물에서 되돌릴 수 있습니다).' : '') +
+        '\n\n' + sanctionSummary(d);
     });
   });
 
@@ -1091,7 +1133,7 @@ Session.refresh().then(function (user) {
       대상: current.target,
       사유: current.reason,
       제재: d === 0 ? '경고만 (이용 제한 없음)' : d + '일 이용 제한 (' + untilDate(d) + ' 해제)',
-      IP차단: ipBox.checked ? '예 (' + (current.ip || '기록 없음') + ')' : '아니오',
+      게시물차단: blockBox.checked ? '예' : '아니오',
       메시지발송: sendBox.checked ? '예' : '아니오'
     };
     return Object.entries(payload).map(([k, v]) => k + ': ' + v).join('\n') +
@@ -1111,7 +1153,7 @@ Session.refresh().then(function (user) {
     const prev = btn.textContent;
     btn.textContent = '처리 중…';
     try {
-      const msg = await onApply(d, ipBox.checked);
+      const msg = await onApply(d, blockBox.checked);
       box.textContent = msg || sanctionSummary(d);
       box.hidden = false;
       close();
@@ -1182,7 +1224,7 @@ Session.refresh().then(function (user) {
 
     document.getElementById('ap-who').textContent = apCurrent.who;
     document.getElementById('ap-orig').textContent =
-      sanctionText(apCurrent.orig.days, apCurrent.orig.ip) +
+      sanctionText(apCurrent.orig.days) +
       (apCurrent.orig.until ? ' (' + apCurrent.orig.until + ' 해제)' : '');
     document.getElementById('ap-reason').textContent = apCurrent.reason;
     document.getElementById('ap-text').textContent = apCurrent.text;
@@ -1208,7 +1250,7 @@ Session.refresh().then(function (user) {
     apResult.textContent =
       '[서버 미연결 — 저장되지 않았습니다]\n\n' +
       '신청자: ' + apCurrent.who + '\n' +
-      '원 제재: ' + sanctionText(apCurrent.orig.days, apCurrent.orig.ip) + '\n' +
+      '원 제재: ' + sanctionText(apCurrent.orig.days) + '\n' +
       '결정: ' + o.label + (o.until ? ' (' + o.until + ' 해제)' : '') + '\n' +
       '메시지발송: ' + (apSend.checked ? '예' : '아니오') +
       (apSend.checked ? '\n\n─ 발송될 메시지 ─\n' + apMsg.value : '');
