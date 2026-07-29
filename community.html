@@ -128,6 +128,28 @@
   color: var(--muted); font-size: 14px; word-break: keep-all;
 }
 
+/* ── 이용 제한 안내 ──
+   숨기지 않고 위쪽에 둔다. 왜 글이 안 써지는지 모르면 사이트가 망가진 걸로 보인다. */
+.suspended {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-md); flex-wrap: wrap;
+  margin-bottom: var(--sp-lg); padding: var(--sp-md) var(--sp-lg);
+  background: rgba(189, 59, 59, .08);
+  border: 1px solid rgba(189, 59, 59, .25);
+  border-radius: var(--rounded-lg);
+}
+.suspended strong { display: block; font-size: 14px; font-weight: 600; color: #9c3030; }
+.suspended p {
+  margin-top: 3px; font-size: 13px; line-height: 1.6; color: var(--body);
+  word-break: keep-all;
+}
+.suspended .btn { flex-shrink: 0; }
+
+.ap-note {
+  margin-top: var(--sp-sm); font-size: 12.5px; line-height: 1.6;
+  color: var(--muted); word-break: keep-all;
+}
+
 /* 진입 장벽 낮추기 — 계획서의 '한 줄 질문도 부담 없이' */
 .nudge {
   margin-top: var(--sp-lg); padding: var(--sp-md) var(--sp-lg);
@@ -305,6 +327,15 @@
 
   <p class="notice" id="notice" role="status" hidden></p>
 
+  <!-- 이용 제한 안내. 이유와 해제일을 모르면 사이트가 고장난 것처럼 보인다. -->
+  <div class="suspended" id="suspended" hidden>
+    <div>
+      <strong id="suspended-title"></strong>
+      <p id="suspended-detail"></p>
+    </div>
+    <button type="button" class="btn btn-ghost" id="appeal-open">항소하기</button>
+  </div>
+
   <div class="community-layout">
     <!-- 과목별 공간 -->
     <nav class="channels" aria-label="과목">
@@ -365,6 +396,31 @@
     <div class="modal-foot">
       <button type="button" class="btn btn-ghost" data-close>취소</button>
       <button type="submit" class="btn btn-primary" id="w-submit">올리기</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 항소 -->
+<dialog class="modal" id="appeal-modal" aria-labelledby="appeal-title">
+  <form id="appeal-form">
+    <div class="modal-head">
+      <h3 id="appeal-title">항소하기</h3>
+      <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="form-error" id="appeal-error" hidden></p>
+      <div class="field">
+        <label for="ap-text">어떤 점이 억울한지 적어주세요
+          <span class="count" id="ap-count">0 / 2000</span>
+        </label>
+        <textarea id="ap-text" maxlength="2000" required
+          placeholder="어떤 상황이었는지, 왜 오해라고 생각하시는지 구체적으로 적어주시면 판단에 도움이 됩니다."></textarea>
+      </div>
+      <p class="ap-note">접수 후에는 검토가 끝날 때까지 추가로 낼 수 없습니다. 한 번에 정리해서 적어주세요.</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" data-close>취소</button>
+      <button type="submit" class="btn btn-primary" id="ap-submit">접수</button>
     </div>
   </form>
 </dialog>
@@ -631,7 +687,73 @@
   renderPosts();
 
   // 둘 다 세션 쿠키를 알아서 싣고 나간다 — 순서를 기다릴 이유가 없다
-  Session.refresh();
+  // ── 이용 제한 안내 · 항소 ──
+  const suspended = el('suspended');
+  const apModal = el('appeal-modal');
+  const apForm = el('appeal-form');
+  const apError = el('appeal-error');
+
+  function showSuspension(user) {
+    if (!user || !user.suspendedUntil) { suspended.hidden = true; return; }
+    const when = new Date(user.suspendedUntil).toLocaleDateString('ko-KR');
+    el('suspended-title').textContent = '현재 글쓰기가 제한된 상태입니다';
+    el('suspended-detail').textContent =
+      '사유: ' + (user.suspendedReason || '운영 정책 위반') + ' · ' + when + '에 자동 해제됩니다. ' +
+      '제한 중에는 질문과 답변을 올릴 수 없습니다.';
+    suspended.hidden = false;
+  }
+
+  el('ap-text').addEventListener('input', function () {
+    el('ap-count').textContent = this.value.length + ' / 2000';
+  });
+
+  el('appeal-open').addEventListener('click', function () {
+    apError.hidden = true;
+    apModal.showModal();
+    el('ap-text').focus();
+  });
+
+  apModal.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close]') || e.target === apModal) apModal.close();
+  });
+
+  apForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const submit = el('ap-submit');
+    const text = el('ap-text').value.trim();
+    if (!text) { el('ap-text').focus(); return; }
+
+    submit.disabled = true;
+    submit.textContent = '접수 중…';
+    try {
+      const res = await fetch('/api/appeals', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 실패하면 닫지 않는다 — 닫으면 접수된 줄 알고 기다린다
+        apError.textContent = data.error || '항소를 접수하지 못했습니다.';
+        apError.hidden = false;
+        return;
+      }
+      apModal.close();
+      apForm.reset();
+      el('ap-count').textContent = '0 / 2000';
+      say(data.message || '항소가 접수됐습니다.');
+    } catch {
+      apError.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+      apError.hidden = false;
+    } finally {
+      submit.disabled = false;
+      submit.textContent = '접수';
+    }
+  });
+
+  showSuspension(Session.load());              // 캐시로 즉시
+  Session.refresh().then(showSuspension);      // 서버 확인 후 다시
   load();
 })();
 </script>

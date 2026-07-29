@@ -713,24 +713,6 @@ Session.refresh().then(function (user) {
   let REPORTS = [];   // GET /api/moderation/reports 로 채운다
 
   // 제재 대상 회원의 항소. 원 제재를 함께 들고 있어야 검토가 가능하다.
-  const MOCK_APPEALS = [
-    {
-      who: 'student04@example.com',
-      orig: { days: 7, ip: true, until: '2026-07-31' },
-      reason: '광고성 게시물',
-      at: '2026-07-25',
-      text: '해당 글은 광고가 아니라 제가 직접 만든 실험 정리본 링크였습니다.\n외부 링크가 있어서 오해가 있었던 것 같습니다. 확인 부탁드립니다.',
-      status: 'wait'
-    },
-    {
-      who: 'student02@example.com',
-      orig: { days: 3, ip: false, until: '2026-07-27' },
-      reason: '욕설·비방',
-      at: '2026-07-24',
-      text: '친구랑 장난친 댓글인데 신고가 들어간 것 같습니다. 앞으로 조심하겠습니다.',
-      status: 'wait'
-    }
-  ];
 
   // 금칙어 목록과 판정은 서버(api/src/functions/posts.js)에만 둔다.
   // 화면에서 다시 계산하면 두 목록이 갈라지고, 감지어가 실제 보류 사유와
@@ -869,27 +851,52 @@ Session.refresh().then(function (user) {
   updatePendingCount();
 
   // ── 항소 ──
+  let APPEALS = [];
+  let appealsLoading = true;
+
   function updateAppealCount() {
-    const n = MOCK_APPEALS.filter((a) => a.status === 'wait').length;
-    document.getElementById('appeal-count').textContent = n;
+    const n = APPEALS.filter((a) => a.status === 'wait').length;
+    document.getElementById('appeal-count').textContent = appealsLoading ? '–' : n;
     const note = document.getElementById('appeal-note');
-    note.textContent = n ? '확인 필요' : '모두 처리됨';
-    note.classList.toggle('warn', n > 0);
+    note.textContent = appealsLoading ? '불러오는 중' : (n ? '확인 필요' : '모두 처리됨');
+    note.classList.toggle('warn', !appealsLoading && n > 0);
   }
 
   function renderAppeals() {
-    fill('appeal-body', MOCK_APPEALS.map((a, i) =>
+    if (appealsLoading) { fill('appeal-body', [], '불러오는 중…'); return; }
+    fill('appeal-body', APPEALS.map((a) =>
       '<tr><td class="cell-name">' + esc(a.who) + '</td>' +
       '<td class="cell-muted">' + sanctionText(a.orig.days) +
       '<div class="cell-sub">' + esc(a.reason) + '</div></td>' +
       '<td class="cell-wrap">' + esc(a.text.split('\n')[0]) + '</td>' +
-      '<td class="cell-muted">' + a.at + '</td>' +
-      '<td>' + badge(a.status, a.decided && a.decided.label) +
-      (a.decided && a.decided.until ? '<div class="cell-sub">' + a.decided.until + ' 해제</div>' : '') + '</td>' +
-      '<td><button type="button" class="row-action" data-appeal="' + i + '">' +
-      (a.decided ? '다시 결정' : '검토') + '</button></td></tr>'
+      '<td class="cell-muted">' + esc(shortDate(a.createdAt)) + '</td>' +
+      '<td>' + badge(a.status, a.decision && DECISION_LABEL[a.decision.decision]) +
+      (a.decision && a.decision.days
+        ? '<div class="cell-sub">' + a.decision.days + '일로 감경</div>' : '') + '</td>' +
+      '<td><button type="button" class="row-action" data-appeal="' + esc(a.id) + '">' +
+      (a.decision ? '다시 결정' : '검토') + '</button></td></tr>'
     ), '접수된 항소가 없습니다.');
   }
+
+  const DECISION_LABEL = { denied: '기각 · 제재 유지', granted: '인용 · 즉시 해제', reduced: '감경' };
+
+  async function loadAppeals() {
+    try {
+      const res = await fetch('/api/moderation/appeals', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      APPEALS = (await res.json()).appeals || [];
+    } catch (e) {
+      APPEALS = [];
+      const box = document.getElementById('ap-result');
+      box.textContent = '항소 목록을 불러오지 못했습니다: ' + e.message;
+      box.hidden = false;
+    } finally {
+      appealsLoading = false;
+      renderAppeals();
+      updateAppealCount();
+    }
+  }
+
   renderAppeals();
   updateAppealCount();
 
@@ -970,6 +977,7 @@ Session.refresh().then(function (user) {
   updateHeldCount();
   loadHeld();     // 관리자 확인이 끝난 뒤라 여기서 부른다
   loadReports();
+  loadAppeals();
 
   document.getElementById('held-body').addEventListener('click', async function (e) {
     const btn = e.target.closest('[data-held-ok],[data-held-block],[data-held-undo]');
@@ -1220,17 +1228,18 @@ Session.refresh().then(function (user) {
   document.getElementById('appeal-body').addEventListener('click', function (e) {
     const btn = e.target.closest('[data-appeal]');
     if (!btn) return;
-    apCurrent = MOCK_APPEALS[Number(btn.dataset.appeal)];
+    apCurrent = APPEALS.find((a) => a.id === btn.dataset.appeal);
+    if (!apCurrent) return;
 
     document.getElementById('ap-who').textContent = apCurrent.who;
     document.getElementById('ap-orig').textContent =
       sanctionText(apCurrent.orig.days) +
-      (apCurrent.orig.until ? ' (' + apCurrent.orig.until + ' 해제)' : '');
+      (apCurrent.orig.until ? ' (' + shortDate(apCurrent.orig.until) + ' 해제)' : '');
     document.getElementById('ap-reason').textContent = apCurrent.reason;
     document.getElementById('ap-text').textContent = apCurrent.text;
 
-    const prev = apCurrent.decided;
-    apDlg.querySelector('input[name="decision"][value="' + (prev ? prev.type : 'denied') + '"]').checked = true;
+    const prev = apCurrent.decision;
+    apDlg.querySelector('input[name="decision"][value="' + (prev ? prev.decision : 'denied') + '"]').checked = true;
     apSend.checked = true;
     apMsg.disabled = false;
     apMsgEdited = false;
@@ -1244,26 +1253,55 @@ Session.refresh().then(function (user) {
   document.getElementById('ap-cancel').addEventListener('click', apClose);
   apDlg.addEventListener('click', function (e) { if (e.target === apDlg) apClose(); });
 
-  document.getElementById('ap-confirm').addEventListener('click', function () {
+  document.getElementById('ap-confirm').addEventListener('click', async function () {
     const o = outcome();
-    // ⚠ 저장되지 않는다. 서버가 붙으면 POST /api/moderation/appeals/{id}/decide 를 호출한다.
-    apResult.textContent =
-      '[서버 미연결 — 저장되지 않았습니다]\n\n' +
-      '신청자: ' + apCurrent.who + '\n' +
-      '원 제재: ' + sanctionText(apCurrent.orig.days) + '\n' +
-      '결정: ' + o.label + (o.until ? ' (' + o.until + ' 해제)' : '') + '\n' +
-      '메시지발송: ' + (apSend.checked ? '예' : '아니오') +
-      (apSend.checked ? '\n\n─ 발송될 메시지 ─\n' + apMsg.value : '');
-    apResult.hidden = false;
+    const d = decision();
+    const btn = this;
+    const prev = btn.textContent;
 
-    // 화면 상태만 갱신 (신고 처리와 동일 — 새로고침하면 사라진다)
-    apCurrent.status = decision();
-    apCurrent.decided = { type: decision(), label: o.label, until: o.until };
-    renderAppeals();
-    updateAppealCount();
+    btn.disabled = true;
+    btn.textContent = '처리 중…';
+    try {
+      const res = await fetch('/api/moderation/appeals/' + encodeURIComponent(apCurrent.id) + '/decide', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        // 감경일 때만 일수를 보낸다. 서버는 정수만 받는다 (null 이 0 으로 새면
+        // "값을 안 보냄" 과 구분되지 않는다)
+        body: JSON.stringify(d === 'reduced' ? { decision: d, days: o.days } : { decision: d })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 실패하면 모달을 닫지 않는다 — 닫으면 처리된 줄 안다
+        apResult.textContent = '처리하지 못했습니다: ' + (data.error || res.status);
+        apResult.hidden = false;
+        return;
+      }
 
-    apClose();
-    apResult.scrollIntoView({ block: 'nearest' });
+      apCurrent.status = d;
+      apCurrent.decision = { decision: d, days: data.days };
+      renderAppeals();
+      updateAppealCount();
+
+      apResult.textContent =
+        '신청자: ' + apCurrent.who + '\n' +
+        '원 제재: ' + sanctionText(apCurrent.orig.days) + '\n' +
+        '결정: ' + o.label + '\n' +
+        (d === 'granted' ? '제재가 즉시 해제되어 다시 글을 쓸 수 있습니다.\n'
+          : d === 'reduced' ? '제재가 ' + data.days + '일로 다시 계산되었습니다.\n'
+          : '제재가 그대로 유지됩니다.\n') +
+        '\n─ 메모 ─\n' + apMsg.value +
+        '\n\n[메시지 발송 기능은 아직 없습니다]';
+      apResult.hidden = false;
+      apClose();
+      apResult.scrollIntoView({ block: 'nearest' });
+    } catch {
+      apResult.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+      apResult.hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = prev;
+    }
   });
 
   // ── 섹션 전환 ──
