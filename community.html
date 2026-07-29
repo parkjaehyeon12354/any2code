@@ -47,6 +47,7 @@
 }
 .channel {
   display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 44px;
   padding: 9px 12px; border: none; background: none; cursor: pointer;
   border-radius: var(--rounded-md);
   font-family: var(--font-body); font-size: 14px; font-weight: 500;
@@ -63,6 +64,7 @@
 /* ── 정렬 탭 ── */
 .sorts { display: flex; gap: 4px; margin-bottom: var(--sp-md); flex-wrap: wrap; }
 .sort {
+  min-height: 44px;
   padding: 8px 14px; border: none; background: none; cursor: pointer;
   border-radius: var(--rounded-pill);
   font-family: var(--font-body); font-size: 13.5px; font-weight: 500; color: var(--muted);
@@ -85,8 +87,10 @@
 
 /* 추천 — 계획서의 '좋은 답변이 상위 노출' */
 .vote { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+/* 44×44 — 추천과 비추천이 세로로 붙어 있어서 작으면 잘못 누른다.
+   보이는 아이콘은 16px 그대로고 눌리는 면적만 넓힌다. */
 .vote button {
-  width: 32px; height: 28px; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
   border: none; background: none; cursor: pointer; border-radius: var(--rounded-md);
   color: var(--muted-soft); transition: background .15s, color .15s;
 }
@@ -135,8 +139,17 @@
 .nudge strong { color: var(--ink); font-weight: 600; }
 
 /* ── 펼친 글: 본문 + 답변 ── */
-.post-title { cursor: pointer; }
+/* 제목은 펼치기 버튼이기도 하다. 글자 크기는 그대로 두고 위아래 여백으로
+   눌리는 높이만 44px 로 키운다 — 음수 마진으로 보이는 위치는 유지한다. */
+.post-title {
+  cursor: pointer;
+  padding: 10px 0; margin-top: -10px; margin-bottom: -6px;
+}
 .post-title:hover { color: var(--primary); }
+.post-title:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+  border-radius: var(--rounded-md);
+}
 .post-body {
   margin-top: var(--sp-sm); padding-top: var(--sp-sm);
   border-top: 1px solid var(--hairline);

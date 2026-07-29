@@ -285,15 +285,19 @@ a { color: inherit; text-decoration: none; }
 
 .hamburger {
   display: none;
+  align-items: center;
+  justify-content: center;
+  /* 모바일 전용 버튼이라 44×44 를 지킨다 (아이콘은 24px 그대로) */
+  width: 44px;
+  height: 44px;
   background: none;
   border: none;
   cursor: pointer;
   margin-left: auto;
-  padding: 4px;
+  margin-right: -10px;   /* 넓힌 만큼 오른쪽 정렬이 밀리지 않게 */
 }
 .hamburger svg { width: 24px; height: 24px; }
 
-/* 서버 미연결 안내 — 저장되지 않는 동작임을 명시할 때 */
 /* 페이지 상단 알림 한 줄 (보류 안내, 오류 등) */
 .notice {
   margin-bottom: var(--sp-lg);
