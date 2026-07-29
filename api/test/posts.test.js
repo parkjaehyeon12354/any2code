@@ -455,3 +455,25 @@ test('글 하나 — 킬 스위치에 막힌다', async () => {
     delete process.env.LOCKDOWN;
   }
 });
+
+test('mine 플래그 — 작성자 식별자를 노출하지 않고 자기 글을 구분한다', async () => {
+  state.docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+  const post = state.docs.find((d) => d.type === 'post');
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '내 답변' }, params: { id: post.id } }), ctx);
+
+  const asAuthor = await routes.postsGet.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
+  assert.strictEqual(asAuthor.jsonBody.post.mine, true);
+
+  const asOther = await routes.postsGet.handler(
+    req({ cookie: login({ sub: 'discord:9' }), params: { id: post.id } }), ctx);
+  assert.strictEqual(asOther.jsonBody.post.mine, false);
+
+  const anon = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(anon.jsonBody.post.mine, false, '비로그인에게 mine=true 가 가면 안 된다');
+
+  const cAuthor = await routes.commentsList.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
+  assert.strictEqual(cAuthor.jsonBody.comments[0].mine, true);
+  assert.ok(!JSON.stringify(cAuthor.jsonBody).includes('discord:1'), 'sub 는 여전히 안 나간다');
+});

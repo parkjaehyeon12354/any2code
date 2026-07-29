@@ -116,6 +116,13 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface-soft);
 }
 
+/* 모달 안의 오류 한 줄 — 문제가 생긴 폼 바로 위에 둔다 */
+.form-error {
+  margin-bottom: var(--sp-md); padding: 10px 12px;
+  background: rgba(189, 59, 59, .1); border-radius: var(--rounded-md);
+  font-size: 13px; line-height: 1.5; color: #9c3030; word-break: keep-all;
+}
+
 /* ── Top Nav ── */
 .top-nav {
   position: sticky;

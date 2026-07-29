@@ -44,8 +44,9 @@ const tooBig = (request) => Number(request.headers.get('content-length') || 0) >
     글이 100개일 때 응답이 그만큼 커지는데, 화면은 두 줄만 보여준다. */
 const EXCERPT_LEN = 200;
 
-const publicPost = (p, full = false) => ({
+const publicPost = (p, full = false, viewerSub = null) => ({
   id: p.id,
+  mine: !!viewerSub && p.authorSub === viewerSub,
   subject: p.subject,
   title: p.title,
   author: p.authorName,
@@ -132,7 +133,7 @@ app.http('postsGet', {
       }
 
       return {
-        jsonBody: { post: publicPost(post, true), myVote },
+        jsonBody: { post: publicPost(post, true, user && user.sub), myVote },
         headers: { 'Cache-Control': 'no-store' }
       };
     } catch (e) {
@@ -286,8 +287,9 @@ app.http('postsVote', {
 /* ── 댓글 ──
    파티션 키가 글 id 라 한 글의 댓글은 한 파티션에서 한 번에 읽힌다. */
 
-const publicComment = (c) => ({
+const publicComment = (c, viewerSub = null) => ({
   id: c.id,
+  mine: !!viewerSub && c.authorSub === viewerSub,
   body: c.body,
   author: c.authorName,
   createdAt: c.createdAt
@@ -306,7 +308,11 @@ app.http('commentsList', {
         query: "SELECT * FROM c WHERE c.type = 'comment' AND c.pk = @p AND c.status = 'public' ORDER BY c.createdAt ASC",
         parameters: [{ name: '@p', value: postId }]
       });
-      return { jsonBody: { comments: rows.map(publicComment) }, headers: { 'Cache-Control': 'no-store' } };
+      const viewer = session.current(request);
+      return {
+        jsonBody: { comments: rows.map((c) => publicComment(c, viewer && viewer.sub)) },
+        headers: { 'Cache-Control': 'no-store' }
+      };
     } catch (e) {
       context.error('댓글 조회 실패:', e.message);
       return dbFail(e, '댓글을 불러오지 못했습니다.');

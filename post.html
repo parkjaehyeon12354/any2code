@@ -97,6 +97,35 @@
 }
 .answer-form .hint { font-size: 12.5px; color: var(--muted); }
 
+/* ── 신고 ──
+   눈에 띄되 먼저 눌러보고 싶지는 않게. 잘못 눌러도 모달에서 취소할 수 있다. */
+.report {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 44px; padding: 0 2px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 12.5px; color: var(--muted-soft);
+}
+.report:hover { color: var(--error); }
+.report svg { width: 13px; height: 13px; }
+.report-row { margin-top: var(--sp-xs); }
+
+.reasons { display: flex; flex-direction: column; gap: 2px; }
+.reasons label {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 0 10px;
+  border-radius: var(--rounded-md); cursor: pointer;
+  font-size: 14px; color: var(--body);
+}
+.reasons label:hover { background: var(--surface-soft); }
+.reasons input { width: 17px; height: 17px; accent-color: var(--primary); flex-shrink: 0; }
+.report-target {
+  margin-bottom: var(--sp-md); padding: 10px 12px;
+  background: var(--surface-soft); border-radius: var(--rounded-md);
+  font-size: 13px; line-height: 1.55; color: var(--muted);
+  word-break: keep-all;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
 .state {
   padding: var(--sp-section) var(--sp-lg); text-align: center;
   border: 1px dashed var(--hairline); border-radius: var(--rounded-lg);
@@ -248,7 +277,30 @@
   </div>
 </main>
 
-
+<!-- 신고 (.modal 뼈대는 styles.css) -->
+<dialog class="modal" id="report-modal" aria-labelledby="report-title">
+  <form id="report-form">
+    <div class="modal-head">
+      <h3 id="report-title">신고하기</h3>
+      <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="form-error" id="report-error" hidden></p>
+      <p class="report-target" id="report-target"></p>
+      <div class="reasons" role="radiogroup" aria-labelledby="report-title">
+        <label><input type="radio" name="reason" value="abuse" checked> 욕설·비방</label>
+        <label><input type="radio" name="reason" value="spam"> 광고성 게시물</label>
+        <label><input type="radio" name="reason" value="copyright"> 타인 자료 무단 게시</label>
+        <label><input type="radio" name="reason" value="wrong"> 허위·오답 유도</label>
+        <label><input type="radio" name="reason" value="etc"> 기타</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" data-close>취소</button>
+      <button type="submit" class="btn btn-primary" id="report-submit">신고</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="session.js"></script>
 <script src="nav-user.js"></script>
@@ -294,6 +346,16 @@
     '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="' + path +
     '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
 
+  /* 자기 글에는 안 붙인다 — 서버가 어차피 거절하므로 반드시 실패할 버튼이 된다.
+     비로그인에게도 안 붙인다 (누르면 로그인으로 튕기기만 한다). */
+  function reportBtn(targetId, mine) {
+    if (mine || !Session.load()) return '';
+    return '<div class="report-row">' +
+      '<button type="button" class="report" data-report="' + esc(targetId) + '">' +
+      '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 2v12M3 3h9l-2 3 2 3H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '신고</button></div>';
+  }
+
   function answersHtml() {
     if (comments === null) return '<p class="answer-empty">답변을 불러오는 중…</p>';
     if (!comments.length) return '<p class="answer-empty">아직 답변이 없습니다. 아는 만큼만 적어주셔도 도움이 됩니다.</p>';
@@ -302,6 +364,7 @@
         '<div class="answer-meta"><span class="who">' + esc(c.author) + '</span>' +
         '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) + '</div>' +
         '<div class="answer-body">' + esc(c.body) + '</div>' +
+        reportBtn(c.id, c.mine) +
       '</div>';
     }).join('');
   }
@@ -326,6 +389,7 @@
         '</div>' +
       '</div>' +
       '<div class="thread-body">' + esc(post.body) + '</div>' +
+      reportBtn(post.id, post.mine) +
       '<section class="answers">' +
         '<h2>답변 ' + post.answers + '</h2>' +
         answersHtml() +
@@ -405,6 +469,60 @@
     } finally {
       submit.disabled = false;
       submit.textContent = '답변 올리기';
+    }
+  });
+
+  // ── 신고 ──
+  const reportModal = el('report-modal');
+  const reportForm = el('report-form');
+  const reportError = el('report-error');
+  let reportTargetId = null;
+
+  box.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-report]');
+    if (!b) return;
+    reportTargetId = b.dataset.report;
+    reportError.hidden = true;
+    // 무엇을 신고하는지 보여준다 — 답변이 여러 개면 어느 것인지 헷갈린다
+    const answer = (comments || []).find(function (c) { return c.id === reportTargetId; });
+    el('report-target').textContent = answer ? answer.body : post.body;
+    reportModal.showModal();
+  });
+
+  reportModal.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close]') || e.target === reportModal) reportModal.close();
+  });
+
+  reportForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const submit = el('report-submit');
+    const reason = reportForm.querySelector('input[name=reason]:checked');
+    if (!reason) return;
+
+    submit.disabled = true;
+    submit.textContent = '접수 중…';
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId: reportTargetId, reason: reason.value })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        // 모달을 닫지 않는다 — 닫으면 실패한 줄 모르고 넘어간다
+        reportError.textContent = data.error || '신고를 접수하지 못했습니다.';
+        reportError.hidden = false;
+        return;
+      }
+      reportModal.close();
+      say(data.message || '신고가 접수됐습니다.');
+    } catch {
+      reportError.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+      reportError.hidden = false;
+    } finally {
+      submit.disabled = false;
+      submit.textContent = '신고';
     }
   });
 
