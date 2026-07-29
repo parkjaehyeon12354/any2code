@@ -25,6 +25,10 @@
       "rewrite": "/community.html"
     },
     {
+      "route": "/guide",
+      "rewrite": "/guide.html"
+    },
+    {
       "route": "/login",
       "rewrite": "/login.html"
     },
