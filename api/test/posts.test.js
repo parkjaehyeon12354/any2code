@@ -252,6 +252,33 @@ test('본문 상한보다 훨씬 큰 요청은 파싱 전에 413', async () => {
   assert.strictEqual(res.status, 413);
 });
 
+test('보류·차단된 글에는 투표할 수 없다 — 목록에서 가리는 것만으로는 차단이 아니다', async () => {
+  docs = [];
+  // 욕설이 섞인 글은 보류로 저장된다
+  await routes.postsCreate.handler(
+    req({ cookie: login(), body: { ...okPost, body: '이 병신 같은 실험' } }), ctx);
+  const post = docs.find((d) => d.type === 'post');
+  assert.strictEqual(post.status, 'held');
+
+  const held = await routes.postsVote.handler(
+    req({ cookie: login(), body: { dir: 1 }, params: { id: post.id } }), ctx);
+  assert.strictEqual(held.status, 404, 'id 를 아는 사람이 계속 투표할 수 있으면 안 된다');
+  assert.strictEqual(post.score, 0, '거부됐는데 점수가 움직이면 안 된다');
+  assert.strictEqual(docs.filter((d) => d.type === 'vote').length, 0);
+
+  // 차단 상태도 동일
+  post.status = 'blocked';
+  const blocked = await routes.postsVote.handler(
+    req({ cookie: login(), body: { dir: 1 }, params: { id: post.id } }), ctx);
+  assert.strictEqual(blocked.status, 404);
+
+  // 공개되면 다시 투표할 수 있다 — 오탐 복구 후에는 정상 동작해야 한다
+  post.status = 'public';
+  const ok = await routes.postsVote.handler(
+    req({ cookie: login(), body: { dir: 1 }, params: { id: post.id } }), ctx);
+  assert.strictEqual(ok.jsonBody.score, 1);
+});
+
 test('없는 글에 투표하면 404', async () => {
   docs = [];
   const res = await routes.postsVote.handler(

@@ -200,6 +200,10 @@ app.http('postsVote', {
         parameters: [{ name: '@id', value: postId }]
       }))[0];
       if (!post) return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      // 목록에서 가리는 것만으로는 차단이 아니다. id 를 아는 사람은 계속
+      // 투표할 수 있고, 나중에 오탐으로 공개하면 조작된 점수를 달고 나타난다.
+      // 없는 글과 같은 404 를 준다 — 상태를 알려주면 존재가 드러난다.
+      if (post.status !== 'public') return { status: 404, jsonBody: { error: '없는 글입니다.' } };
 
       let prev = 0;
       try {
