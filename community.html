@@ -100,10 +100,9 @@
 .vote .score { font-size: 14px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 .post-main { min-width: 0; }
-.post-title {
-  font-size: 16px; font-weight: 500; line-height: 1.45;
-  color: var(--ink); word-break: keep-all; margin-bottom: 4px;
-}
+.post-title { font-size: 16px; font-weight: 500; line-height: 1.45; margin-bottom: 4px; }
+.post-title a { color: var(--ink); word-break: keep-all; display: inline-block; padding: 3px 0; }
+.post-title a:hover { color: var(--primary); }
 .post-excerpt {
   font-size: 13.5px; line-height: 1.6; color: var(--muted);
   word-break: keep-all; margin-bottom: 8px;
@@ -137,66 +136,6 @@
 }
 .nudge strong { color: var(--ink); font-weight: 600; }
 
-/* ── 펼친 글: 본문 + 답변 ── */
-/* 제목은 펼치기 버튼이기도 하다. 글자 크기는 그대로 두고 위아래 여백으로
-   눌리는 높이만 44px 로 키운다 — 음수 마진으로 보이는 위치는 유지한다. */
-.post-title {
-  cursor: pointer;
-  min-height: 44px; display: flex; align-items: center;
-  padding: 10px 0; margin-top: -10px; margin-bottom: -6px;
-}
-.post-title:hover { color: var(--primary); }
-.post-title:focus-visible {
-  outline: 2px solid var(--primary); outline-offset: 2px;
-  border-radius: var(--rounded-md);
-}
-.post-body {
-  margin-top: var(--sp-sm); padding-top: var(--sp-sm);
-  border-top: 1px solid var(--hairline);
-  font-size: 14.5px; line-height: 1.72; color: var(--body);
-  white-space: pre-wrap; word-break: keep-all;
-}
-.answers { margin-top: var(--sp-md); }
-.answers h4 {
-  margin-bottom: var(--sp-sm);
-  font-size: 12.5px; font-weight: 600; color: var(--muted);
-  letter-spacing: .02em;
-}
-.answer {
-  padding: var(--sp-sm) 0;
-  border-top: 1px solid var(--hairline);
-}
-/* 누가 언제 썼는지를 먼저 읽고 본문으로 내려간다 — 답변이 여러 개일 때
-   글쓴이가 바뀌는 지점이 눈에 바로 들어온다 */
-.answer-meta {
-  margin-bottom: 5px;
-  font-size: 12.5px; color: var(--muted);
-}
-.answer-meta .who { font-weight: 600; color: var(--ink); }
-.answer-meta .sep { margin: 0 5px; color: var(--muted-soft); }
-.answer-body {
-  font-size: 14px; line-height: 1.7; color: var(--body);
-  white-space: pre-wrap; word-break: keep-all;
-}
-.answer-empty {
-  padding: var(--sp-sm) 0; border-top: 1px solid var(--hairline);
-  font-size: 13.5px; color: var(--muted); word-break: keep-all;
-}
-.answer-form { margin-top: var(--sp-sm); }
-.answer-form textarea {
-  width: 100%; min-height: 84px; padding: 10px 12px; resize: vertical;
-  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
-  color: var(--body); background: #fff;
-  border: 1px solid var(--hairline); border-radius: var(--rounded-md);
-}
-.answer-form textarea:focus-visible {
-  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
-}
-.answer-form .row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--sp-sm); margin-top: 6px;
-}
-.answer-form .hint { font-size: 12px; color: var(--muted-soft); }
 
 /* ── 글쓰기 폼 (.modal 뼈대는 styles.css) ── */
 .field { margin-bottom: var(--sp-md); }
@@ -450,8 +389,6 @@
 
   let POSTS = [];           // GET /api/posts 로 채운다
   let votes = {};           // 내 투표 상태. 서버가 함께 내려준다
-  let expanded = null;      // 펼쳐진 글 id (하나만)
-  const comments = {};      // 글 id → 답변 배열. 펼칠 때 한 번만 받는다
 
   const esc = escapeHtml;   // session.js 제공
   let channel = 'all';
@@ -467,9 +404,6 @@
   }
   function hush() { notice.hidden = true; }
 
-  /* 접힌 목록에 보여줄 요약. 서버는 본문만 주고 자르는 건 화면에서 한다 —
-     펼쳤을 때 잘린 텍스트를 본문 자리에 보여주는 사고를 막는다. */
-  const excerpt = (s) => (s || '').length > 200 ? s.slice(0, 200) + '…' : (s || '');
 
   /* 작성 시각을 상대 표현으로. 서버는 ISO 문자열만 주고 판단은 화면에서 한다 —
      "3분 전"을 서버가 계산해 캐시되면 시간이 멈춘 것처럼 보인다. */
@@ -532,7 +466,7 @@
         'aria-pressed="' + (v === d) + '" aria-label="' + (d > 0 ? '추천' : '비추천') + '">' +
         '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="' + dir +
         '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
-      const open = expanded === p.id;
+      // 제목은 글 화면으로 가는 링크다 — 주소가 생겨야 공유·북마크·검색이 된다
       return '<article class="post">' +
         '<div class="vote">' +
           arrow('M3 10l5-5 5 5', 1) +
@@ -540,9 +474,9 @@
           arrow('M3 6l5 5 5-5', -1) +
         '</div>' +
         '<div class="post-main">' +
-          '<h3 class="post-title" data-open="' + esc(p.id) + '" role="button" tabindex="0" ' +
-            'aria-expanded="' + open + '">' + esc(p.title) + '</h3>' +
-          (open ? '' : '<p class="post-excerpt">' + esc(excerpt(p.body)) + '</p>') +
+          '<h3 class="post-title"><a href="post.html?id=' + encodeURIComponent(p.id) + '">' +
+            esc(p.title) + '</a></h3>' +
+          '<p class="post-excerpt">' + esc(p.excerpt) + '</p>' +
           '<div class="post-meta">' +
             '<span class="subject"><span class="dot" style="background:' + s.color + '"></span>' + esc(s.name) + '</span>' +
             '<span class="sep" aria-hidden="true">·</span><span>' + esc(p.author) + '</span>' +
@@ -550,56 +484,11 @@
             '<span class="sep" aria-hidden="true">·</span><span>답변 ' + p.answers + '</span>' +
             (p.answers === 0 ? '<span class="tag tag-open">답변 기다리는 중</span>' : '') +
           '</div>' +
-          (open ? detailHtml(p) : '') +
         '</div>' +
       '</article>';
     }).join('');
   }
 
-  /* 펼친 글의 본문 + 답변. 답변은 열 때 따로 받아오므로 아직 없으면 로딩 표시. */
-  function detailHtml(p) {
-    const list = comments[p.id];
-    let answers;
-    if (!list) {
-      answers = '<p class="answer-empty">답변을 불러오는 중…</p>';
-    } else if (!list.length) {
-      answers = '<p class="answer-empty">아직 답변이 없습니다. 아는 만큼만 적어주셔도 도움이 됩니다.</p>';
-    } else {
-      answers = list.map(c =>
-        '<div class="answer">' +
-          '<div class="answer-meta"><span class="who">' + esc(c.author) + '</span>' +
-          '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) + '</div>' +
-          '<div class="answer-body">' + esc(c.body) + '</div>' +
-        '</div>').join('');
-    }
-
-    return '<div class="post-body">' + esc(p.body) + '</div>' +
-      '<div class="answers">' +
-        '<h4>답변 ' + p.answers + '</h4>' + answers +
-        '<form class="answer-form" data-answer-form="' + esc(p.id) + '">' +
-          '<textarea placeholder="아는 만큼만 적어주셔도 됩니다. 왜 그런지까지 적으면 더 좋아요." ' +
-            'maxlength="2000" aria-label="답변 내용"></textarea>' +
-          '<div class="row">' +
-            '<span class="hint">' + (Session.load() ? '' : '답변하려면 로그인이 필요합니다.') + '</span>' +
-            '<button type="submit" class="btn btn-primary">답변 올리기</button>' +
-          '</div>' +
-        '</form>' +
-      '</div>';
-  }
-
-  /** 글을 펼치고 답변을 받아온다. 이미 받아둔 건 다시 받지 않는다. */
-  async function openPost(id) {
-    expanded = expanded === id ? null : id;
-    renderPosts();
-    if (!expanded || comments[id]) return;
-    try {
-      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments', { credentials: 'same-origin' });
-      comments[id] = res.ok ? (await res.json()).comments || [] : [];
-    } catch {
-      comments[id] = [];
-    }
-    if (expanded === id) renderPosts();
-  }
 
   // ── 이벤트 ──
   el('channels').addEventListener('click', function (e) {
@@ -618,61 +507,6 @@
     renderPosts();
   });
 
-  // 제목 클릭 = 펼치기/접기. 키보드로도 되어야 한다 (role="button" 이므로)
-  el('posts').addEventListener('click', function (e) {
-    const t = e.target.closest('[data-open]');
-    if (t) openPost(t.dataset.open);
-  });
-  el('posts').addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const t = e.target.closest('[data-open]');
-    if (!t) return;
-    e.preventDefault();
-    openPost(t.dataset.open);
-  });
-
-  // 답변 작성
-  el('posts').addEventListener('submit', async function (e) {
-    const form = e.target.closest('[data-answer-form]');
-    if (!form) return;
-    e.preventDefault();
-
-    if (!Session.load()) { window.location.href = 'login.html'; return; }
-
-    const id = form.dataset.answerForm;
-    const ta = form.querySelector('textarea');
-    const submit = form.querySelector('button[type=submit]');
-    const text = ta.value.trim();
-    if (!text) { ta.focus(); return; }
-
-    submit.disabled = true;
-    submit.textContent = '올리는 중…';
-    try {
-      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: text })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { say(data.error || '저장하지 못했습니다.'); return; }
-
-      if (data.held) {
-        say(data.message);          // 보류된 답변은 목록에 없다 — 사라진 걸로 오해하지 않게
-      } else {
-        hush();
-        (comments[id] = comments[id] || []).push(data.comment);
-        const p = POSTS.find(x => x.id === id);
-        if (p) p.answers += 1;
-      }
-      renderPosts();
-    } catch {
-      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
-    } finally {
-      submit.disabled = false;
-      submit.textContent = '답변 올리기';
-    }
-  });
 
   el('posts').addEventListener('click', async function (e) {
     const b = e.target.closest('[data-vote]');

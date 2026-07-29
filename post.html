@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Ans2Quest 커뮤니티 — 과학 질문과 답변">
+<title>질문 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 글 하나를 읽는 화면. 목록보다 본문 폭을 좁혀 읽기 편하게 한다.
+   네비/푸터 마크업은 community.html 과 동일하다 (이 프로젝트의 기존 방식). */
+.thread { padding: var(--sp-lg) 0 var(--sp-section); }
+.thread-inner { max-width: 740px; }
+
+/* 목록으로 돌아가는 길을 항상 열어둔다 — 링크로 바로 들어온 사람도 있다 */
+.back {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; margin-bottom: var(--sp-xs);
+  font-size: 13.5px; font-weight: 500; color: var(--muted);
+}
+.back:hover { color: var(--primary); }
+.back svg { width: 15px; height: 15px; }
+
+.thread-head { display: grid; grid-template-columns: 52px 1fr; gap: var(--sp-md); }
+.thread h1 {
+  font-family: var(--font-display); font-size: 27px; font-weight: 700;
+  line-height: 1.35; color: var(--ink); word-break: keep-all;
+  margin-bottom: var(--sp-xs);
+}
+.thread-meta {
+  display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap;
+  font-size: 13px; color: var(--muted);
+}
+.thread-meta .subject { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--body); }
+.thread-meta .sep { color: var(--muted-soft); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.thread-body {
+  margin-top: var(--sp-lg); padding-top: var(--sp-lg);
+  border-top: 1px solid var(--hairline);
+  font-size: 15.5px; line-height: 1.8; color: var(--body);
+  white-space: pre-wrap; word-break: keep-all;
+}
+
+/* 추천 — 목록과 같은 44×44 규칙 */
+.vote { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.vote button {
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; border-radius: var(--rounded-md);
+  color: var(--muted-soft); transition: background .15s, color .15s;
+}
+.vote button:hover { background: var(--surface-soft); color: var(--ink); }
+.vote button[aria-pressed="true"] { color: var(--primary-active); }
+.vote button svg { width: 16px; height: 16px; }
+.vote .score { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ── 답변 ── */
+.answers { margin-top: var(--sp-section); }
+.answers h2 {
+  font-size: 15px; font-weight: 600; color: var(--ink);
+  padding-bottom: var(--sp-sm); border-bottom: 1px solid var(--hairline);
+}
+.answer { padding: var(--sp-md) 0; border-bottom: 1px solid var(--hairline); }
+.answer-meta { margin-bottom: 6px; font-size: 12.5px; color: var(--muted); }
+.answer-meta .who { font-weight: 600; color: var(--ink); }
+.answer-meta .sep { margin: 0 5px; color: var(--muted-soft); }
+.answer-body {
+  font-size: 14.5px; line-height: 1.75; color: var(--body);
+  white-space: pre-wrap; word-break: keep-all;
+}
+.answer-empty {
+  padding: var(--sp-lg) 0; border-bottom: 1px solid var(--hairline);
+  font-size: 14px; color: var(--muted); word-break: keep-all;
+}
+
+.answer-form { margin-top: var(--sp-lg); }
+.answer-form label {
+  display: block; margin-bottom: 6px;
+  font-size: 13px; font-weight: 600; color: var(--ink);
+}
+.answer-form textarea {
+  width: 100%; min-height: 120px; padding: 11px 13px; resize: vertical;
+  font-family: var(--font-body); font-size: 14.5px; line-height: 1.7;
+  color: var(--body); background: #fff;
+  border: 1px solid var(--hairline); border-radius: var(--rounded-md);
+}
+.answer-form textarea:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
+}
+.answer-form .row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-sm); margin-top: var(--sp-sm);
+}
+.answer-form .hint { font-size: 12.5px; color: var(--muted); }
+
+.state {
+  padding: var(--sp-section) var(--sp-lg); text-align: center;
+  border: 1px dashed var(--hairline); border-radius: var(--rounded-lg);
+  color: var(--muted); font-size: 14.5px; line-height: 1.9; word-break: keep-all;
+}
+.state a { color: var(--primary); font-weight: 500; }
+
+@media (max-width: 480px) {
+  .thread h1 { font-size: 22px; }
+  .thread-head { grid-template-columns: 44px 1fr; gap: var(--sp-sm); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">카테고리 1</p>
+            <a href="#">미정</a><a href="#">미정</a><a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">카테고리 2</p>
+            <a href="#">미정</a><a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">카테고리 1</p>
+            <a href="#">미정</a><a href="#">미정</a><a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">카테고리 2</p>
+            <a href="#">미정</a><a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">카테고리 1</p>
+            <a href="#">미정</a><a href="#">미정</a><a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">카테고리 2</p>
+            <a href="#">미정</a><a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">카테고리 1</p>
+            <a href="#">미정</a><a href="#">미정</a><a href="#">미정</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">카테고리 2</p>
+            <a href="#">미정</a><a href="#">미정</a>
+          </div>
+        </div>
+      </li>
+      <li class="active"><a href="community.html">커뮤니티</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a><a href="#">가설 설정 가이드</a><a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a><a href="#">보고서 템플릿</a><a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="#">가이드</a></li>
+    </ul>
+
+    <div class="nav-cta" id="nav-cta">
+      <a href="login.html">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── Mobile Menu ── -->
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="#">물리학</a>
+    <a href="#">화학</a>
+    <a href="#">생명과학</a>
+    <a href="#">지구과학</a>
+    <a href="community.html">커뮤니티</a>
+    <a href="#">심화 탐구</a>
+    <a href="#">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="login.html" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="thread">
+  <div class="container thread-inner">
+    <a href="community.html" class="back">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      커뮤니티로
+    </a>
+
+    <p class="notice" id="notice" role="status" hidden></p>
+
+    <article id="thread">
+      <p class="state">불러오는 중…</p>
+    </article>
+  </div>
+</main>
+
+
+
+<script src="session.js"></script>
+<script src="nav-user.js"></script>
+<script src="nav-dropdown.js"></script>
+<script>
+(function () {
+  const SUBJECTS = {
+    physics: { name: '물리학',   color: '#2f4bd6' },
+    chem:    { name: '화학',     color: '#c2410c' },
+    bio:     { name: '생명과학', color: '#167a63' },
+    earth:   { name: '지구과학', color: '#b45309' }
+  };
+
+  const esc = escapeHtml;                 // session.js 제공
+  const el = (id) => document.getElementById(id);
+  const notice = el('notice');
+  const box = el('thread');
+
+  const id = new URLSearchParams(location.search).get('id');
+
+  let post = null;
+  let myVote = 0;
+  let comments = null;                    // null = 아직 안 받음 (빈 배열과 구분)
+
+  const say = (msg) => { notice.textContent = msg; notice.hidden = false; };
+  const hush = () => { notice.hidden = true; };
+
+  /* 작성 시각은 화면에서 계산한다 — 서버가 "3분 전"을 만들어 캐시되면
+     시간이 멈춘 것처럼 보인다. */
+  function ago(iso) {
+    const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+    if (s < 60) return '방금 전';
+    if (s < 3600) return Math.floor(s / 60) + '분 전';
+    if (s < 86400) return Math.floor(s / 3600) + '시간 전';
+    if (s < 172800) return '어제';
+    if (s < 2592000) return Math.floor(s / 86400) + '일 전';
+    return new Date(iso).toLocaleDateString('ko-KR');
+  }
+
+  const arrow = (path, dir) =>
+    '<button type="button" data-dir="' + dir + '" ' +
+    'aria-pressed="' + (myVote === dir) + '" aria-label="' + (dir > 0 ? '추천' : '비추천') + '">' +
+    '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="' + path +
+    '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+
+  function answersHtml() {
+    if (comments === null) return '<p class="answer-empty">답변을 불러오는 중…</p>';
+    if (!comments.length) return '<p class="answer-empty">아직 답변이 없습니다. 아는 만큼만 적어주셔도 도움이 됩니다.</p>';
+    return comments.map(function (c) {
+      return '<div class="answer">' +
+        '<div class="answer-meta"><span class="who">' + esc(c.author) + '</span>' +
+        '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) + '</div>' +
+        '<div class="answer-body">' + esc(c.body) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function render() {
+    if (!post) return;
+    const s = SUBJECTS[post.subject] || { name: post.subject, color: 'var(--muted-soft)' };
+    box.innerHTML =
+      '<div class="thread-head">' +
+        '<div class="vote">' +
+          arrow('M3 10l5-5 5 5', 1) +
+          '<span class="score">' + post.score + '</span>' +
+          arrow('M3 6l5 5 5-5', -1) +
+        '</div>' +
+        '<div>' +
+          '<h1>' + esc(post.title) + '</h1>' +
+          '<div class="thread-meta">' +
+            '<span class="subject"><span class="dot" style="background:' + s.color + '"></span>' + esc(s.name) + '</span>' +
+            '<span class="sep" aria-hidden="true">·</span><span>' + esc(post.author) + '</span>' +
+            '<span class="sep" aria-hidden="true">·</span><span>' + esc(ago(post.createdAt)) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="thread-body">' + esc(post.body) + '</div>' +
+      '<section class="answers">' +
+        '<h2>답변 ' + post.answers + '</h2>' +
+        answersHtml() +
+        '<form class="answer-form" id="answer-form">' +
+          '<label for="answer-text">답변 쓰기</label>' +
+          '<textarea id="answer-text" maxlength="2000" ' +
+            'placeholder="아는 만큼만 적어주셔도 됩니다. 왜 그런지까지 적으면 더 좋아요."></textarea>' +
+          '<div class="row">' +
+            '<span class="hint">' + (Session.load() ? '' : '답변하려면 로그인이 필요합니다.') + '</span>' +
+            '<button type="submit" class="btn btn-primary">답변 올리기</button>' +
+          '</div>' +
+        '</form>' +
+      '</section>';
+  }
+
+  // ── 투표 ──
+  box.addEventListener('click', async function (e) {
+    const b = e.target.closest('[data-dir]');
+    if (!b) return;
+    if (!Session.load()) { say('추천하려면 로그인이 필요합니다.'); return; }
+
+    b.disabled = true;
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/vote', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: Number(b.dataset.dir) })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) { say(data.error || '처리하지 못했습니다.'); return; }
+      // 서버가 확정한 값만 반영한다 — 미리 그렸다가 실패하면 화면이 거짓말을 한다
+      myVote = data.dir;
+      post.score = data.score;
+      hush();
+      render();
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  // ── 답변 작성 ──
+  box.addEventListener('submit', async function (e) {
+    if (!e.target.closest('#answer-form')) return;
+    e.preventDefault();
+    if (!Session.load()) { window.location.href = 'login.html'; return; }
+
+    const ta = el('answer-text');
+    const submit = e.target.querySelector('button[type=submit]');
+    const text = ta.value.trim();
+    if (!text) { ta.focus(); return; }
+
+    submit.disabled = true;
+    submit.textContent = '올리는 중…';
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: text })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) { say(data.error || '저장하지 못했습니다.'); return; }
+
+      if (data.held) {
+        say(data.message);      // 보류된 답변은 목록에 없다 — 사라진 걸로 오해하지 않게
+      } else {
+        hush();
+        comments.push(data.comment);
+        post.answers += 1;
+      }
+      render();
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      submit.disabled = false;
+      submit.textContent = '답변 올리기';
+    }
+  });
+
+  // ── 첫 로드 ──
+  const notFound = (msg) => {
+    box.innerHTML = '<p class="state">' + esc(msg) +
+      '<br><a href="community.html">커뮤니티로 돌아가기</a></p>';
+  };
+
+  async function load() {
+    if (!id) { notFound('주소에 글 번호가 없습니다.'); return; }
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id), { credentials: 'same-origin' });
+      // 보류·차단된 글도 404 다. 상태를 알려주면 "그런 글이 있긴 하다" 가 드러난다
+      if (res.status === 404) { notFound('없는 글이거나 검토 중인 글입니다.'); return; }
+      if (!res.ok) throw new Error(res.status);
+
+      const data = await res.json();
+      post = data.post;
+      myVote = data.myVote || 0;
+      document.title = post.title + ' — Ans2Quest';
+      render();
+
+      // 답변은 본문을 그린 뒤에 채운다 — 읽을 것부터 먼저 보여준다
+      const cr = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments', { credentials: 'same-origin' });
+      comments = cr.ok ? (await cr.json()).comments || [] : [];
+      render();
+    } catch {
+      notFound('글을 불러오지 못했습니다.');
+    }
+  }
+
+  // 세션이 확인되면 로그인 안내 문구가 달라진다 — 이미 그려졌으면 다시 그린다
+  Session.refresh().then(render);
+  load();
+})();
+</script>
+
+</body>
+</html>

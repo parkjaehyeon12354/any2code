@@ -37,18 +37,23 @@ function voteAllowed(sub, now = Date.now()) {
    수십 MB JSON 을 받아서 파싱한 뒤에야 거절하면 그 자체가 부하다. */
 const tooBig = (request) => Number(request.headers.get('content-length') || 0) > 32 * 1024;
 
-/** 목록에 나갈 형태. 작성자 식별자(sub)는 밖으로 내보내지 않는다.
-    요약은 따로 보내지 않는다 — 본문을 자르면 되는데 둘 다 보내면 중복이고,
-    글을 펼쳤을 때 잘린 요약을 본문 자리에 보여주는 사고가 난다. */
-const publicPost = (p) => ({
+/** 밖으로 내보낼 형태. 작성자 식별자(sub)는 절대 넣지 않는다.
+
+    목록은 요약만, 글 화면은 본문 전체를 받는다. 목록에 본문을 다 실으면
+    글이 100개일 때 응답이 그만큼 커지는데, 화면은 두 줄만 보여준다. */
+const EXCERPT_LEN = 200;
+
+const publicPost = (p, full = false) => ({
   id: p.id,
   subject: p.subject,
   title: p.title,
-  body: p.body,
   author: p.authorName,
   createdAt: p.createdAt,
   score: p.score || 0,
-  answers: p.answers || 0
+  answers: p.answers || 0,
+  ...(full
+    ? { body: p.body }
+    : { excerpt: p.body.length > EXCERPT_LEN ? p.body.slice(0, EXCERPT_LEN) + '…' : p.body })
 });
 
 /* ── 목록 ──
@@ -92,6 +97,46 @@ app.http('postsList', {
     } catch (e) {
       context.error('목록 조회 실패:', e.message);
       return dbFail(e, '목록을 불러오지 못했습니다.');
+    }
+  }
+});
+
+/* ── 글 하나 ──
+   목록에서 걸러 쓰면 전체를 받아야 하고, 링크로 바로 들어온 사람은
+   목록을 거치지도 않는다. 보류·차단된 글은 없는 글과 같은 404. */
+app.http('postsGet', {
+  route: 'posts/{id}',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+
+    try {
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: request.params.id }]
+      }))[0];
+      if (!post || post.status !== 'public') {
+        return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      }
+
+      // 내 투표 상태도 함께 — 화살표를 눌린 상태로 그리려면 필요하다
+      let myVote = 0;
+      if (user) {
+        try {
+          const read = await container().item(`${post.id}:${user.sub}`, post.id).read();
+          if (read.resource) myVote = read.resource.dir;
+        } catch { /* 투표한 적 없음 */ }
+      }
+
+      return {
+        jsonBody: { post: publicPost(post, true), myVote },
+        headers: { 'Cache-Control': 'no-store' }
+      };
+    } catch (e) {
+      context.error('글 조회 실패:', e.message);
+      return dbFail(e, '글을 불러오지 못했습니다.');
     }
   }
 });

@@ -51,9 +51,9 @@ test('COSMOS_CONNECTION 이 없으면 원인을 알려준다', async () => {
   }
 });
 
-test('다섯 엔드포인트가 등록된다', () => {
+test('여섯 엔드포인트가 등록된다', () => {
   assert.deepStrictEqual(Object.keys(routes).sort(),
-    ['commentsCreate', 'commentsList', 'postsCreate', 'postsList', 'postsVote']);
+    ['commentsCreate', 'commentsList', 'postsCreate', 'postsGet', 'postsList', 'postsVote']);
   assert.strictEqual(routes.postsVote.route, 'posts/{id}/vote');
   assert.strictEqual(routes.commentsList.route, 'posts/{id}/comments');
 });
@@ -99,7 +99,8 @@ test('정상 글은 저장되고 목록에 나온다', async () => {
   const list = await routes.postsList.handler(req({}), ctx);
   assert.strictEqual(list.jsonBody.posts.length, 1);
   assert.strictEqual(list.jsonBody.posts[0].title, okPost.title);
-  assert.strictEqual(list.jsonBody.posts[0].body, okPost.body, '펼쳤을 때 보여줄 본문이 있어야 한다');
+  assert.strictEqual(list.jsonBody.posts[0].excerpt, okPost.body);
+  assert.strictEqual(list.jsonBody.posts[0].body, undefined, '목록에 본문 전체를 실으면 글이 늘수록 응답만 커진다');
 });
 
 test('작성자 식별자는 목록에 노출되지 않는다', async () => {
@@ -379,6 +380,77 @@ test('댓글 — 킬 스위치에 함께 막힌다', async () => {
     const create = await routes.commentsCreate.handler(
       req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
     assert.deepStrictEqual([list.status, create.status], [503, 503]);
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+});
+
+// ── 글 하나 (post.html 이 쓴다) ──
+
+test('글 하나 — 본문 전체를 주고, 목록은 요약만 준다', async () => {
+  const long = 'ㄱ'.repeat(500);
+  state.docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: { ...okPost, body: long } }), ctx);
+  const post = state.docs.find((d) => d.type === 'post');
+
+  const one = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(one.jsonBody.post.body, long, '글 화면은 전문이 필요하다');
+  assert.strictEqual(one.jsonBody.post.excerpt, undefined);
+
+  const list = await routes.postsList.handler(req({}), ctx);
+  assert.strictEqual(list.jsonBody.posts[0].body, undefined);
+  assert.ok(list.jsonBody.posts[0].excerpt.length < long.length, '목록은 잘라서 보낸다');
+  assert.ok(list.jsonBody.posts[0].excerpt.endsWith('…'));
+});
+
+test('글 하나 — 비로그인도 읽고, 작성자 식별자는 안 나간다', async () => {
+  state.docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+  const post = state.docs.find((d) => d.type === 'post');
+
+  const res = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(res.jsonBody.post.title, okPost.title);
+  assert.strictEqual(res.jsonBody.myVote, 0);
+  assert.ok(!JSON.stringify(res.jsonBody).includes('discord:1'));
+  assert.strictEqual(res.headers['Cache-Control'], 'no-store');
+});
+
+test('글 하나 — 없는 글·보류·차단은 전부 404', async () => {
+  state.docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+  const post = state.docs.find((d) => d.type === 'post');
+
+  const missing = await routes.postsGet.handler(req({ params: { id: '없음' } }), ctx);
+  assert.strictEqual(missing.status, 404);
+
+  for (const status of ['held', 'blocked']) {
+    post.status = status;
+    const res = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+    assert.strictEqual(res.status, 404, `${status} 인 글이 링크로 열렸다`);
+  }
+});
+
+test('글 하나 — 로그인하면 내 투표 상태가 함께 온다', async () => {
+  state.docs = [];
+  await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);
+  const post = state.docs.find((d) => d.type === 'post');
+  const cookie = login();
+
+  await routes.postsVote.handler(req({ cookie, body: { dir: -1 }, params: { id: post.id } }), ctx);
+
+  const mine = await routes.postsGet.handler(req({ cookie, params: { id: post.id } }), ctx);
+  assert.strictEqual(mine.jsonBody.myVote, -1);
+
+  const other = await routes.postsGet.handler(
+    req({ cookie: login({ sub: 'discord:2' }), params: { id: post.id } }), ctx);
+  assert.strictEqual(other.jsonBody.myVote, 0, '남의 투표가 보이면 안 된다');
+});
+
+test('글 하나 — 킬 스위치에 막힌다', async () => {
+  process.env.LOCKDOWN = '1';
+  try {
+    const res = await routes.postsGet.handler(req({ params: { id: 'x' } }), ctx);
+    assert.strictEqual(res.status, 503);
   } finally {
     delete process.env.LOCKDOWN;
   }
