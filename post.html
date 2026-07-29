@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="/styles.css">
 <style>
 /* 글 하나를 읽는 화면. 목록보다 본문 폭을 좁혀 읽기 편하게 한다.
    네비/푸터 마크업은 community.html 과 동일하다 (이 프로젝트의 기존 방식). */
@@ -206,7 +206,7 @@
           </div>
         </div>
       </li>
-      <li class="active"><a href="community.html">커뮤니티</a></li>
+      <li class="active"><a href="/community">커뮤니티</a></li>
       <li>
         <a href="#" data-dropdown="research">심화 탐구</a>
         <div class="mega-dropdown">
@@ -224,7 +224,7 @@
     </ul>
 
     <div class="nav-cta" id="nav-cta">
-      <a href="login.html">시작하기</a>
+      <a href="/login">시작하기</a>
     </div>
     <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -253,18 +253,18 @@
     <a href="#">화학</a>
     <a href="#">생명과학</a>
     <a href="#">지구과학</a>
-    <a href="community.html">커뮤니티</a>
+    <a href="/community">커뮤니티</a>
     <a href="#">심화 탐구</a>
     <a href="#">가이드</a>
   </nav>
   <div class="mobile-menu-actions" id="mobile-cta">
-    <a href="login.html" class="btn btn-primary" style="width:100%">시작하기</a>
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
   </div>
 </div>
 
 <main class="thread">
   <div class="container thread-inner">
-    <a href="community.html" class="back">
+    <a href="/community" class="back">
       <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       커뮤니티로
     </a>
@@ -302,9 +302,9 @@
   </form>
 </dialog>
 
-<script src="session.js"></script>
-<script src="nav-user.js"></script>
-<script src="nav-dropdown.js"></script>
+<script src="/session.js"></script>
+<script src="/nav-user.js"></script>
+<script src="/nav-dropdown.js"></script>
 <script>
 (function () {
   const SUBJECTS = {
@@ -319,7 +319,11 @@
   const notice = el('notice');
   const box = el('thread');
 
-  const id = new URLSearchParams(location.search).get('id');
+  /* 주소는 /q/{id}. 서버가 이 파일로 rewrite 하므로 경로에서 직접 읽는다.
+     예전에 공유된 /post.html?id=… 링크도 계속 열려야 하니 둘 다 받는다. */
+  const id = location.pathname.startsWith('/q/')
+    ? decodeURIComponent(location.pathname.slice(3))
+    : new URLSearchParams(location.search).get('id');
 
   let post = null;
   let myVote = 0;
@@ -437,7 +441,7 @@
   box.addEventListener('submit', async function (e) {
     if (!e.target.closest('#answer-form')) return;
     e.preventDefault();
-    if (!Session.load()) { window.location.href = 'login.html'; return; }
+    if (!Session.load()) { window.location.href = '/login'; return; }
 
     const ta = el('answer-text');
     const submit = e.target.querySelector('button[type=submit]');
@@ -529,7 +533,7 @@
   // ── 첫 로드 ──
   const notFound = (msg) => {
     box.innerHTML = '<p class="state">' + esc(msg) +
-      '<br><a href="community.html">커뮤니티로 돌아가기</a></p>';
+      '<br><a href="/community">커뮤니티로 돌아가기</a></p>';
   };
 
   async function load() {

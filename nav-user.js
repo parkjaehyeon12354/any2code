@@ -21,14 +21,14 @@
         '<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</button>' +
         '<div class="profile-dropdown">' +
-        (isAdmin ? '<a href="admin.html">관리자</a>' : '') +
+        (isAdmin ? '<a href="/admin">관리자</a>' : '') +
         '<a href="#" data-logout>로그아웃</a>' +
         '</div></div>';
     }
 
     if (mobileCta) {
       mobileCta.innerHTML =
-        (isAdmin ? '<a href="admin.html" class="btn btn-ghost" style="width:100%">관리자</a>' : '') +
+        (isAdmin ? '<a href="/admin" class="btn btn-ghost" style="width:100%">관리자</a>' : '') +
         '<a href="#" class="btn btn-primary" style="width:100%" data-logout>로그아웃</a>';
     }
 

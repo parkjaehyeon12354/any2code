@@ -63,7 +63,7 @@ app.http('authCallback', {
     const q = new URL(request.url).searchParams;
     const fail = (reason) => ({
       status: 302,
-      headers: { Location: `/login.html?error=${encodeURIComponent(reason)}` },
+      headers: { Location: `/login?error=${encodeURIComponent(reason)}` },
       cookies: [session.clearState()]
     });
 

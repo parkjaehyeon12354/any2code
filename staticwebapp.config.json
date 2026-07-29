@@ -21,6 +21,22 @@
       "rewrite": "/Index.html"
     },
     {
+      "route": "/community",
+      "rewrite": "/community.html"
+    },
+    {
+      "route": "/login",
+      "rewrite": "/login.html"
+    },
+    {
+      "route": "/admin",
+      "rewrite": "/admin.html"
+    },
+    {
+      "route": "/q/*",
+      "rewrite": "/post.html"
+    },
+    {
       "route": "/api/*",
       "headers": { "Cache-Control": "no-store" }
     }
