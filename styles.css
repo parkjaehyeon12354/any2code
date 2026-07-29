@@ -140,6 +140,8 @@ a { color: inherit; text-decoration: none; }
 .nav-brand {
   display: flex;
   align-items: center;
+  /* 56px 네비 안에서 44px 만 확보한다 — 로고도 홈으로 가는 링크다 */
+  min-height: 44px;
   gap: 8px;
   font-size: 18px;
   font-weight: 600;
@@ -243,6 +245,7 @@ a { color: inherit; text-decoration: none; }
 .profile-trigger {
   display: flex;
   align-items: center;
+  min-height: 44px;
   gap: 6px;
   background: none;
   border: none;
