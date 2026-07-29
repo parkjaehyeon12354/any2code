@@ -956,7 +956,15 @@ Session.refresh().then(function (user) {
     if (btn.dataset.heldBlock !== undefined) {
       openSanction(
         { target: p.title, reason: '욕설·비방 (' + (p.words || []).join(', ') + ')', ip: null },
-        function () { moderate(id, 'block').catch((err) => heldSay(err.message)); },
+        // 게시물 차단은 실제로 저장된다. 제재 일수·메시지 발송은 아직 서버가 없어
+        // 화면 표시뿐이라, 무엇이 저장되고 무엇이 아닌지 결과에 그대로 적는다.
+        async function (d) {
+          await moderate(id, 'block');
+          return '"' + p.title + '" 을(를) 차단했습니다. 커뮤니티 목록에서 즉시 사라집니다.\n' +
+            '글은 지워지지 않았습니다 — 되돌리기로 복구할 수 있습니다.\n\n' +
+            sanctionSummary(d) + '\n\n' +
+            '[이용 제한·메시지 발송은 아직 저장되지 않습니다]';
+        },
         heldResult
       );
       return;
@@ -1060,11 +1068,14 @@ Session.refresh().then(function (user) {
     const btn = e.target.closest('[data-report]');
     if (!btn) return;
     const r = MOCK_REPORTS[Number(btn.dataset.report)];
+    // 신고 처리는 아직 서버가 없다 — 화면 상태만 바뀌고 새로고침하면 사라진다.
+    // 처리된 척하지 않도록 결과 문구에 명시한다.
     openSanction(r, function (d, ip) {
       r.status = 'done';
       r.applied = { days: d, ip: ip, until: d > 0 ? untilDate(d) : null };
       renderReports();
       updatePendingCount();
+      return '[서버 미연결 — 저장되지 않았습니다]\n\n' + sanctionSummary(d);
     });
   });
 
@@ -1074,33 +1085,44 @@ Session.refresh().then(function (user) {
   // 배경(backdrop) 클릭으로 닫기 — dialog 자체가 클릭 대상이면 바깥이다
   dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
 
-  document.getElementById('mod-confirm').addEventListener('click', function () {
-    const d = days();
-    // ⚠ 서버가 없으므로 아무것도 저장·발송되지 않는다.
-    // 실제로 보낼 내용만 그대로 보여준다 — 처리된 척하면 안 된다.
-    // 서버가 붙으면 이 자리에서 POST /api/moderation/reports/{id}/resolve 를 호출한다.
+  /** 확정한 제재 내용을 사람이 읽는 형태로. 저장 여부와 무관하게 같은 형식이다. */
+  function sanctionSummary(d) {
     const payload = {
       대상: current.target,
       사유: current.reason,
       제재: d === 0 ? '경고만 (이용 제한 없음)' : d + '일 이용 제한 (' + untilDate(d) + ' 해제)',
-      IP차단: ipBox.checked ? '예 (' + current.ip + ')' : '아니오',
+      IP차단: ipBox.checked ? '예 (' + (current.ip || '기록 없음') + ')' : '아니오',
       메시지발송: sendBox.checked ? '예' : '아니오'
     };
-
-    // 결과는 연 곳 옆에 띄운다 (신고 화면에서 열었으면 신고 화면에)
-    const box = onApplyResultBox || resultBox;
-    box.textContent =
-      '[서버 미연결 — 저장되지 않았습니다]\n\n' +
-      Object.entries(payload).map(([k, v]) => k + ': ' + v).join('\n') +
+    return Object.entries(payload).map(([k, v]) => k + ': ' + v).join('\n') +
       (sendBox.checked ? '\n\n─ 발송될 메시지 ─\n' + msgBox.value : '');
-    box.hidden = false;
+  }
 
-    // 화면 상태만 갱신한다. 새로고침하면 사라진다 —
-    // 처리 후 화면이 어떻게 보이는지 확인하기 위한 것이지 저장이 아니다.
-    onApply(d, ipBox.checked);
+  /* 확정 버튼.
+     결과 문구는 처리 주체(onApply)가 돌려준다 — 여기서 만들면 실제로 저장한
+     경우에도 "저장되지 않았습니다" 를 찍게 된다(실제로 그랬다).
+     저장에 실패하면 모달을 닫지 않는다. 닫아버리면 실패한 줄 모르고 넘어간다. */
+  document.getElementById('mod-confirm').addEventListener('click', async function () {
+    const d = days();
+    const box = onApplyResultBox || resultBox;
+    const btn = this;
 
-    close();
-    box.scrollIntoView({ block: 'nearest' });
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = '처리 중…';
+    try {
+      const msg = await onApply(d, ipBox.checked);
+      box.textContent = msg || sanctionSummary(d);
+      box.hidden = false;
+      close();
+      box.scrollIntoView({ block: 'nearest' });
+    } catch (err) {
+      box.textContent = '처리하지 못했습니다: ' + err.message;
+      box.hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = prev;
+    }
   });
 
   // ── 항소 처리 모달 ──
