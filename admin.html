@@ -204,9 +204,12 @@
   border-radius: var(--rounded-md);
   font-size: 13px;
 }
-.mod-summary div { display: flex; gap: var(--sp-sm); padding: 3px 0; }
-.mod-summary dt { width: 52px; flex-shrink: 0; color: var(--muted); }
-.mod-summary dd { color: var(--ink); font-weight: 500; word-break: break-all; }
+/* 자손(div)이 아니라 직계 자식(> div)이어야 한다. 자손으로 두면 dd 안에 넣은
+   어떤 div 든 flex 항목이 되어, 한 덩어리로 읽혀야 할 내용이 칸처럼 어긋난다.
+   (.set-env 에서 같은 실수를 이미 한 번 고쳤다.) */
+.mod-summary > div { display: flex; gap: var(--sp-sm); padding: 3px 0; }
+.mod-summary > div > dt { width: 52px; flex-shrink: 0; color: var(--muted); }
+.mod-summary > div > dd { color: var(--ink); font-weight: 500; word-break: break-all; }
 
 /* 선택한 제재가 언제까지인지 — 표와 같은 문구를 쓴다 */
 .mod-effect {
