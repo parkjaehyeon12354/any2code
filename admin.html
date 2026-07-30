@@ -221,11 +221,16 @@
 /* 반복 위반 — 표를 훑을 때 걸려야 한다. 앰버는 surface 위 4.5:1 확보값 */
 .cell-sub.warn-text { color: #8a5c08; font-weight: 600; }
 
-/* 모달 이력 — dt 폭(52px)에 맞춰 한 줄씩 쌓는다.
-   .mod-summary dd 의 word-break: break-all 이 상속되면 날짜가 "2026-0 / 7-30" 으로
+/* 모달 이력.
+   한 줄에 날짜·조치·사유·처리자가 들어가야 하는데 dt(52px) 옆 칸으로는 좁아서
+   항목마다 서너 줄로 쪼개진다. 이 행만 세로로 쌓아 모달 폭을 다 쓰게 한다. */
+#mod-history-row, #ap-history-row { display: block; }
+#mod-history-row dt, #ap-history-row dt { width: auto; margin-bottom: 6px; }
+
+/* .mod-summary dd 의 word-break: break-all 이 상속되면 날짜가 "2026-0 / 7-30" 으로
    끊겨 읽을 수가 없다. 한국어는 어절 단위로 끊고, 넘칠 때만(긴 이메일) 강제로 자른다. */
-.hist-line { line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
-.hist-line + .hist-line { margin-top: 4px; }
+.hist-line { line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+.hist-line + .hist-line { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--hairline); }
 .hist-when { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); }
 
 /* 소명 본문 — 회원이 쓴 글이라 관리자 UI 문구와 구분되어야 한다 */
