@@ -1,7 +1,8 @@
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
-const { lockdown } = require('../lib/lockdown');
+const { lockdown, active: lockdownActive } = require('../lib/lockdown');
 const { container, query, dbFail } = require('../lib/db');
+const settings = require('../lib/settings');
 
 /* 관리자 전용 엔드포인트.
 
@@ -114,6 +115,80 @@ app.http('adminModerate', {
     } catch (e) {
       context.error('보류 처리 실패:', e.message);
       return dbFail(e);
+    }
+  }
+});
+
+/* ── 운영 설정 ──
+   고칠 수 있는 값(금칙어·도배 기준)과 못 고치는 값(환경 변수)을 한 화면에서 보여준다.
+
+   환경 변수를 API 로 바꿀 수 있게 만들지 않는다. LOCKDOWN 과 ADMIN_EMAILS 는
+   "관리자 세션이 탈취된 상황" 을 가정한 마지막 방어선이라, 사이트 로그인으로
+   건드릴 수 있으면 방어선이 아니게 된다 — Azure 포털만 조작할 수 있어야 한다.
+   그래서 여기서는 현재 값만 읽어서 보여준다. */
+const envView = () => ({
+  lockdown: lockdownActive(),
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',').map((s) => s.trim()).filter(Boolean),
+  sessionDays: session.MAX_AGE / 86400,
+  cosmosConnected: !!process.env.COSMOS_CONNECTION
+});
+
+const settingsBody = (editable) => ({
+  editable,
+  fixed: settings.FIXED,
+  env: envView(),
+  limits: { wordsMax: settings.WORDS_MAX, wordMaxLen: settings.WORD_MAX_LEN },
+  defaults: settings.DEFAULTS
+});
+
+app.http('adminSettings', {
+  route: 'moderation/settings',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
+    try {
+      return {
+        jsonBody: settingsBody(await settings.get()),
+        headers: { 'Cache-Control': 'no-store' }
+      };
+    } catch (e) {
+      context.error('설정 조회 실패:', e.message);
+      return dbFail(e);
+    }
+  }
+});
+
+app.http('adminSettingsSave', {
+  route: 'moderation/settings',
+  methods: ['PUT'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const { user, error } = requireAdmin(request);
+    if (error) return error;
+
+    // 금칙어 200개라도 몇 KB다. 그보다 큰 요청은 파싱 전에 자른다.
+    if (Number(request.headers.get('content-length') || 0) > 32 * 1024) {
+      return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
+    }
+
+    let body;
+    try { body = await request.json(); } catch { return { status: 400, jsonBody: { error: '요청 형식이 잘못됐습니다.' } }; }
+
+    try {
+      const saved = await settings.save(body, user);
+      // 저장된 값을 그대로 돌려준다. 화면이 보낸 값을 그리면 서버가 다듬은
+      // 결과(중복 제거·공백 정리)와 어긋나서 "저장했는데 다르다" 가 된다.
+      return { jsonBody: settingsBody(saved) };
+    } catch (e) {
+      if (e.code === 'BAD_SETTINGS') return { status: 400, jsonBody: { error: e.message } };
+      context.error('설정 저장 실패:', e.message);
+      return dbFail(e, '저장하지 못했습니다.');
     }
   }
 });

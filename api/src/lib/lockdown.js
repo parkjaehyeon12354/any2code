@@ -16,4 +16,4 @@ const lockdown = () => active()
   ? { status: 503, jsonBody: { error: '점검 중입니다. 잠시 후 다시 이용해 주세요.' } }
   : null;
 
-module.exports = { lockdown };
+module.exports = { lockdown, active };

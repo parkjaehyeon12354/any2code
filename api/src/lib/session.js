@@ -121,5 +121,5 @@ function requireAdmin(request) {
 
 module.exports = {
   issue, clear, current, issueState, checkState, clearState,
-  isAdmin, requireAdmin, COOKIE
+  isAdmin, requireAdmin, COOKIE, MAX_AGE
 };

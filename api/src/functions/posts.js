@@ -3,6 +3,7 @@ const session = require('../lib/session');
 const { lockdown } = require('../lib/lockdown');
 const { container, query, dbFail } = require('../lib/db');
 const sanction = require('../lib/sanction');
+const settings = require('../lib/settings');
 
 /* 과목은 서버가 정한 목록만 받는다. 클라이언트가 보낸 값을 그대로 파티션 키로
    쓰면 아무 문자열이나 새 파티션이 되어 데이터가 흩어진다. */
@@ -10,25 +11,21 @@ const SUBJECTS = ['physics', 'chem', 'bio', 'earth'];
 
 const LIMIT = { title: 120, body: 4000, comment: 2000 };
 
-/* 자동 보류 필터. admin.html 과 같은 목록이다.
-   '고아' 처럼 정상 문맥에도 쓰이는 단어가 있어 오탐이 반드시 생긴다 —
-   그래서 삭제가 아니라 보류이고, 사람이 최종 판단한다. */
-const BANNED_WORDS = ['씨발', '시발', '병신', '개새끼', '좆', '지랄', '새끼', '꺼져', '고아'];
-const findBanned = (text) => BANNED_WORDS.filter((w) => text.includes(w));
+/* 자동 보류 필터. 목록과 도배 기준은 lib/settings 가 갖고 있다 (관리자 설정 화면에서
+   고칠 수 있고, 못 읽으면 기본값으로 돈다). 여기서 다시 정의하면 두 목록이 갈라진다. */
+const findBanned = (text, words) => words.filter((w) => text.includes(w));
 
 const rid = (prefix) => prefix + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 /* ── 도배 방지 ──
-   글: 최근 10분 내 5개까지. DB 를 세므로 인스턴스가 재시작해도 유지된다.
-   투표: 분당 30번까지. 표는 사람당 하나라 남는 건 RU 소모뿐이니
-   인스턴스 메모리로 충분하다 (재시작하면 초기화 — 감수한다). */
-const POST_WINDOW_MS = 10 * 60 * 1000;
-const POST_MAX_IN_WINDOW = 5;
-
+   글: 기준 시간 내 N개까지 (설정값). DB 를 세므로 인스턴스가 재시작해도 유지된다.
+   투표: 분당 30번까지 — 코드 고정. 표는 사람당 하나라 남는 건 RU 소모뿐이니
+   인스턴스 메모리로 충분하다 (재시작하면 초기화 — 감수한다).
+   이 값만 설정으로 빼지 않은 이유는 lib/settings.js 의 FIXED 주석에 있다. */
 const voteLog = new Map();   // sub → [timestamp]
-function voteAllowed(sub, now = Date.now()) {
+function voteAllowed(sub, now = Date.now(), max = settings.FIXED.voteMaxPerMin) {
   const arr = (voteLog.get(sub) || []).filter((t) => now - t < 60_000);
-  if (arr.length >= 30) { voteLog.set(sub, arr); return false; }
+  if (arr.length >= max) { voteLog.set(sub, arr); return false; }
   arr.push(now);
   voteLog.set(sub, arr);
   return true;
@@ -171,22 +168,27 @@ app.http('postsCreate', {
     if (!text) return bad('내용을 입력해 주세요.');
     if (text.length > LIMIT.body) return bad(`내용은 ${LIMIT.body}자까지 쓸 수 있습니다.`);
 
-    // 도배 확인 — 이 사용자가 최근 10분간 쓴 글 수
+    // 도배 확인 — 이 사용자가 기준 시간 내에 쓴 글 수
+    let cfg;
     try {
-      const since = new Date(Date.now() - POST_WINDOW_MS).toISOString();
+      cfg = await settings.get();
+      const since = new Date(Date.now() - cfg.postWindowMin * 60_000).toISOString();
       const [n] = await query({
         query: "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'post' AND c.authorSub = @u AND c.createdAt > @since",
         parameters: [{ name: '@u', value: user.sub }, { name: '@since', value: since }]
       });
-      if (n >= POST_MAX_IN_WINDOW) {
-        return { status: 429, jsonBody: { error: '잠시 후에 다시 작성해 주세요. 10분에 5개까지 올릴 수 있습니다.' } };
+      if (n >= cfg.postMax) {
+        return {
+          status: 429,
+          jsonBody: { error: `잠시 후에 다시 작성해 주세요. ${cfg.postWindowMin}분에 ${cfg.postMax}개까지 올릴 수 있습니다.` }
+        };
       }
     } catch (e) {
       context.error('도배 확인 실패:', e.message);
       return dbFail(e, '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
-    const hits = findBanned(title + '\n' + text);
+    const hits = findBanned(title + '\n' + text, cfg.bannedWords);
     const doc = {
       id: rid('p'),
       type: 'post',
@@ -351,17 +353,21 @@ app.http('commentsCreate', {
       // 보류·차단된 글에는 답변을 달 수 없다. 없는 글과 같은 404 를 준다
       if (!post || post.status !== 'public') return { status: 404, jsonBody: { error: '없는 글입니다.' } };
 
-      // 도배 확인 — 글과 같은 기준(10분 5개)
-      const since = new Date(Date.now() - POST_WINDOW_MS).toISOString();
+      // 도배 확인 — 글과 같은 기준을 쓴다
+      const cfg = await settings.get();
+      const since = new Date(Date.now() - cfg.postWindowMin * 60_000).toISOString();
       const [n] = await query({
         query: "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'comment' AND c.authorSub = @u AND c.createdAt > @since",
         parameters: [{ name: '@u', value: user.sub }, { name: '@since', value: since }]
       });
-      if (n >= POST_MAX_IN_WINDOW) {
-        return { status: 429, jsonBody: { error: '잠시 후에 다시 작성해 주세요. 10분에 5개까지 올릴 수 있습니다.' } };
+      if (n >= cfg.postMax) {
+        return {
+          status: 429,
+          jsonBody: { error: `잠시 후에 다시 작성해 주세요. ${cfg.postWindowMin}분에 ${cfg.postMax}개까지 올릴 수 있습니다.` }
+        };
       }
 
-      const hits = findBanned(text);
+      const hits = findBanned(text, cfg.bannedWords);
       const doc = {
         id: rid('c'),
         type: 'comment',

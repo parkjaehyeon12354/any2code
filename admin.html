@@ -75,7 +75,7 @@
 }
 .page-head p { font-size: 13.5px; color: var(--muted); }
 
-/* 샘플 데이터임을 명확히 — 실제 회원 정보로 오인하면 안 된다.
+/* 각 화면의 주의문 — 조치가 즉시 반영되는지, 되돌릴 수 있는지 먼저 알린다.
    강조는 한쪽 굵은 테두리 대신 아이콘 색으로 준다 (login.html 의 .auth-notice 와 같은 방식) */
 .mock-banner {
   display: flex;
@@ -157,24 +157,6 @@
 .table .cell-name { color: var(--ink); font-weight: 500; }
 .table .cell-muted { color: var(--muted); }
 
-/* 검색 */
-.search {
-  height: 36px;
-  padding: 0 12px;
-  min-width: 220px;
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  color: var(--ink);
-  background: var(--canvas);
-  border: 1px solid var(--hairline);
-  border-radius: var(--rounded-md);
-}
-.search:focus-visible {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(22, 122, 99, .18);
-}
-
 /* 상태 배지 */
 .badge {
   display: inline-block;
@@ -187,13 +169,6 @@
 /* 새 --error(#bd3b3b) 기준 배지 배경·텍스트 */
 .badge-hold { background: rgba(189, 59, 59, .1); color: #9c3030; }
 .badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
-
-/* 제공자 칩 — 색으로 구분하면 표를 훑을 때 빨리 잡힌다 */
-.chip { display: inline-block; padding: 2px 8px; border-radius: var(--rounded-pill); font-size: 12px; font-weight: 500; }
-.chip-google { background: #f1f3f4; color: #3c4043; }
-.chip-kakao { background: #FEE500; color: rgba(0,0,0,.85); }
-.chip-github { background: #24292f; color: #fff; }
-.chip-discord { background: #5865F2; color: #fff; }
 
 .row-action {
   padding: 5px 10px;
@@ -317,7 +292,56 @@ mark {
 /* 12px 안내문에 --muted-soft 를 쓰면 3.23:1 로 미달 */
 .check-note { display: block; margin-left: 24px; font-size: 12px; color: var(--muted); word-break: keep-all; }
 
-.modal textarea {
+/* 표가 아닌 내용을 담는 패널 (설정 화면). .panel 은 표 전용으로 padding 이 없다 */
+.panel-body { padding: var(--sp-lg); }
+
+/* 문장형 입력 — "최근 [10]분에 [5]개까지". 라벨을 따로 쌓지 않아도
+   무엇을 세는 값인지 읽으면 바로 안다 */
+.set-sentence {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--body);
+}
+.set-sentence input {
+  width: 84px;
+  height: 44px;              /* 모바일 터치 타깃 하한 */
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.set-sentence input:focus-visible {
+  outline: none;
+  border-color: var(--primary-active);
+  box-shadow: 0 0 0 3px rgba(15, 92, 74, .18);
+}
+.set-sentence input:invalid { border-color: var(--error); }
+
+/* 환경 변수 표시 — .mod-summary 와 같은 모양이지만 항목 이름이 길어 dt 가 넓다 */
+.set-env { font-size: 13px; }
+.set-env div {
+  display: flex;
+  gap: var(--sp-md);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.set-env div:last-child { border-bottom: none; }
+.set-env dt { width: 110px; flex-shrink: 0; color: var(--muted); }
+.set-env dd { color: var(--ink); font-weight: 500; word-break: break-all; }
+
+.set-foot { display: flex; align-items: center; gap: var(--sp-md); flex-wrap: wrap; }
+.set-foot .btn { height: 44px; }
+.set-saved { font-size: 12.5px; color: var(--muted); }
+
+.modal textarea,
+.panel-body textarea {
   width: 100%;
   min-height: 108px;
   padding: 10px 12px;
@@ -330,12 +354,16 @@ mark {
   border: 1px solid var(--hairline);
   border-radius: var(--rounded-md);
 }
-.modal textarea:focus-visible {
+.modal textarea:focus-visible,
+.panel-body textarea:focus-visible {
   outline: none;
   border-color: var(--primary-active);
   box-shadow: 0 0 0 3px rgba(15, 92, 74, .18);
 }
-.modal textarea[disabled] { background: var(--surface-soft); color: var(--muted); }
+.modal textarea[disabled],
+.panel-body textarea[disabled] { background: var(--surface-soft); color: var(--muted); }
+/* 금칙어는 한 줄에 하나라 줄이 많아진다 — 스크롤보다 넉넉한 높이가 훑기 쉽다 */
+.panel-body textarea { min-height: 200px; }
 
 /* 처리 결과 — 서버가 없으니 "보냈을 내용"만 그대로 보여준다 */
 .mod-result {
@@ -391,10 +419,10 @@ mark {
   <nav class="admin-side">
     <h2>운영</h2>
     <a href="#overview" data-nav="overview">개요</a>
-    <a href="#users" data-nav="users">회원</a>
     <a href="#reports" data-nav="reports">신고</a>
     <a href="#appeals" data-nav="appeals">항소</a>
     <a href="#held" data-nav="held">보류 게시물</a>
+    <a href="#settings" data-nav="settings">설정</a>
   </nav>
 
   <main class="admin-main">
@@ -405,23 +433,7 @@ mark {
         <p id="whoami"></p>
       </div>
 
-      <p class="mock-banner">
-        <span class="mark">ⓘ</span>
-        <span><strong>아래는 전부 화면 확인용 샘플입니다.</strong> 실제 회원 정보가 아니며,
-        서버가 연결되기 전까지는 어떤 데이터도 저장·조회되지 않습니다.</span>
-      </p>
-
       <div class="stat-grid">
-        <div class="stat">
-          <div class="stat-label">전체 회원</div>
-          <div class="stat-value">1,248</div>
-          <div class="stat-note">지난주 대비 +36</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">오늘 가입</div>
-          <div class="stat-value">12</div>
-          <div class="stat-note">평균 9명</div>
-        </div>
         <div class="stat">
           <div class="stat-label">처리 대기 신고</div>
           <div class="stat-value" id="pending-count">3</div>
@@ -436,44 +448,6 @@ mark {
           <div class="stat-label">보류 게시물</div>
           <div class="stat-value" id="held-count">0</div>
           <div class="stat-note warn" id="held-note">확인 필요</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h3>최근 가입</h3></div>
-        <div class="panel-scroll">
-          <table class="table">
-            <thead><tr><th scope="col">이름</th><th scope="col">이메일</th><th scope="col">가입 경로</th><th scope="col">가입일</th></tr></thead>
-            <tbody id="recent-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── 회원 ── -->
-    <section id="users">
-      <div class="page-head">
-        <h1>회원</h1>
-        <p>가입한 학생 계정을 확인하고 상태를 관리합니다.</p>
-      </div>
-
-      <p class="mock-banner">
-        <span class="mark">ⓘ</span>
-        <span><strong>샘플 데이터입니다.</strong> 정지·해제 버튼은 아직 아무 동작도 하지 않습니다.</span>
-      </p>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h3>전체 회원 <span class="cell-muted" id="user-count"></span></h3>
-          <input type="search" class="search" id="user-search" placeholder="이름 또는 이메일 검색" aria-label="회원 검색">
-        </div>
-        <div class="panel-scroll">
-          <table class="table">
-            <thead>
-              <tr><th scope="col">이름</th><th scope="col">이메일</th><th scope="col">가입 경로</th><th scope="col">가입일</th><th scope="col">상태</th><th scope="col"></th></tr>
-            </thead>
-            <tbody id="user-body"></tbody>
-          </table>
         </div>
       </div>
     </section>
@@ -555,6 +529,72 @@ mark {
             <thead><tr><th scope="col">작성자</th><th scope="col">내용</th><th scope="col">감지어</th><th scope="col">작성일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
             <tbody id="held-body"></tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 설정 ── -->
+    <section id="settings">
+      <div class="page-head">
+        <h1>설정</h1>
+        <p>자동 필터와 도배 기준을 조정합니다. 나머지는 Azure 포털에서만 바뀝니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>저장하면 다음 글부터 적용됩니다.</strong> 이미 올라간 글을 다시
+        판정하지는 않습니다 — 보류 이유는 걸릴 당시 기준으로 남아야 판단할 수 있기 때문입니다.</span>
+      </p>
+
+      <pre class="mod-result" id="set-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>자동 필터</h3>
+          <span class="cell-muted" id="set-words-count"></span>
+        </div>
+        <div class="panel-body">
+          <div class="field-row">
+            <label class="legend" for="set-words">금칙어 — 한 줄에 하나</label>
+            <textarea id="set-words" spellcheck="false" aria-describedby="set-words-help"></textarea>
+            <span class="check-note" id="set-words-help">글이나 답변에 이 중 하나라도 들어가면
+            자동으로 보류되고 보류 게시물 화면에 올라옵니다. 지워지는 게 아니니 오탐이면 공개하면 됩니다.
+            비워두면 필터가 꺼집니다.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>도배 기준</h3></div>
+        <div class="panel-body">
+          <div class="field-row">
+            <span class="legend">한 사람이 글·답변을 올릴 수 있는 한도</span>
+            <p class="set-sentence">
+              최근
+              <input type="number" id="set-window" min="1" max="1440" step="1" inputmode="numeric" required aria-label="기준 시간 (분)">
+              분에
+              <input type="number" id="set-max" min="1" max="100" step="1" inputmode="numeric" required aria-label="허용 개수">
+              개까지
+            </p>
+            <span class="check-note">넘으면 작성을 거절하고 "잠시 후에 다시 작성해 주세요" 가 뜹니다.
+            글과 답변에 각각 적용됩니다.</span>
+          </div>
+
+          <div class="field-row set-foot">
+            <button type="button" class="btn btn-primary" id="set-save">저장</button>
+            <button type="button" class="btn btn-ghost" id="set-reset">기본값으로</button>
+            <span class="set-saved" id="set-saved"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>서버 상태</h3></div>
+        <div class="panel-body">
+          <dl class="set-env" id="set-env"></dl>
+          <span class="check-note">이 값들은 Azure 앱 설정(환경 변수)이라 이 화면에서는 바꿀 수 없습니다.
+          관리자 세션이 탈취된 상황을 가정하면, 점검 스위치와 관리자 목록만은 사이트 로그인으로
+          건드릴 수 없어야 합니다.</span>
         </div>
       </div>
     </section>
@@ -696,20 +736,6 @@ Session.refresh().then(function (user) {
   document.getElementById('whoami').textContent =
     me.name + '님으로 로그인됨 · 오늘의 운영 현황입니다.';
 
-  // ⚠ 전부 가짜 데이터. 이메일은 예약된 예시 도메인(example.com)만 썼다.
-  // 서버가 붙으면 이 배열들을 fetch('/api/moderation/...') 응답으로 갈아끼운다.
-  const MOCK_USERS = [
-    { name: '김서연', email: 'student01@example.com', provider: 'google',  joined: '2026-07-25', status: 'ok' },
-    { name: '이준호', email: 'student02@example.com', provider: 'kakao',   joined: '2026-07-25', status: 'ok' },
-    { name: '박민수', email: 'student03@example.com', provider: 'google',  joined: '2026-07-24', status: 'ok' },
-    { name: '최지우', email: 'student04@example.com', provider: 'discord', joined: '2026-07-24', status: 'hold' },
-    { name: '정하은', email: 'student05@example.com', provider: 'kakao',   joined: '2026-07-23', status: 'ok' },
-    { name: '강태윤', email: 'student06@example.com', provider: 'github',  joined: '2026-07-23', status: 'ok' },
-    { name: '윤소미', email: 'student07@example.com', provider: 'google',  joined: '2026-07-22', status: 'ok' },
-    { name: '임도현', email: 'student08@example.com', provider: 'kakao',   joined: '2026-07-22', status: 'ok' }
-  ];
-
-  // IP 는 문서용 예약 대역(203.0.113.x, RFC 5737)만 썼다 — 실존 주소일 수 없다
   let REPORTS = [];   // GET /api/moderation/reports 로 채운다
 
   // 제재 대상 회원의 항소. 원 제재를 함께 들고 있어야 검토가 가능하다.
@@ -730,10 +756,7 @@ Session.refresh().then(function (user) {
 
   let HELD = [];   // GET /api/moderation/held 로 채운다
 
-  const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', github: 'GitHub', discord: 'Discord' };
   const STATUS = {
-    ok:      { cls: 'badge-ok',    text: '정상' },
-    hold:    { cls: 'badge-hold',  text: '정지' },
     wait:    { cls: 'badge-wait',  text: '대기' },
     done:    { cls: 'badge-ok',    text: '처리됨' },  // text 는 제재 내용으로 덮어쓴다
     denied:  { cls: 'badge-hold',  text: '기각' },
@@ -746,7 +769,6 @@ Session.refresh().then(function (user) {
   };
 
   const esc = escapeHtml;   // session.js 제공
-  const chip = (p) => '<span class="chip chip-' + p + '">' + PROVIDER_LABEL[p] + '</span>';
   const badge = (s, override) =>
     '<span class="badge ' + STATUS[s].cls + '">' + esc(override || STATUS[s].text) + '</span>';
 
@@ -767,35 +789,6 @@ Session.refresh().then(function (user) {
       ? rows.join('')
       : '<tr><td colspan="' + cols + '" class="empty">' + empty + '</td></tr>';
   };
-
-  // 개요 — 최근 가입 4명만
-  fill('recent-body', MOCK_USERS.slice(0, 4).map((u) =>
-    '<tr><td class="cell-name">' + esc(u.name) + '</td>' +
-    '<td class="cell-muted">' + esc(u.email) + '</td>' +
-    '<td>' + chip(u.provider) + '</td>' +
-    '<td class="cell-muted">' + u.joined + '</td></tr>'
-  ), '');
-
-  // 회원 — 검색어로 걸러 그린다
-  function renderUsers(q) {
-    const key = (q || '').trim().toLowerCase();
-    const list = key
-      ? MOCK_USERS.filter((u) => (u.name + u.email).toLowerCase().includes(key))
-      : MOCK_USERS;
-
-    document.getElementById('user-count').textContent = list.length + '명';
-    fill('user-body', list.map((u) =>
-      '<tr><td class="cell-name">' + esc(u.name) + '</td>' +
-      '<td class="cell-muted">' + esc(u.email) + '</td>' +
-      '<td>' + chip(u.provider) + '</td>' +
-      '<td class="cell-muted">' + u.joined + '</td>' +
-      '<td>' + badge(u.status) + '</td>' +
-      '<td><button type="button" class="row-action">' +
-      (u.status === 'hold' ? '정지 해제' : '정지') + '</button></td></tr>'
-    ), '검색 결과가 없습니다.');
-  }
-  renderUsers('');
-  document.getElementById('user-search').addEventListener('input', (e) => renderUsers(e.target.value));
 
   // 개요의 대기 건수도 표와 같은 원본을 보게 한다 (숫자가 따로 놀면 신뢰를 잃는다)
   let reportsLoading = true;
@@ -1303,6 +1296,123 @@ Session.refresh().then(function (user) {
       btn.textContent = prev;
     }
   });
+
+  // ── 설정 ──
+  const setWords = document.getElementById('set-words');
+  const setWindow = document.getElementById('set-window');
+  const setMax = document.getElementById('set-max');
+  const setSave = document.getElementById('set-save');
+  const setResult = document.getElementById('set-result');
+  const setSaved = document.getElementById('set-saved');
+
+  function setSay(msg) { setResult.textContent = msg; setResult.hidden = false; }
+
+  const shortWhen = (iso) => {
+    const d = new Date(iso);
+    return isNaN(d) ? iso : shortDate(iso) + ' ' +
+      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  };
+
+  let SET_DEFAULTS = null;   // '기본값으로' 버튼이 쓴다. 서버가 아는 값이 유일한 기준이다
+
+  /* 서버가 준 값만 그린다. 화면이 보낸 값을 그리면 서버가 다듬은 결과
+     (공백 정리·중복 제거)와 어긋나서 "저장했는데 다르다" 가 된다. */
+  function renderSettings(data) {
+    const e = data.editable;
+    SET_DEFAULTS = data.defaults;
+    setWords.value = e.bannedWords.join('\n');
+    setWindow.value = e.postWindowMin;
+    setMax.value = e.postMax;
+
+    document.getElementById('set-words-count').textContent =
+      e.bannedWords.length + '개 / ' + data.limits.wordsMax + '개';
+    setSaved.textContent = e.updatedAt
+      ? '마지막 변경: ' + shortWhen(e.updatedAt) + ' · ' + e.updatedBy
+      : '아직 바꾼 적 없습니다 (기본값)';
+
+    // 환경 변수는 서버가 읽어준 현재 값을 그대로 보여준다
+    const env = data.env;
+    document.getElementById('set-env').innerHTML =
+      row('점검 모드', env.lockdown
+        ? badge('blocked', '켜짐 · 모든 API 503')
+        : badge('public', '꺼짐 · 정상 운영')) +
+      row('관리자', env.adminEmails.length
+        ? env.adminEmails.map(esc).join('<br>')
+        : '<span class="cell-muted">ADMIN_EMAILS 미설정</span>') +
+      row('데이터베이스', env.cosmosConnected
+        ? badge('public', '연결됨')
+        : badge('blocked', 'COSMOS_CONNECTION 미설정')) +
+      row('세션 만료', esc(env.sessionDays + '일')) +
+      row('투표 제한', esc('분당 ' + data.fixed.voteMaxPerMin + '회') +
+        '<div class="cell-sub">코드 고정 — 표 한 번에 설정을 읽지 않으려고 뺐습니다</div>');
+  }
+
+  function row(dt, ddHtml) {
+    return '<div><dt>' + esc(dt) + '</dt><dd>' + ddHtml + '</dd></div>';
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/moderation/settings', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      renderSettings(await res.json());
+      setResult.hidden = true;
+    } catch (e) {
+      setSay('설정을 불러오지 못했습니다: ' + e.message +
+        '\n서버 값을 모르는 상태로 저장하면 멀쩡한 설정을 덮어씁니다. 저장 버튼을 잠갔습니다.');
+      // 빈 화면을 저장 가능한 상태로 두면 금칙어를 통째로 날린다
+      setSave.disabled = true;
+    }
+  }
+
+  async function saveSettings() {
+    // 브라우저 검사를 먼저 통과시킨다 — 서버도 같은 범위를 확인하지만,
+    // 왕복하지 않고 바로 알려주는 편이 낫다
+    for (const input of [setWindow, setMax]) {
+      if (!input.checkValidity()) { input.focus(); input.reportValidity(); return; }
+    }
+
+    const body = {
+      bannedWords: setWords.value.split('\n').map((w) => w.trim()).filter(Boolean),
+      postWindowMin: Number(setWindow.value),
+      postMax: Number(setMax.value)
+    };
+
+    const prev = setSave.textContent;
+    setSave.disabled = true;
+    setSave.textContent = '저장 중…';
+    try {
+      const res = await fetch('/api/moderation/settings', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '저장하지 못했습니다.');
+      renderSettings(data);
+      setSay('저장했습니다. 다음 글부터 이 기준으로 판정합니다.');
+    } catch (e) {
+      setSay('저장하지 못했습니다: ' + e.message + '\n화면의 값은 그대로 두었습니다.');
+    } finally {
+      setSave.disabled = false;
+      setSave.textContent = prev;
+    }
+  }
+
+  setSave.addEventListener('click', saveSettings);
+
+  // 기본값 되돌리기는 입력란만 채운다 — 저장은 따로 눌러야 한다.
+  // 한 번의 실수로 금칙어 목록이 날아가면 안 된다.
+  document.getElementById('set-reset').addEventListener('click', () => {
+    if (!SET_DEFAULTS) return;   // 아직 못 불러왔다면 채울 기준이 없다
+    setWords.value = SET_DEFAULTS.bannedWords.join('\n');
+    setWindow.value = SET_DEFAULTS.postWindowMin;
+    setMax.value = SET_DEFAULTS.postMax;
+    setSay('기본값을 입력란에 채웠습니다. 적용하려면 저장을 누르세요.');
+  });
+
+  loadSettings();
 
   // ── 섹션 전환 ──
   // location.hash 를 쓰면 뒤로가기와 새로고침이 공짜로 동작한다.
