@@ -43,6 +43,12 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { overflow-x: hidden; }
 
+/* [hidden] 은 브라우저 기본값이 display:none 인데, 클래스가 display 를 지정하면
+   특정도에서 밀려 그대로 보인다 (.suspended 가 display:flex 라 제재 없는 사람에게도
+   제재 배너가 떴다). 화면 곳곳이 el.hidden = true 로 토글하므로 여기서 못 박는다.
+   숨김은 어떤 클래스보다 세야 하니 !important 가 맞다. */
+[hidden] { display: none !important; }
+
 body {
   font-family: var(--font-body);
   font-size: 16px;

@@ -103,6 +103,33 @@ test('정상 글은 저장되고 목록에 나온다', async () => {
   assert.strictEqual(list.jsonBody.posts[0].body, undefined, '목록에 본문 전체를 실으면 글이 늘수록 응답만 커진다');
 });
 
+test('목록의 글이 여러 개여도 전부 excerpt 다 — map 이 인덱스를 넘기는 함정', async () => {
+  /* posts.map(publicPost) 로 쓰면 map 이 (요소, 인덱스, 배열) 을 넘겨서
+     full 에 인덱스가 들어간다. 인덱스 0 만 falsy 라 첫 글은 멀쩡하고
+     두 번째부터 본문 전체가 실려 나갔다 — 실서버에서 화면에 undefined 로 드러났다.
+     글을 하나만 만드는 테스트로는 절대 못 잡는다. */
+  state.docs = [];
+  for (const n of [1, 2, 3]) {
+    await routes.postsCreate.handler(req({
+      cookie: login(), body: { subject: 'physics', title: '글' + n, body: '본문' + n }
+    }), ctx);
+  }
+
+  const list = await routes.postsList.handler(req({}), ctx);
+  assert.strictEqual(list.jsonBody.posts.length, 3);
+  list.jsonBody.posts.forEach((p, i) => {
+    assert.strictEqual(p.body, undefined, i + '번째 글에 본문 전체가 실렸다');
+    assert.ok(p.excerpt, i + '번째 글의 excerpt 가 없다 — 화면에 undefined 로 나온다');
+  });
+
+  // viewerSub 자리에도 배열이 들어가던 탓에 mine 이 늘 false 였다
+  const asAuthor = await routes.postsList.handler(req({ cookie: login() }), ctx);
+  assert.ok(asAuthor.jsonBody.posts.every((p) => p.mine === true), '내가 쓴 글인데 mine 이 false 다');
+
+  const anon = await routes.postsList.handler(req({}), ctx);
+  assert.ok(anon.jsonBody.posts.every((p) => p.mine === false), '비로그인에게 mine 이 true 로 나가면 안 된다');
+});
+
 test('작성자 식별자는 목록에 노출되지 않는다', async () => {
   state.docs = [];
   await routes.postsCreate.handler(req({ cookie: login(), body: okPost }), ctx);

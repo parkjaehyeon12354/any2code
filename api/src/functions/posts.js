@@ -90,7 +90,10 @@ app.http('postsList', {
       myVotes.forEach((v) => { votes[v.postId] = v.dir; });
 
       return {
-        jsonBody: { posts: posts.map(publicPost), votes },
+        // map(publicPost) 로 쓰면 안 된다 — map 이 콜백에 (요소, 인덱스, 배열) 을
+        // 넘기므로 full 에 인덱스가, viewerSub 에 배열이 들어간다. 그래서 첫 글만
+        // excerpt 가 나오고 (인덱스 0 = falsy) 나머지는 본문 전체가 실려 나갔다.
+        jsonBody: { posts: posts.map((p) => publicPost(p, false, user && user.sub)), votes },
         headers: { 'Cache-Control': 'no-store' }
       };
     } catch (e) {
