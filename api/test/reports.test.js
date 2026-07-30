@@ -350,6 +350,71 @@ test('이력 기록이 실패해도 제재 처리는 성공한다', async () => 
   }
 });
 
+test('관리자 목록에 그 사람의 제재 이력이 함께 온다', async () => {
+  /* 일수를 정하는 사람이 과거를 못 보면 반복 위반을 알 수 없다.
+     본인용(/api/profile)과 달리 처리한 관리자(by)도 남긴다. */
+  await seedSanctioned();
+  await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
+
+  const reports = await routes.reportList.handler(req({ cookie: admin() }), ctx);
+  const row = reports.jsonBody.reports[0];
+  assert.ok(Array.isArray(row.history), '신고 목록에 이력이 없다');
+  assert.strictEqual(row.history.length, 1);
+  assert.strictEqual(row.history[0].event, 'issued');
+  assert.strictEqual(row.history[0].by, 'boss@example.com', '관리자끼리는 누가 처리했는지 보여야 한다');
+
+  const appeals = await routes.appealList.handler(req({ cookie: admin() }), ctx);
+  assert.strictEqual(appeals.jsonBody.appeals[0].history.length, 1);
+});
+
+test('이력은 사람별로 갈린다 — 남의 이력이 섞이면 안 된다', async () => {
+  await seedSanctioned();                      // author 가 제재를 받는다
+  const sanction = require('../src/lib/sanction');
+  await sanction.log({ sub: 'discord:2', event: 'issued', days: 30, reason: '남의 제재' });
+
+  const reports = await routes.reportList.handler(req({ cookie: admin() }), ctx);
+  const row = reports.jsonBody.reports[0];
+  assert.strictEqual(row.history.length, 1, '남의 이력이 섞였다');
+  assert.notStrictEqual(row.history[0].reason, '남의 제재');
+});
+
+test('이력이 없는 사람은 빈 배열 — 화면이 undefined 를 그리면 안 된다', async () => {
+  const { report } = await seedReport();
+  const reports = await routes.reportList.handler(req({ cookie: admin() }), ctx);
+  const row = reports.jsonBody.reports.find((r) => r.id === report.id);
+  assert.deepStrictEqual(row.history, []);
+});
+
+test('이력 조회는 목록 크기와 무관하게 쿼리 한 번', async () => {
+  /* 행마다 물으면 신고 20건에 쿼리가 21번 나간다. 무료 계층 1000 RU/s 에서
+     관리자가 새로고침할 때마다 그만큼 쓴다. */
+  state.docs = [];
+  for (let i = 0; i < 3; i++) {
+    await routes.postsCreate.handler(req({
+      cookie: author(), body: { subject: 'physics', title: '글' + i, body: '내용' + i }
+    }), ctx);
+  }
+  const posts = state.docs.filter((d) => d.type === 'post');
+  for (const p of posts) {
+    await routes.reportCreate.handler(
+      req({ cookie: other(), body: { targetId: p.id, reason: 'spam' } }), ctx);
+  }
+
+  let logQueries = 0;
+  const realQuery = fake.items.query;
+  fake.items.query = (spec) => {
+    if (spec.query.includes("'sanctionLog'")) logQueries++;
+    return realQuery(spec);
+  };
+  try {
+    const res = await routes.reportList.handler(req({ cookie: admin() }), ctx);
+    assert.strictEqual(res.jsonBody.reports.length, 3);
+    assert.strictEqual(logQueries, 1, '신고 건수만큼 쿼리가 나갔다');
+  } finally {
+    fake.items.query = realQuery;
+  }
+});
+
 test('소명 기각 — 제재가 유지된다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);

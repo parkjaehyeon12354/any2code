@@ -93,6 +93,32 @@ app.http('reportCreate', {
   }
 });
 
+/* ── 제재 이력 (관리자용) ──
+   "이력이 남아야 반복 위반을 알 수 있다" 는 판단은 관리자가 한다. 그런데 본인만
+   볼 수 있게 만들어 두면 정작 일수를 정하는 사람이 과거를 못 본다. 목록에 함께 싣는다.
+
+   한 번만 조회해서 사용자별로 묶는다. 행마다 따로 물으면 신고 20건에 쿼리가 21번
+   나간다. 관리자 화면은 어차피 전체를 훑으므로 한 번에 읽는 편이 싸다.
+
+   본인용(profile.js)과 달리 by(처리한 관리자)를 남겨둔다 — 운영자끼리는 누가 어떤
+   판단을 했는지 보여야 서로 확인할 수 있다. 이 응답은 requireAdmin 뒤에서만 나간다. */
+async function historyBySub() {
+  const rows = await query({ query: "SELECT * FROM c WHERE c.type = 'sanctionLog'" });
+  const map = {};
+  for (const r of rows) {
+    (map[r.userSub] = map[r.userSub] || []).push({
+      event: r.event,
+      days: Number.isInteger(r.days) ? r.days : null,
+      reason: r.reason || null,
+      at: r.at,
+      by: r.by || null
+    });
+  }
+  // 최근 것이 먼저. ORDER BY 를 쓰지 않는 이유는 lib/sanction.js 의 history() 주석 참고.
+  for (const k of Object.keys(map)) map[k].sort((a, b) => (a.at < b.at ? 1 : -1));
+  return map;
+}
+
 /* ── 신고 목록 (관리자) ── */
 const reportView = (r) => ({
   id: r.id,
@@ -119,10 +145,16 @@ app.http('reportList', {
 
     try {
       // 처리한 것도 함께 준다 — 방금 누른 결과가 사라지면 잘못 눌렀을 때 확인할 수 없다
-      const rows = await query({
-        query: "SELECT * FROM c WHERE c.type = 'report' ORDER BY c.createdAt DESC"
-      });
-      return { jsonBody: { reports: rows.map(reportView) }, headers: { 'Cache-Control': 'no-store' } };
+      const [rows, history] = await Promise.all([
+        query({ query: "SELECT * FROM c WHERE c.type = 'report' ORDER BY c.createdAt DESC" }),
+        historyBySub()
+      ]);
+      // 제재 일수를 정하는 화면이다 — 그 사람이 처음인지 반복인지가 여기서 필요하다
+      const reports = rows.map((r) => ({
+        ...reportView(r),
+        history: history[r.targetAuthorSub] || []
+      }));
+      return { jsonBody: { reports }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
       context.error('신고 목록 실패:', e.message);
       return dbFail(e, '신고 목록을 불러오지 못했습니다.');
@@ -310,10 +342,16 @@ app.http('appealList', {
     if (error) return error;
 
     try {
-      const rows = await query({
-        query: "SELECT * FROM c WHERE c.type = 'appeal' ORDER BY c.createdAt DESC"
-      });
-      return { jsonBody: { appeals: rows.map(appealView) }, headers: { 'Cache-Control': 'no-store' } };
+      const [rows, history] = await Promise.all([
+        query({ query: "SELECT * FROM c WHERE c.type = 'appeal' ORDER BY c.createdAt DESC" }),
+        historyBySub()
+      ]);
+      // 풀어줄지 판단하는 화면이다 — 같은 사람이 몇 번째인지 보여야 한다
+      const appeals = rows.map((a) => ({
+        ...appealView(a),
+        history: history[a.userSub] || []
+      }));
+      return { jsonBody: { appeals }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
       context.error('소명 목록 실패:', e.message);
       return dbFail(e, '소명 목록을 불러오지 못했습니다.');

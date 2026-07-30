@@ -218,6 +218,13 @@
 
 /* 표 안의 해제일 보조 표기 */
 .cell-sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+/* 반복 위반 — 표를 훑을 때 걸려야 한다. 앰버는 surface 위 4.5:1 확보값 */
+.cell-sub.warn-text { color: #8a5c08; font-weight: 600; }
+
+/* 모달 이력 — dt 폭(52px)에 맞춰 한 줄씩 쌓는다 */
+.hist-line { line-height: 1.55; }
+.hist-line + .hist-line { margin-top: 2px; }
+.hist-when { font-variant-numeric: tabular-nums; color: var(--muted); }
 
 /* 소명 본문 — 회원이 쓴 글이라 관리자 UI 문구와 구분되어야 한다 */
 .ap-quote {
@@ -616,6 +623,8 @@ mark {
       <div><dt>사유</dt><dd id="mod-reason"></dd></div>
       <div><dt>IP</dt><dd id="mod-ip"></dd></div>
       <div id="mod-prev-row" hidden><dt>기존</dt><dd id="mod-prev"></dd></div>
+      <!-- 반복 위반인지 여기서 봐야 일수를 제대로 정한다 -->
+      <div id="mod-history-row" hidden><dt>이력</dt><dd id="mod-history"></dd></div>
     </dl>
 
     <!-- 선택한 제재가 실제로 며칠까지인지 바로 보여준다 -->
@@ -672,6 +681,8 @@ mark {
     <dl class="mod-summary">
       <div><dt>신청자</dt><dd id="ap-who"></dd></div>
       <div><dt>원 제재</dt><dd id="ap-orig"></dd></div>
+      <!-- 처음인지 반복인지에 따라 풀어줄지가 달라진다 -->
+      <div id="ap-history-row" hidden><dt>이력</dt><dd id="ap-history"></dd></div>
       <div><dt>사유</dt><dd id="ap-reason"></dd></div>
     </dl>
 
@@ -804,11 +815,49 @@ Session.refresh().then(function (user) {
   }
 
   // 처리 후 상태가 바뀌므로 다시 그릴 수 있어야 한다
+  /* 반복 위반 표시. 제재로 이어진 것만 센다 — 감경·해제는 같은 건의 후속이라
+     함께 세면 한 번 걸린 사람이 세 번 걸린 것처럼 보인다. */
+  const priorCount = (history) => (history || []).filter((h) => h.event === 'issued').length;
+
+  const priorTag = (history) => {
+    const n = priorCount(history);
+    return n ? '<div class="cell-sub warn-text">이전 제재 ' + n + '건</div>' : '';
+  };
+
+  const HISTORY_EVENT = {
+    issued: (h) => (h.days ? h.days + '일 제한' : '경고'),
+    reduced: (h) => h.days + '일로 감경',
+    lifted: () => '소명 인용 · 해제'
+  };
+
+  /* 모달의 이력 칸. 처리한 관리자까지 보여준다 — 운영자끼리 서로 확인할 수 있어야 한다.
+     최근 5건까지만: 판단에 필요한 건 최근 경향이고, 길어지면 모달이 스크롤된다. */
+  function fillHistory(rowId, boxId, history) {
+    const list = history || [];
+    const row = document.getElementById(rowId);
+    row.hidden = !list.length;
+    if (!list.length) return;
+
+    const shown = list.slice(0, 5);
+    document.getElementById(boxId).innerHTML =
+      shown.map((h) => {
+        const label = (HISTORY_EVENT[h.event] || ((x) => x.event))(h);
+        return '<div class="hist-line">' +
+          '<span class="hist-when">' + esc(shortDate(h.at)) + '</span> ' +
+          esc(label) +
+          (h.reason ? ' <span class="cell-muted">· ' + esc(h.reason) + '</span>' : '') +
+          (h.by ? ' <span class="cell-muted">· ' + esc(h.by) + '</span>' : '') +
+          '</div>';
+      }).join('') +
+      (list.length > shown.length
+        ? '<div class="cell-sub">외 ' + (list.length - shown.length) + '건</div>' : '');
+  }
+
   function renderReports() {
     if (reportsLoading) { fill('report-body', [], '불러오는 중…'); return; }
     fill('report-body', REPORTS.map((r) =>
       '<tr><td class="cell-name">' + esc(r.target) +
-        '<div class="cell-sub">' + esc(r.targetAuthor || '') + '</div></td>' +
+        '<div class="cell-sub">' + esc(r.targetAuthor || '') + '</div>' + priorTag(r.history) + '</td>' +
       '<td class="cell-wrap">' + esc(clip(r.targetText)) + '</td>' +
       '<td>' + esc(r.reason) + '</td>' +
       '<td class="cell-muted">' + esc(r.by) + '</td>' +
@@ -860,7 +909,7 @@ Session.refresh().then(function (user) {
   function renderAppeals() {
     if (appealsLoading) { fill('appeal-body', [], '불러오는 중…'); return; }
     fill('appeal-body', APPEALS.map((a) =>
-      '<tr><td class="cell-name">' + esc(a.who) + '</td>' +
+      '<tr><td class="cell-name">' + esc(a.who) + priorTag(a.history) + '</td>' +
       '<td class="cell-muted">' + sanctionText(a.orig.days) +
       '<div class="cell-sub">' + esc(a.reason) + '</div></td>' +
       '<td class="cell-wrap">' + esc(a.text.split('\n')[0]) + '</td>' +
@@ -1084,6 +1133,8 @@ Session.refresh().then(function (user) {
         (prev.until ? ' (' + shortDate(prev.until) + ' 해제)' : '');
     }
 
+    fillHistory('mod-history-row', 'mod-history', current.history);
+
     dlg.querySelector('input[name="duration"][value="' + (prev ? prev.days : 0) + '"]').checked = true;
     blockBox.checked = prev ? !!prev.blockedContent : true;
     sendBox.checked = true;
@@ -1232,6 +1283,7 @@ Session.refresh().then(function (user) {
       (apCurrent.orig.until ? ' (' + shortDate(apCurrent.orig.until) + ' 해제)' : '');
     document.getElementById('ap-reason').textContent = apCurrent.reason;
     document.getElementById('ap-text').textContent = apCurrent.text;
+    fillHistory('ap-history-row', 'ap-history', apCurrent.history);
 
     const prev = apCurrent.decision;
     apDlg.querySelector('input[name="decision"][value="' + (prev ? prev.decision : 'denied') + '"]').checked = true;
