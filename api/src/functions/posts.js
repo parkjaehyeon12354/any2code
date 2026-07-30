@@ -4,6 +4,7 @@ const { lockdown } = require('../lib/lockdown');
 const { container, query, dbFail } = require('../lib/db');
 const sanction = require('../lib/sanction');
 const settings = require('../lib/settings');
+const profile = require('../lib/profile');
 
 /* 과목은 서버가 정한 목록만 받는다. 클라이언트가 보낸 값을 그대로 파티션 키로
    쓰면 아무 문자열이나 새 파티션이 되어 데이터가 흩어진다. */
@@ -200,7 +201,8 @@ app.http('postsCreate', {
       title,
       body: text,
       authorSub: user.sub,
-      authorName: user.name,
+      // 쿠키의 이름이 아니라 사용자가 고른 표시 이름. 못 읽으면 쿠키 값으로 돈다.
+      authorName: await profile.displayName(user).catch(() => user.name),
       createdAt: new Date().toISOString(),
       score: 0,
       answers: 0,
@@ -378,7 +380,7 @@ app.http('commentsCreate', {
         postId,
         body: text,
         authorSub: user.sub,
-        authorName: user.name,
+        authorName: await profile.displayName(user).catch(() => user.name),
         createdAt: new Date().toISOString(),
         status: hits.length ? 'held' : 'public',
         ...(hits.length ? { heldWords: hits } : {})

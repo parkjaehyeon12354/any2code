@@ -33,6 +33,10 @@
       "rewrite": "/admin.html"
     },
     {
+      "route": "/settings",
+      "rewrite": "/settings.html"
+    },
+    {
       "route": "/q/*",
       "rewrite": "/post.html"
     },

@@ -3,6 +3,7 @@ const session = require('../lib/session');
 const { lockdown } = require('../lib/lockdown');
 const { PROVIDERS, credentials, exchangeCode, fetchProfile } = require('../lib/providers');
 const sanction = require('../lib/sanction');
+const profile = require('../lib/profile');
 
 /** 콜백 주소.
 
@@ -88,6 +89,15 @@ app.http('authCallback', {
         role: session.isAdmin(profile.email) ? 'admin' : 'user'
       };
 
+      // 사용자 문서를 만들거나 마지막 로그인 시각만 갱신한다.
+      // 실패해도 로그인은 진행한다 — 프로필은 부가 기능이고, 여기서 막으면
+      // DB 문제 하나로 아무도 못 들어온다 (/api/me 의 제재 조회와 같은 원칙).
+      try {
+        await profile.ensure(user);
+      } catch (e) {
+        context.error('사용자 문서 갱신 실패:', e.message);
+      }
+
       // 세션 발급과 state 쿠키 폐기를 한 응답에 함께 싣는다
       return {
         status: 302,
@@ -117,12 +127,17 @@ app.http('me', {
     let suspended = null;
     try { suspended = await sanction.active(user.sub); } catch { suspended = null; }
 
+    // 표시 이름도 쿠키가 아니라 지금 문서 기준으로 읽는다. 쿠키는 14일 살아있어서
+    // 이름을 바꿔도 그때까지 옛 이름이 상단바에 남는다 — role 과 같은 이유다.
+    let name = user.name;
+    try { name = await profile.displayName(user); } catch { name = user.name; }
+
     return {
       jsonBody: {
         authenticated: true,
         suspendedUntil: suspended ? suspended.until : null,
         suspendedReason: suspended ? suspended.reason : null,
-        name: user.name,
+        name,
         email: user.email,
         picture: user.picture,
         provider: user.provider,
