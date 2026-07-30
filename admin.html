@@ -324,15 +324,17 @@ mark {
 }
 .set-sentence input:invalid { border-color: var(--error); }
 
-/* 환경 변수 표시 — .mod-summary 와 같은 모양이지만 항목 이름이 길어 dt 가 넓다 */
+/* 환경 변수 표시 — .mod-summary 와 같은 모양이지만 항목 이름이 길어 dt 가 넓다.
+   자손(div)이 아니라 직계 자식(> div)이어야 한다 — dd 안의 .cell-sub 주석까지
+   행으로 잡으면 거기에도 flex 와 padding 이 걸린다 */
 .set-env { font-size: 13px; }
-.set-env div {
+.set-env > div {
   display: flex;
   gap: var(--sp-md);
   padding: 7px 0;
   border-bottom: 1px solid var(--hairline);
 }
-.set-env div:last-child { border-bottom: none; }
+.set-env > div:last-child { border-bottom: none; }
 .set-env dt { width: 110px; flex-shrink: 0; color: var(--muted); }
 .set-env dd { color: var(--ink); font-weight: 500; word-break: break-all; }
 
