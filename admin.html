@@ -219,7 +219,7 @@
 /* 표 안의 해제일 보조 표기 */
 .cell-sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
 
-/* 항소 본문 — 회원이 쓴 글이라 관리자 UI 문구와 구분되어야 한다 */
+/* 소명 본문 — 회원이 쓴 글이라 관리자 UI 문구와 구분되어야 한다 */
 .ap-quote {
   padding: 10px 12px;
   background: var(--surface-soft);
@@ -230,7 +230,7 @@
   word-break: keep-all;
   white-space: pre-wrap;
 }
-/* 표 안에서 긴 항소 사유는 줄바꿈 허용 (다른 셀은 nowrap) */
+/* 표 안에서 긴 소명 사유는 줄바꿈 허용 (다른 셀은 nowrap) */
 .table td.cell-wrap { white-space: normal; min-width: 200px; max-width: 340px; word-break: keep-all; }
 
 /* 감지된 금칙어 강조 — 문맥을 보고 오탐인지 바로 판단할 수 있어야 한다 */
@@ -422,7 +422,7 @@ mark {
     <h2>운영</h2>
     <a href="#overview" data-nav="overview">개요</a>
     <a href="#reports" data-nav="reports">신고</a>
-    <a href="#appeals" data-nav="appeals">항소</a>
+    <a href="#appeals" data-nav="appeals">소명</a>
     <a href="#held" data-nav="held">보류 게시물</a>
     <a href="#settings" data-nav="settings">설정</a>
   </nav>
@@ -442,7 +442,7 @@ mark {
           <div class="stat-note warn" id="pending-note">확인 필요</div>
         </div>
         <div class="stat">
-          <div class="stat-label">대기 중 항소</div>
+          <div class="stat-label">대기 중 소명</div>
           <div class="stat-value" id="appeal-count">2</div>
           <div class="stat-note warn" id="appeal-note">확인 필요</div>
         </div>
@@ -464,7 +464,7 @@ mark {
       <p class="mock-banner">
         <span class="mark">ⓘ</span>
         <span><strong>제한을 걸면 즉시 적용됩니다.</strong> 해당 회원은 글·답변을
-        쓸 수 없게 되고, 기간이 지나면 자동으로 풀립니다. 이의가 있으면 항소로 들어옵니다.</span>
+        쓸 수 없게 되고, 기간이 지나면 자동으로 풀립니다. 이의가 있으면 소명으로 들어옵니다.</span>
       </p>
 
       <pre class="mod-result" id="mod-result" hidden></pre>
@@ -480,10 +480,10 @@ mark {
       </div>
     </section>
 
-    <!-- ── 항소 ── -->
+    <!-- ── 소명 ── -->
     <section id="appeals">
       <div class="page-head">
-        <h1>항소</h1>
+        <h1>소명</h1>
         <p>제재를 받은 회원이 낸 이의를 검토합니다.</p>
       </div>
 
@@ -496,10 +496,10 @@ mark {
       <pre class="mod-result" id="ap-result" hidden></pre>
 
       <div class="panel">
-        <div class="panel-head"><h3>접수된 항소</h3></div>
+        <div class="panel-head"><h3>접수된 소명</h3></div>
         <div class="panel-scroll">
           <table class="table">
-            <thead><tr><th scope="col">신청자</th><th scope="col">원 제재</th><th scope="col">항소 사유</th><th scope="col">접수일</th><th scope="col">결과</th><th scope="col"></th></tr></thead>
+            <thead><tr><th scope="col">신청자</th><th scope="col">원 제재</th><th scope="col">소명 사유</th><th scope="col">접수일</th><th scope="col">결과</th><th scope="col"></th></tr></thead>
             <tbody id="appeal-body"></tbody>
           </table>
         </div>
@@ -661,10 +661,10 @@ mark {
   </div>
 </dialog>
 
-<!-- 항소 처리 모달 — 신고 모달과 CSS 는 공유하고 결정 항목만 다르다 -->
+<!-- 소명 처리 모달 — 신고 모달과 CSS 는 공유하고 결정 항목만 다르다 -->
 <dialog class="modal" id="ap-dialog" aria-labelledby="ap-title">
   <div class="modal-head">
-    <h3 id="ap-title">항소 처리</h3>
+    <h3 id="ap-title">소명 처리</h3>
     <button type="button" class="modal-close" id="ap-x" aria-label="닫기">×</button>
   </div>
 
@@ -676,7 +676,7 @@ mark {
     </dl>
 
     <div class="field-row">
-      <span class="legend">항소 내용</span>
+      <span class="legend">소명 내용</span>
       <p class="ap-quote" id="ap-text"></p>
     </div>
 
@@ -740,7 +740,7 @@ Session.refresh().then(function (user) {
 
   let REPORTS = [];   // GET /api/moderation/reports 로 채운다
 
-  // 제재 대상 회원의 항소. 원 제재를 함께 들고 있어야 검토가 가능하다.
+  // 제재 대상 회원의 소명. 원 제재를 함께 들고 있어야 검토가 가능하다.
 
   // 금칙어 목록과 판정은 서버(api/src/functions/posts.js)에만 둔다.
   // 화면에서 다시 계산하면 두 목록이 갈라지고, 감지어가 실제 보류 사유와
@@ -845,7 +845,7 @@ Session.refresh().then(function (user) {
   renderReports();
   updatePendingCount();
 
-  // ── 항소 ──
+  // ── 소명 ──
   let APPEALS = [];
   let appealsLoading = true;
 
@@ -870,7 +870,7 @@ Session.refresh().then(function (user) {
         ? '<div class="cell-sub">' + a.decision.days + '일로 감경</div>' : '') + '</td>' +
       '<td><button type="button" class="row-action" data-appeal="' + esc(a.id) + '">' +
       (a.decision ? '다시 결정' : '검토') + '</button></td></tr>'
-    ), '접수된 항소가 없습니다.');
+    ), '접수된 소명이 없습니다.');
   }
 
   const DECISION_LABEL = { denied: '기각 · 제재 유지', granted: '인용 · 즉시 해제', reduced: '감경' };
@@ -883,7 +883,7 @@ Session.refresh().then(function (user) {
     } catch (e) {
       APPEALS = [];
       const box = document.getElementById('ap-result');
-      box.textContent = '항소 목록을 불러오지 못했습니다: ' + e.message;
+      box.textContent = '소명 목록을 불러오지 못했습니다: ' + e.message;
       box.hidden = false;
     } finally {
       appealsLoading = false;
@@ -1036,7 +1036,7 @@ Session.refresh().then(function (user) {
       '회원님의 「' + current.target + '」이(가) ‘' + current.reason + '’ 사유로 신고 접수되어 검토했습니다.\n' +
       limit +
       (blockBox.checked ? '\n신고된 글은 커뮤니티에서 가려졌습니다.' : '') +
-      '\n\n이의가 있으시면 항소를 접수해 주세요.';
+      '\n\n이의가 있으시면 소명을 접수해 주세요.';
   }
 
   function refreshTemplate() {
@@ -1170,7 +1170,7 @@ Session.refresh().then(function (user) {
     }
   });
 
-  // ── 항소 처리 모달 ──
+  // ── 소명 처리 모달 ──
   const apDlg = document.getElementById('ap-dialog');
   const apMsg = document.getElementById('ap-message');
   const apSend = document.getElementById('ap-send');

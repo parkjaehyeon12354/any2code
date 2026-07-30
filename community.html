@@ -333,7 +333,7 @@
       <strong id="suspended-title"></strong>
       <p id="suspended-detail"></p>
     </div>
-    <button type="button" class="btn btn-ghost" id="appeal-open">항소하기</button>
+    <button type="button" class="btn btn-ghost" id="appeal-open">소명하기</button>
   </div>
 
   <div class="community-layout">
@@ -400,11 +400,11 @@
   </form>
 </dialog>
 
-<!-- 항소 -->
+<!-- 소명 -->
 <dialog class="modal" id="appeal-modal" aria-labelledby="appeal-title">
   <form id="appeal-form">
     <div class="modal-head">
-      <h3 id="appeal-title">항소하기</h3>
+      <h3 id="appeal-title">소명하기</h3>
       <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
     </div>
     <div class="modal-body">
@@ -687,7 +687,7 @@
   renderPosts();
 
   // 둘 다 세션 쿠키를 알아서 싣고 나간다 — 순서를 기다릴 이유가 없다
-  // ── 이용 제한 안내 · 항소 ──
+  // ── 이용 제한 안내 · 소명 ──
   const suspended = el('suspended');
   const apModal = el('appeal-modal');
   const apForm = el('appeal-form');
@@ -735,14 +735,14 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         // 실패하면 닫지 않는다 — 닫으면 접수된 줄 알고 기다린다
-        apError.textContent = data.error || '항소를 접수하지 못했습니다.';
+        apError.textContent = data.error || '소명을 접수하지 못했습니다.';
         apError.hidden = false;
         return;
       }
       apModal.close();
       apForm.reset();
       el('ap-count').textContent = '0 / 2000';
-      say(data.message || '항소가 접수됐습니다.');
+      say(data.message || '소명이 접수됐습니다.');
     } catch {
       apError.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
       apError.hidden = false;

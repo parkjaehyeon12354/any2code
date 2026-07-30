@@ -122,7 +122,7 @@ app.http('me', {
     const user = session.current(request);
     if (!user) return { status: 401, jsonBody: { authenticated: false } };
 
-    // 제한 중이면 화면이 이유와 항소 경로를 안내할 수 있어야 한다.
+    // 제한 중이면 화면이 이유와 소명 경로를 안내할 수 있어야 한다.
     // DB 가 없거나 실패해도 로그인 자체는 막지 않는다.
     let suspended = null;
     try { suspended = await sanction.active(user.sub); } catch { suspended = null; }

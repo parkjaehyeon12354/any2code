@@ -1,9 +1,9 @@
-/* 신고 → 제재 → 항소.
+/* 신고 → 제재 → 소명.
 
    세 가지가 한 흐름이라 한 파일에 둔다.
      신고  사용자가 글·답변을 신고한다
      제재  관리자가 신고를 처리하며 작성자에게 이용 제한을 건다
-     항소  제한된 사용자가 이의를 제기하고, 관리자가 판단한다
+     소명  제한된 사용자가 이의를 제기하고, 관리자가 판단한다
 
    ⚠ 경로에 'admin/' 을 쓰지 말 것 — Functions 예약 접두사라 라우트가 조용히
    사라진다. 관리자 경로는 'moderation/' 을 쓴다 (admin.js 참고).
@@ -11,7 +11,7 @@
    문서 종류
      report    pk = 신고 대상 id     한 글에 들어온 신고를 한 번에 읽는다
      sanction  pk = 사용자 sub       id 도 sub 라 사용자당 하나만 존재한다
-     appeal    pk = 사용자 sub       그 사용자의 항소 이력 */
+     appeal    pk = 사용자 sub       그 사용자의 소명 이력 */
 const { app } = require('@azure/functions');
 const session = require('../lib/session');
 const { requireAdmin } = session;
@@ -221,7 +221,7 @@ app.http('reportResolve', {
   }
 });
 
-/* ── 항소하기 ──
+/* ── 소명하기 ──
    제재를 받은 본인만, 유효 기간 안에만 낼 수 있다. */
 app.http('appealCreate', {
   route: 'appeals',
@@ -237,19 +237,19 @@ app.http('appealCreate', {
 
     const text = String(body.text || '').trim();
     if (!text) return bad('내용을 입력해 주세요.');
-    if (text.length > 2000) return bad('항소 내용은 2000자까지 쓸 수 있습니다.');
+    if (text.length > 2000) return bad('소명 내용은 2000자까지 쓸 수 있습니다.');
 
     try {
       const current = await sanction.active(user.sub);
       if (!current) return bad('현재 이용 제한 상태가 아닙니다.');
 
-      // 이미 대기 중인 항소가 있으면 새로 받지 않는다 — 같은 건으로 여러 번
+      // 이미 대기 중인 소명이 있으면 새로 받지 않는다 — 같은 건으로 여러 번
       // 넣으면 관리자 화면이 중복으로 찬다
       const waiting = (await query({
         query: "SELECT * FROM c WHERE c.type = 'appeal' AND c.pk = @s AND c.status = 'wait'",
         parameters: [{ name: '@s', value: user.sub }]
       }))[0];
-      if (waiting) return bad('이미 접수된 항소가 검토 중입니다.');
+      if (waiting) return bad('이미 접수된 소명이 검토 중입니다.');
 
       await container().items.create({
         id: rid('a'),
@@ -263,15 +263,15 @@ app.http('appealCreate', {
         status: 'wait'
       });
 
-      return { status: 201, jsonBody: { ok: true, message: '항소가 접수됐습니다. 검토 후 결과를 반영하겠습니다.' } };
+      return { status: 201, jsonBody: { ok: true, message: '소명이 접수됐습니다. 검토 후 결과를 반영하겠습니다.' } };
     } catch (e) {
-      context.error('항소 실패:', e.message);
-      return dbFail(e, '항소를 접수하지 못했습니다.');
+      context.error('소명 실패:', e.message);
+      return dbFail(e, '소명을 접수하지 못했습니다.');
     }
   }
 });
 
-/* ── 항소 목록 (관리자) ── */
+/* ── 소명 목록 (관리자) ── */
 const appealView = (a) => ({
   id: a.id,
   who: a.userName,
@@ -298,13 +298,13 @@ app.http('appealList', {
       });
       return { jsonBody: { appeals: rows.map(appealView) }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
-      context.error('항소 목록 실패:', e.message);
-      return dbFail(e, '항소 목록을 불러오지 못했습니다.');
+      context.error('소명 목록 실패:', e.message);
+      return dbFail(e, '소명 목록을 불러오지 못했습니다.');
     }
   }
 });
 
-/* ── 항소 판단 (관리자) ──
+/* ── 소명 판단 (관리자) ──
    denied  기각 — 제재 유지
    granted 인용 — 제재 즉시 해제
    reduced 감경 — days 로 다시 계산 */
@@ -338,7 +338,7 @@ app.http('appealDecide', {
         query: "SELECT * FROM c WHERE c.type = 'appeal' AND c.id = @id",
         parameters: [{ name: '@id', value: request.params.id }]
       }))[0];
-      if (!appeal) return { status: 404, jsonBody: { error: '없는 항소입니다.' } };
+      if (!appeal) return { status: 404, jsonBody: { error: '없는 소명입니다.' } };
 
       const c = container();
       const at = new Date().toISOString();
@@ -368,7 +368,7 @@ app.http('appealDecide', {
 
       return { jsonBody: { id: appeal.id, status: decision, days, at } };
     } catch (e) {
-      context.error('항소 판단 실패:', e.message);
+      context.error('소명 판단 실패:', e.message);
       return dbFail(e, '처리하지 못했습니다.');
     }
   }

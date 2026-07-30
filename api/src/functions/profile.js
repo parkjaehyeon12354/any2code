@@ -23,8 +23,14 @@ app.http('profileGet', {
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     try {
+      // 제재·소명은 이름을 저장할 때 바뀌지 않으므로 PUT 응답에는 넣지 않는다.
+      // 화면도 이 블록만 따로 그린다 — 저장할 때마다 다시 받을 이유가 없다.
+      const [me, record] = await Promise.all([
+        profile.read(user.sub),
+        profile.discipline(user.sub)
+      ]);
       return {
-        jsonBody: { profile: profile.view(await profile.read(user.sub), user), limits },
+        jsonBody: { profile: profile.view(me, user), limits, discipline: record },
         headers: { 'Cache-Control': 'no-store' }
       };
     } catch (e) {

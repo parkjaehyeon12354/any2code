@@ -5,7 +5,7 @@
 
    ⚠ id 에 sub 를 그대로 쓰지 말 것. 제재 문서가 이미 id = pk = sub 를 쓰고 있어서
    (reports.js), 같은 id 로 upsert 하면 로그인만 해도 그 사람의 제재가 통째로
-   덮여 사라진다. 그래서 id 에 'user:' 를 붙인다. pk 는 sub 그대로 두어 제재·항소와
+   덮여 사라진다. 그래서 id 에 'user:' 를 붙인다. pk 는 sub 그대로 두어 제재·소명과
    같은 파티션에 모은다 — 한 사람 것을 한 번에 훑을 수 있다.
 
    생일은 밖으로 절대 내보내지 않는다. 대상이 고등학생이라 공개될 이유가 없고,
@@ -171,8 +171,58 @@ async function save(user, input) {
   return { profile: view(await read(user.sub), user), renamed };
 }
 
+/* ── 제재·소명 내역 ──
+   소유자에게만 준다.
+
+   ⚠ 관리자 이메일(by, liftedBy, reducedBy)은 넣지 않는다. 제재받은 학생에게
+   처리한 사람을 알려줄 이유가 없고, 알려주면 그 사람에게 직접 항의가 간다.
+
+   ⚠ 두 종류를 한 쿼리로 묶어 ORDER BY 를 걸면 안 된다. 제재 문서에는 createdAt 이
+   없고(at 을 쓴다), Cosmos 는 ORDER BY 대상 필드가 없는 문서를 결과에서 아예
+   빼버린다 — 제재가 조용히 사라진다. 그래서 따로 읽고 JS 로 정렬한다. */
+const sanctionView = (s) => ({
+  reason: s.reason,
+  days: s.days,
+  until: s.until,
+  at: s.at,
+  active: s.until > new Date().toISOString(),
+  lifted: !!s.liftedAt,          // 소명이 받아들여져 즉시 풀린 경우
+  liftedAt: s.liftedAt || null,
+  reducedAt: s.reducedAt || null
+});
+
+const appealView = (a) => ({
+  id: a.id,
+  text: a.text,
+  createdAt: a.createdAt,
+  status: a.status,                                        // wait | denied | granted | reduced
+  decidedAt: (a.decision && a.decision.at) || null,
+  reducedDays: a.decision && a.decision.decision === 'reduced' ? a.decision.days : null,
+  origDays: a.orig ? a.orig.days : null,
+  origReason: a.orig ? a.orig.reason : null
+});
+
+async function discipline(sub) {
+  const [sanctions, appeals] = await Promise.all([
+    query({
+      query: "SELECT * FROM c WHERE c.type = 'sanction' AND c.pk = @s",
+      parameters: [{ name: '@s', value: sub }]
+    }),
+    query({
+      query: "SELECT * FROM c WHERE c.type = 'appeal' AND c.pk = @s",
+      parameters: [{ name: '@s', value: sub }]
+    })
+  ]);
+
+  return {
+    // 제재는 사용자당 문서 하나다 (발급이 upsert). 그래서 '내역' 이 아니라 최근 것 하나.
+    sanction: sanctions[0] ? sanctionView(sanctions[0]) : null,
+    appeals: appeals.map(appealView).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  };
+}
+
 module.exports = {
-  ensure, read, save, view, displayName,
+  ensure, read, save, view, displayName, discipline,
   checkName, checkBirthday,
   NAME_MIN, NAME_MAX, RESERVED
 };
