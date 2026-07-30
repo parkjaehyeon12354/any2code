@@ -69,10 +69,17 @@
      "저장했습니다" 안내가 함께 지워져서 사용자는 아무 일도 안 일어난 줄 안다. */
   window.NavUser = { render: render };
 
-  // 캐시가 있으면 즉시 그리고(깜빡임 방지), 서버 응답이 오면 다시 그린다
-  render(Session.load());
+  /* 캐시가 있으면 즉시 그리고(깜빡임 방지), 서버 응답이 오면 다시 그린다.
+
+     비교 대상은 "방금 그린 값" 이어야 한다. Session.load() 를 여기서 다시 부르면
+     안 되는데, load() 는 서버 확인이 끝나면 캐시가 아니라 verified 를 돌려주므로
+     refresh 직후에는 서버 응답과 자기 자신을 비교하게 된다 — 항상 같다고 나와서
+     다시 그리지 않는다. 그러면 캐시에 남은 옛 이름·옛 role 이 세션 내내 상단바에
+     박혀 있고, "해임되면 다음 새로고침부터 관리자 메뉴가 사라진다" 도 거짓이 된다. */
+  const drawn = Session.load();
+  render(drawn);
   Session.refresh().then(function (user) {
-    if (JSON.stringify(user) !== JSON.stringify(Session.load()) || !document.getElementById('profile-menu')) {
+    if (JSON.stringify(user) !== JSON.stringify(drawn) || !document.getElementById('profile-menu')) {
       render(user);
     }
   });
