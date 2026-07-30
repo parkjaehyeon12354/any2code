@@ -24,10 +24,13 @@ const Session = (function () {
     /** 화면 표시용 사용자. 서버 확인 전에는 캐시로 즉시 그린다. */
     load() { return checked ? verified : readCache(); },
 
-    /** 서버에 현재 세션을 묻는다. 페이지당 한 번만 실제 요청이 나간다. */
+    /** 서버에 현재 세션을 묻는다. 동시에 여러 번 불러도 요청은 하나로 합쳐진다.
+        요청이 끝나면 inflight 를 비우므로, 나중에 다시 부르면 다시 물어본다 —
+        비우지 않으면 페이지가 살아있는 동안 재확인할 방법이 없어서, 설정에서 이름을
+        바꾼 뒤에도 상단바가 로드 시점의 옛 이름을 계속 들고 있었다. */
     async refresh() {
       if (inflight) return inflight;
-      inflight = (async () => {
+      const p = (async () => {
         let user = null;
         try {
           const res = await fetch('/api/me', { credentials: 'same-origin' });
@@ -45,7 +48,10 @@ const Session = (function () {
         else sessionStorage.removeItem(KEY);
         return user;
       })();
-      return inflight;
+      inflight = p;
+      // 자기 것만 비운다 — 그 사이 새 요청이 시작됐으면 그건 남겨둬야 한다
+      p.finally(() => { if (inflight === p) inflight = null; });
+      return p;
     },
 
     async logout() {
