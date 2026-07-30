@@ -11,6 +11,7 @@
    생일은 밖으로 절대 내보내지 않는다. 대상이 고등학생이라 공개될 이유가 없고,
    글 목록은 사용자 문서를 아예 참조하지 않으므로 이 파일만 지키면 새지 않는다. */
 const { container, query } = require('./db');
+const sanction = require('./sanction');
 
 const docId = (sub) => 'user:' + sub;
 
@@ -202,8 +203,17 @@ const appealView = (a) => ({
   origReason: a.orig ? a.orig.reason : null
 });
 
+/* 제재 이력 한 줄. by(관리자 식별자)는 빼고 내보낸다. */
+const historyView = (h) => ({
+  event: h.event,                                          // issued | reduced | lifted
+  days: Number.isInteger(h.days) ? h.days : null,
+  until: h.until || null,
+  reason: h.reason || null,
+  at: h.at
+});
+
 async function discipline(sub) {
-  const [sanctions, appeals] = await Promise.all([
+  const [sanctions, appeals, log] = await Promise.all([
     query({
       query: "SELECT * FROM c WHERE c.type = 'sanction' AND c.pk = @s",
       parameters: [{ name: '@s', value: sub }]
@@ -211,12 +221,16 @@ async function discipline(sub) {
     query({
       query: "SELECT * FROM c WHERE c.type = 'appeal' AND c.pk = @s",
       parameters: [{ name: '@s', value: sub }]
-    })
+    }),
+    sanction.history(sub)
   ]);
 
   return {
-    // 제재는 사용자당 문서 하나다 (발급이 upsert). 그래서 '내역' 이 아니라 최근 것 하나.
+    /* 현재 제재는 사용자당 문서 하나다 (발급이 upsert) — 집행이 보는 값이다.
+       history 는 덮이지 않는 이벤트 기록이라 지난 제재까지 남는다. 이력이 비어 있어도
+       (기능 추가 전에 받은 제재) sanction 은 정확하므로 둘을 함께 내보낸다. */
     sanction: sanctions[0] ? sanctionView(sanctions[0]) : null,
+    history: log.map(historyView),
     appeals: appeals.map(appealView).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
   };
 }

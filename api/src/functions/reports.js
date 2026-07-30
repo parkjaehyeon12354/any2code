@@ -184,6 +184,23 @@ app.http('reportResolve', {
         });
       }
 
+      /* 1-1) 이력 한 줄. 위 문서는 덮이므로 이력은 따로 쌓아야 남는다.
+         경고(0일)도 남긴다 — 제재 문서는 안 만들지만 본인은 받은 사실을 알아야 한다.
+         실패해도 처리는 성공으로 끝낸다. 여기서 막으면 이미 걸린 제재를 두고
+         관리자에게 "실패했다" 고 말하는 셈이다. */
+      try {
+        await sanction.log({
+          sub: report.targetAuthorSub,
+          event: 'issued',
+          days,
+          until: applied.until,
+          reason: report.reason,
+          by: applied.by
+        });
+      } catch (e) {
+        context.error('제재 이력 기록 실패:', e.message);
+      }
+
       // 2) 대상 글 차단 (선택)
       if (body.blockContent) {
         const target = (await query({
@@ -359,6 +376,23 @@ app.http('appealDecide', {
           { op: 'set', path: '/reducedBy', value: user.email || user.sub },
           { op: 'set', path: '/reducedAt', value: at }
         ]).catch(() => {});
+      }
+
+      // 제재가 실제로 바뀐 경우만 이력에 남긴다. 기각은 제재가 그대로이므로
+      // 소명 문서의 status 가 이미 결과를 갖고 있다 (같은 사실을 두 번 쌓지 않는다).
+      if (decision === 'granted' || decision === 'reduced') {
+        try {
+          await sanction.log({
+            sub: appeal.userSub,
+            event: decision === 'granted' ? 'lifted' : 'reduced',
+            days: decision === 'reduced' ? days : 0,
+            until: decision === 'granted' ? at : until(days),
+            reason: appeal.orig ? appeal.orig.reason : null,
+            by: user.email || user.sub
+          });
+        } catch (e) {
+          context.error('제재 이력 기록 실패:', e.message);
+        }
       }
 
       await c.item(appeal.id, appeal.pk).patch([

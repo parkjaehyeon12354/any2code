@@ -191,6 +191,30 @@
 }
 .appeal-outcome { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
 
+/* 소제목 — 한 카드 안에서 '현재 / 이력 / 소명' 을 가른다 */
+.sub-head {
+  margin: var(--sp-lg) 0 var(--sp-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.sub-head:first-child { margin-top: 0; }
+
+/* 제재 이력 — 표가 아니라 한 줄씩. 항목이 세 개뿐이라 표는 과하다 */
+.log { font-size: 13px; }
+.log > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.log > div:last-child { border-bottom: none; }
+.log .when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .what { color: var(--ink); font-weight: 500; }
+.log .why { color: var(--muted); }
+
 @media (max-width: 480px) {
   .page-head h1 { font-size: 27px; }
   .rows > div { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -375,12 +399,20 @@
   const badge = (cls, text) => '<span class="badge ' + cls + '">' + esc(text) + '</span>';
 
   /* 제재·소명은 이름을 저장해도 바뀌지 않으므로 불러올 때 한 번만 그린다. */
+  /* 이력 한 줄의 문구. days 는 그 이벤트가 만든 기간이라 해석이 이벤트마다 다르다. */
+  const LOG_EVENT = {
+    issued:  (h) => (h.days ? h.days + '일 이용 제한' : '경고'),
+    reduced: (h) => '소명이 일부 받아들여져 ' + h.days + '일로 줄었습니다',
+    lifted:  () => '소명이 받아들여져 제재가 해제됐습니다'
+  };
+
   function renderDiscipline(d) {
     const box = el('discipline');
     const parts = [];
 
     if (d.sanction) {
       const s = d.sanction;
+      parts.push('<p class="sub-head">현재 상태</p>');
       const state = s.active
         ? badge('badge-bad', '제한 중')
         : s.lifted
@@ -401,7 +433,20 @@
       );
     }
 
+    if (d.history.length) {
+      parts.push('<p class="sub-head">제재 이력 ' + d.history.length + '건</p>');
+      parts.push('<div class="log">' + d.history.map(function (h) {
+        const label = (LOG_EVENT[h.event] || function () { return h.event; })(h);
+        return '<div>' +
+          '<span class="when">' + esc(shortWhen(h.at)) + '</span>' +
+          '<span class="what">' + esc(label) + '</span>' +
+          (h.reason && h.event === 'issued' ? '<span class="why">· ' + esc(h.reason) + '</span>' : '') +
+          '</div>';
+      }).join('') + '</div>');
+    }
+
     if (d.appeals.length) {
+      parts.push('<p class="sub-head">낸 소명 ' + d.appeals.length + '건</p>');
       parts.push(d.appeals.map(function (a) {
         const st = APPEAL_STATUS[a.status] || { cls: 'badge-off', text: a.status };
         let outcome = '';
@@ -423,7 +468,12 @@
     if (!parts.length) {
       parts.push('<p class="empty">제재를 받은 적이 없습니다.</p>');
     } else if (!d.appeals.length) {
-      parts.push('<p class="empty">아직 낸 소명이 없습니다. 억울한 점이 있으면 커뮤니티 화면에서 소명할 수 있습니다.</p>');
+      /* 소명은 제한이 걸려 있는 동안만 낼 수 있다 (서버가 그렇게 막는다).
+         경고만 받았거나 기간이 끝난 사람에게 소명하라고 안내하면, 눌러 봤다가
+         거절당한다 — 화면이 되지 않는 일을 권하는 셈이다. */
+      parts.push('<p class="empty">' + (d.sanction && d.sanction.active
+        ? '아직 낸 소명이 없습니다. 억울한 점이 있으면 커뮤니티 화면에서 소명할 수 있습니다.'
+        : '낸 소명이 없습니다.') + '</p>');
     }
 
     box.innerHTML = parts.join('');

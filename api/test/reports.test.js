@@ -1,4 +1,4 @@
-/* 신고 → 제재 → 항소 점검.
+/* 신고 → 제재 → 소명 점검.
    핵심은 "제재가 실제로 집행되느냐" — 화면에만 있는 제재는 제재가 아니다.
    실행: cd api && node --test */
 const { test } = require('node:test');
@@ -215,7 +215,7 @@ test('제재 — 처리한 신고는 결과와 함께 남는다', async () => {
   assert.ok(row.applied.until, '해제 시각이 있어야 다툼을 가린다');
 });
 
-// ── 항소 ──
+// ── 소명 ──
 
 /** 제재를 받은 상태를 만든다 */
 async function seedSanctioned(days = 7) {
@@ -224,7 +224,7 @@ async function seedSanctioned(days = 7) {
     req({ cookie: admin(), body: { days }, params: { id: report.id } }), ctx);
 }
 
-test('항소 — 제재 중인 본인만 낼 수 있다', async () => {
+test('소명 — 제재 중인 본인만 낼 수 있다', async () => {
   await seedPost();
   const notSanctioned = await routes.appealCreate.handler(
     req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
@@ -239,19 +239,19 @@ test('항소 — 제재 중인 본인만 낼 수 있다', async () => {
   assert.strictEqual(ok.status, 201);
 });
 
-test('항소 — 빈 내용·길이 초과 거부, 중복 접수 거부', async () => {
+test('소명 — 빈 내용·길이 초과 거부, 중복 접수 거부', async () => {
   await seedSanctioned();
   for (const text of ['', '   ', 'ㄱ'.repeat(2001)]) {
     const res = await routes.appealCreate.handler(req({ cookie: author(), body: { text } }), ctx);
     assert.strictEqual(res.status, 400);
   }
 
-  await routes.appealCreate.handler(req({ cookie: author(), body: { text: '첫 항소' } }), ctx);
+  await routes.appealCreate.handler(req({ cookie: author(), body: { text: '첫 소명' } }), ctx);
   const dup = await routes.appealCreate.handler(req({ cookie: author(), body: { text: '또 냅니다' } }), ctx);
   assert.strictEqual(dup.status, 400, '같은 건으로 여러 번 넣으면 관리자 화면이 찬다');
 });
 
-test('항소 — 목록은 관리자만 본다', async () => {
+test('소명 — 목록은 관리자만 본다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
 
@@ -263,7 +263,7 @@ test('항소 — 목록은 관리자만 본다', async () => {
   assert.strictEqual(ok.jsonBody.appeals[0].orig.days, 7);
 });
 
-test('항소 인용 — 제재가 실제로 풀린다', async () => {
+test('소명 인용 — 제재가 실제로 풀린다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
   const appeal = state.docs.find((d) => d.type === 'appeal');
@@ -279,7 +279,78 @@ test('항소 인용 — 제재가 실제로 풀린다', async () => {
   assert.ok(state.docs.find((d) => d.type === 'sanction'), '이력은 남긴다');
 });
 
-test('항소 기각 — 제재가 유지된다', async () => {
+test('제재 이력 — 처리·감경·해제가 각각 한 줄씩 쌓인다', async () => {
+  /* 제재 문서는 사용자당 하나라 새 제재가 이전 것을 덮는다. 본인에게 내역을
+     보여주려면 덮이지 않는 기록이 따로 필요하다. */
+  await seedSanctioned();
+  const log = () => state.docs.filter((d) => d.type === 'sanctionLog');
+
+  assert.strictEqual(log().length, 1, '제재를 걸면 이력 한 줄');
+  assert.strictEqual(log()[0].event, 'issued');
+  assert.ok(log()[0].reason, '무슨 사유였는지 남아야 한다');
+
+  await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
+  const appeal = state.docs.find((d) => d.type === 'appeal');
+
+  await routes.appealDecide.handler(
+    req({ cookie: admin(), body: { decision: 'reduced', days: 1 }, params: { id: appeal.id } }), ctx);
+  assert.strictEqual(log().length, 2, '감경도 이력에 남아야 한다');
+  assert.strictEqual(log().find((h) => h.event === 'reduced').days, 1);
+
+  await routes.appealDecide.handler(
+    req({ cookie: admin(), body: { decision: 'granted' }, params: { id: appeal.id } }), ctx);
+  assert.strictEqual(log().length, 3, '해제도 이력에 남아야 한다');
+  assert.ok(log().find((h) => h.event === 'lifted'));
+
+  // 제재 문서는 여전히 하나 — 이력은 그 문서와 별개로 쌓인다
+  assert.strictEqual(state.docs.filter((d) => d.type === 'sanction').length, 1);
+});
+
+test('경고(0일)도 이력에 남는다 — 제재 문서는 안 만들지만 본인은 알아야 한다', async () => {
+  const { report } = await seedReport();
+  await routes.reportResolve.handler(
+    req({ cookie: admin(), body: { days: 0 }, params: { id: report.id } }), ctx);
+
+  assert.strictEqual(state.docs.filter((d) => d.type === 'sanction').length, 0, '경고는 제재 문서를 안 만든다');
+  const log = state.docs.filter((d) => d.type === 'sanctionLog');
+  assert.strictEqual(log.length, 1);
+  assert.strictEqual(log[0].days, 0);
+});
+
+test('기각은 이력에 쌓지 않는다 — 제재가 그대로이고 소명 문서가 결과를 갖고 있다', async () => {
+  await seedSanctioned();
+  await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
+  const appeal = state.docs.find((d) => d.type === 'appeal');
+  const before = state.docs.filter((d) => d.type === 'sanctionLog').length;
+
+  await routes.appealDecide.handler(
+    req({ cookie: admin(), body: { decision: 'denied' }, params: { id: appeal.id } }), ctx);
+
+  assert.strictEqual(state.docs.filter((d) => d.type === 'sanctionLog').length, before,
+    '같은 사실을 두 번 쌓으면 내역이 부풀어 보인다');
+  assert.strictEqual(state.docs.find((d) => d.type === 'appeal').status, 'denied');
+});
+
+test('이력 기록이 실패해도 제재 처리는 성공한다', async () => {
+  /* 이미 걸린 제재를 두고 관리자에게 "실패했다" 고 말하면 같은 처리를 또 하게 된다. */
+  const { report } = await seedReport();
+  const realCreate = fake.items.create;
+  fake.items.create = async (d) => {
+    if (d.type === 'sanctionLog') throw new Error('이력 저장 실패(의도)');
+    return realCreate(d);
+  };
+  try {
+    const res = await routes.reportResolve.handler(
+      req({ cookie: admin(), body: { days: 3 }, params: { id: report.id } }), ctx);
+    assert.strictEqual(res.status, undefined, '이력 실패가 제재 처리를 실패로 만들었다');
+    assert.strictEqual(res.jsonBody.status, 'done');
+    assert.ok(state.docs.find((d) => d.type === 'sanction'), '제재는 걸려 있어야 한다');
+  } finally {
+    fake.items.create = realCreate;
+  }
+});
+
+test('소명 기각 — 제재가 유지된다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
   const appeal = state.docs.find((d) => d.type === 'appeal');
@@ -292,7 +363,7 @@ test('항소 기각 — 제재가 유지된다', async () => {
   assert.strictEqual(res.status, 403);
 });
 
-test('항소 감경 — 일수를 검증하고 기간을 다시 계산한다', async () => {
+test('소명 감경 — 일수를 검증하고 기간을 다시 계산한다', async () => {
   await seedSanctioned(30);
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '줄여주세요' } }), ctx);
   const appeal = state.docs.find((d) => d.type === 'appeal');
@@ -312,7 +383,7 @@ test('항소 감경 — 일수를 검증하고 기간을 다시 계산한다', a
   assert.ok(left > 2.9 && left < 3.1, '감경한 일수만큼만 남아야 한다');
 });
 
-test('항소 — 알 수 없는 결정과 없는 항소는 거부한다', async () => {
+test('소명 — 알 수 없는 결정과 없는 소명은 거부한다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
   const appeal = state.docs.find((d) => d.type === 'appeal');
@@ -328,18 +399,18 @@ test('항소 — 알 수 없는 결정과 없는 항소는 거부한다', async 
   assert.strictEqual(missing.status, 404);
 });
 
-test('항소 — 일반 사용자는 판단할 수 없다', async () => {
+test('소명 — 일반 사용자는 판단할 수 없다', async () => {
   await seedSanctioned();
   await routes.appealCreate.handler(req({ cookie: author(), body: { text: '억울합니다' } }), ctx);
   const appeal = state.docs.find((d) => d.type === 'appeal');
 
   const res = await routes.appealDecide.handler(
     req({ cookie: author(), body: { decision: 'granted' }, params: { id: appeal.id } }), ctx);
-  assert.strictEqual(res.status, 403, '본인이 자기 항소를 인용할 수 있으면 제재가 무의미하다');
+  assert.strictEqual(res.status, 403, '본인이 자기 소명을 인용할 수 있으면 제재가 무의미하다');
   assert.strictEqual(appeal.status, 'wait');
 });
 
-test('킬 스위치 — 신고·항소 경로도 함께 막힌다', async () => {
+test('킬 스위치 — 신고·소명 경로도 함께 막힌다', async () => {
   process.env.LOCKDOWN = '1';
   try {
     const r = await routes.reportCreate.handler(req({ cookie: other(), body: {} }), ctx);
