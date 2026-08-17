@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Ans2Quest — 과학 실험 시뮬레이션과 탐구 커뮤니티 플랫폼">
+<title>Ans2Quest — 탐구의 시작</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰/네비/푸터는 styles.css 에 있다 */
+/* ── Hero ── */
+.hero {
+  position: relative;
+  /* 첫 화면을 꽉 채운다 (56px = top-nav 높이) */
+  min-height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--canvas);
+  overflow: hidden;
+}
+.hero canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hero h1, .hero p, .hero-buttons { position: relative; z-index: 1; }
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.18;
+  /* Noto Serif KR 700 — 묵직한 학술지 톤. 한글 세리프라 음수 자간은 약하게만 */
+  letter-spacing: -0.3px;
+  word-break: keep-all;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.hero p {
+  font-size: 18px;
+  line-height: 1.55;
+  word-break: keep-all;
+  color: var(--body);
+  max-width: 520px;
+  margin: 0 auto 32px;
+}
+.hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 36px; }
+  .hero { padding: 48px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">고전 역학</a>
+            <a href="#">빛과 파동</a>
+            <a href="#">천체의 운동</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">전기와 자기</a>
+            <a href="#">열과 통계</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">입지의 운동</a>
+            <a href="#">화학 반응</a>
+            <a href="#">화학 결합</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">산과 염기</a>
+            <a href="#">전기화학</a>
+            <a href="#">방사능</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">개체와 생태계</a>
+            <a href="#">세포의 구조</a>
+            <a href="#">유전과 진화</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">신경과 자극전달</a>
+            <a href="#">순환과 수송</a>
+            <a href="#">대사와 효소</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">대기와 기상</a>
+            <a href="#">판과 지각 변동</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">해양과 순환</a>
+            <a href="#">외권과 천체</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+
+
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── Mobile Menu ── -->
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 위 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 (실제로 그렇게 갈라진 적 있음) -->
+  <nav>
+    <a href="#">물리학</a>
+    <a href="#">화학</a>
+    <a href="#">생명과학</a>
+    <a href="#">지구과학</a>
+    <a href="/community">커뮤니티</a>
+    <a href="#">심화 탐구</a>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<!-- ── Hero ── -->
+<section class="hero" id="hero">
+  <canvas data-sphere aria-hidden="true"></canvas>
+  <h1>탐구의 시작,<br>Ans2Quest</h1>
+  <p>과학 실험 시뮬레이션과 커뮤니티 기반 탐구 활동으로 당신의 과학적 사고를 확장하세요.</p>
+  <div class="hero-buttons">
+    <a href="/login" class="btn btn-primary">무료로 시작하기</a>
+    <a href="/guide" class="btn btn-ghost">더 알아보기</a>
+  </div>
+</section>
+
+<script src="session.js"></script>
+<script src="nav-user.js"></script>
+<script src="sphere.js"></script>
+
+<!-- ── Main Content Area ── -->
+<!-- Ans2Quest 본문 내용이 들어갈 자리입니다. -->
+
+<!-- ── Footer ── -->
+<footer class="site-footer" id="footer">
+  <div class="container">
+    <div class="footer-top">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true" style="width: 24px; height: 24px; margin-right: 8px;">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </div>
+    <!-- 상단 네비와 같은 구조를 따른다. 푸터가 사이트맵 역할을 하므로
+         네비에 없는 항목을 여기 새로 만들면 안 된다. -->
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h2>실험</h2>
+        <ul>
+          <li><a href="#">물리학</a></li>
+          <li><a href="#">화학</a></li>
+          <li><a href="#">생명과학</a></li>
+          <li><a href="#">지구과학</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>탐구</h2>
+        <ul>
+          <li><a href="/community">커뮤니티</a></li>
+          <li><a href="#">심화 탐구</a></li>
+          <li><a href="#">주제 탐색</a></li>
+          <li><a href="#">보고서 템플릿</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>이용 안내</h2>
+        <ul>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">이용 가이드</a></li>
+          <li><a href="#">자주 묻는 질문</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>약관 · 정책</h2>
+        <ul>
+          <li><a href="#">이용약관</a></li>
+          <li><a href="#" class="footer-strong">개인정보처리방침</a></li>
+          <li><a href="#">커뮤니티 운영원칙</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>Ans2Quest는 고등학생이 과학 실험을 직접 체험하고 함께 탐구하는 학습 서비스입니다.</p>
+      <p class="footer-copy">© 2026 투코드(TwoCode) · 박재현, 최윤지</p>
+    </div>
+  </div>
+</footer>
+
+<script src="nav-dropdown.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+/* ── Design Tokens — Ans2Quest 고유 팔레트 ──
+   Discovery Teal(#167a63) 중심의 쿨 뉴트럴. 프라이머리가 흰 글자 기준
+   5.25:1 이라 채운 버튼에 그대로 쓴다 (예전처럼 active 로 우회할 필요 없음). */
+:root {
+  /* Colors */
+  --primary: #167a63;
+  --primary-active: #0f5c4a;
+  --ink: #1a201d;
+  --body: #3d4642;
+  --muted: #5d6963;
+  --muted-soft: #88938c;
+  --hairline: #dde4e0;
+  --canvas: #f7f9f8;
+  --surface-soft: #edf2ef;
+  --surface-dark: #14201b;
+  --surface-dark-elevated: #24352c;
+  --on-primary: #ffffff;
+  --on-dark: #f2f7f4;
+  --on-dark-soft: #a9bbb1;
+  --error: #bd3b3b;
+
+  /* Typography — 디스플레이는 Noto Serif KR 700 (한글+라틴을 한 서체가 커버,
+     묵직한 학술지 톤). 본문은 Pretendard. */
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", Georgia, serif;
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Rounded */
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
+  --rounded-pill: 9999px;
+
+  /* Spacing */
+  --sp-xs: 8px;
+  --sp-sm: 12px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+  --sp-xxl: 48px;
+  --sp-section: 96px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { overflow-x: hidden; }
+
+/* [hidden] 은 브라우저 기본값이 display:none 인데, 클래스가 display 를 지정하면
+   특정도에서 밀려 그대로 보인다 (.suspended 가 display:flex 라 제재 없는 사람에게도
+   제재 배너가 떴다). 화면 곳곳이 el.hidden = true 로 토글하므로 여기서 못 박는다.
+   숨김은 어떤 클래스보다 세야 하니 !important 가 맞다. */
+[hidden] { display: none !important; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* 키보드 사용자에게는 초점이 반드시 보여야 한다 */
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ── Container ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--sp-lg); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500; line-height: 1;
+  padding: 12px 20px; height: 40px; border-radius: var(--rounded-md);
+  border: none; cursor: pointer; white-space: nowrap;
+}
+/* 새 프라이머리는 흰 글자 5.25:1 로 그 자체가 AA 통과 — 버튼에 바로 쓴다 */
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary-active); }
+.btn-primary:active { background: #0a4234; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
+
+/* ── Modal (native <dialog>) ──
+   admin.html 과 community.html 이 함께 쓴다. */
+.modal {
+  padding: 0;
+  /* 위의 전역 리셋(*{margin:0})이 <dialog> 의 기본 margin:auto 를 지워서
+     모달이 좌상단에 붙는다. 여기서 되살려야 화면 중앙에 온다. */
+  margin: auto;
+  width: calc(100% - 32px);
+  max-width: 460px;
+  color: var(--body);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 16px 48px rgba(20, 20, 19, .18);
+}
+.modal::backdrop { background: rgba(20, 20, 19, .45); }
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.modal-head h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.modal-close {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
+  border-radius: var(--rounded-md);
+  color: var(--muted); font-size: 18px; line-height: 1;
+}
+.modal-close:hover { background: var(--surface-soft); color: var(--ink); }
+
+.modal-body { padding: var(--sp-lg); max-height: 62vh; overflow-y: auto; }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: var(--sp-xs);
+  padding: var(--sp-md) var(--sp-lg);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+
+/* 모달 안의 오류 한 줄 — 문제가 생긴 폼 바로 위에 둔다 */
+.form-error {
+  margin-bottom: var(--sp-md); padding: 10px 12px;
+  background: rgba(189, 59, 59, .1); border-radius: var(--rounded-md);
+  font-size: 13px; line-height: 1.5; color: #9c3030; word-break: keep-all;
+}
+
+/* ── Top Nav ── */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  /* 56px 네비 안에서 44px 만 확보한다 — 로고도 홈으로 가는 링크다 */
+  min-height: 44px;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.nav-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  margin: 0 auto;
+}
+.nav-links > li { position: relative; padding-bottom: 18px; margin-bottom: -18px; }
+.nav-links > li > a {
+  position: relative;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: var(--rounded-md);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.nav-links > li > a:hover,
+.nav-links > li.active > a {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+/* Active underline indicator */
+.nav-links > li.active > a::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--primary);
+}
+
+/* ── Mega Dropdown ── */
+.mega-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 560px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  padding: var(--sp-lg) var(--sp-xl);
+  padding-top: calc(var(--sp-lg) + 8px);
+  display: none;
+  z-index: 200;
+}
+.mega-dropdown.open { display: flex; gap: var(--sp-xl); }
+
+.mega-col { flex: 1; min-width: 0; }
+/* 제목 태그(h5)가 아니라 라벨이다 — h5 를 쓰면 h1 보다 앞서 나와 제목 계층이 깨진다 */
+.mega-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);   /* --muted-soft 는 11px 에서 AA 미달 */
+  margin-bottom: var(--sp-sm);
+}
+.mega-col a {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body);
+  padding: 6px 0;
+  transition: color 0.15s;
+}
+.mega-col a:hover { color: var(--primary); }
+
+.nav-cta { display: flex; align-items: center; gap: var(--sp-sm); }
+/* 직계 자식만 — 안 그러면 프로필 드롭다운 안의 링크까지 코랄 알약이 된다 */
+.nav-cta > a {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-primary);
+  background: var(--primary);   /* 흰 글자 대비 5.25:1 — AA 통과 */
+  padding: 7px 16px;
+  border-radius: var(--rounded-pill);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.nav-cta > a:hover { background: var(--primary-active); }
+
+/* 로그인 상태의 네비 — 이름을 누르면 드롭다운 (mega-dropdown과 같은 패턴) */
+.profile-menu { position: relative; }
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--rounded-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background .15s;
+}
+.profile-trigger:hover { background: var(--surface-soft); }
+.profile-trigger svg { width: 10px; height: 7px; color: var(--muted); transition: transform .15s; }
+.profile-menu.open .profile-trigger svg { transform: rotate(180deg); }
+
+.profile-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  min-width: 160px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+  padding: 6px;
+  z-index: 200;
+}
+.profile-menu.open .profile-dropdown { display: block; }
+.profile-dropdown a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--rounded-md);
+  font-size: 14px;
+  color: var(--body);
+}
+.profile-dropdown a:hover { background: var(--surface-soft); color: var(--ink); }
+
+.hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* 모바일 전용 버튼이라 44×44 를 지킨다 (아이콘은 24px 그대로) */
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: -10px;   /* 넓힌 만큼 오른쪽 정렬이 밀리지 않게 */
+}
+.hamburger svg { width: 24px; height: 24px; }
+
+/* 페이지 상단 알림 한 줄 (보류 안내, 오류 등) */
+.notice {
+  margin-bottom: var(--sp-lg);
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  word-break: keep-all;
+}
+
+/* ── Footer ── */
+.site-footer { background: var(--surface-dark); padding: 64px 0; margin-top: var(--sp-section); }
+.footer-top {
+  display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-xxl);
+  font-size: 18px; font-weight: 500; color: var(--on-dark);
+}
+.footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-xl); }
+/* h2 인 이유: h1(히어로) 다음 단계여야 제목 계층이 안 끊긴다.
+   시각적 크기는 링크와 비슷하게 두고 굵기·색으로만 구분한다. */
+.footer-col h2 { font-size: 14px; font-weight: 600; color: var(--on-dark); margin-bottom: var(--sp-xs); }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; }
+/* 16px 짜리 텍스트 링크는 손가락으로 못 누른다 — 세로 패딩으로 44px 터치 영역 확보 */
+.footer-col li a {
+  display: block;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--on-dark-soft);
+}
+.footer-col li a:hover { color: var(--on-dark); }
+/* 개인정보처리방침은 국내 서비스 관례상 다른 약관보다 눈에 띄게 둔다 */
+.footer-col li a.footer-strong { color: var(--on-dark); font-weight: 500; }
+
+.footer-bottom {
+  margin-top: var(--sp-xxl); padding-top: var(--sp-lg);
+  border-top: 1px solid var(--surface-dark-elevated);
+  font-size: 14px; color: var(--on-dark-soft);
+}
+.footer-bottom p { word-break: keep-all; }
+.footer-copy { margin-top: var(--sp-xs); font-size: 13px; }
+
+/* ── Mobile Nav ── */
+.mobile-menu {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: var(--canvas); padding: var(--sp-xl); flex-direction: column;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-xxl); }
+.mobile-menu-close { background: none; border: none; cursor: pointer; width: 36px; height: 36px; }
+.mobile-menu nav { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.mobile-menu nav a { font-size: 22px; font-weight: 500; color: var(--ink); }
+.mobile-menu-actions { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-sm); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+
+  :root { --sp-section: 64px; }
+}
+
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
