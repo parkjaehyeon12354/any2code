@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ans2Quest 과학 시뮬레이션 목록">
+  <title>시뮬레이션 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .sim-page { padding: var(--sp-xxl) 0 var(--sp-section); }
+    .sim-intro { margin-bottom: var(--sp-xxl); }
+    .sim-intro .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .12em; margin-bottom: 10px; }
+    .sim-intro h1 { color: var(--ink); font-family: var(--font-display); font-size: clamp(32px, 4vw, 46px); line-height: 1.25; letter-spacing: -.03em; margin-bottom: 12px; word-break: keep-all; }
+    .sim-intro p:not(.eyebrow) { color: var(--muted); font-size: 16px; word-break: keep-all; }
+    .sim-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-xl); align-items: start; }
+    .filters { position: sticky; top: 80px; padding: var(--sp-lg); background: #fff; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); }
+    .filters h2 { color: var(--ink); font-size: 15px; margin-bottom: 6px; }
+    .filters p { color: var(--muted); font-size: 12px; line-height: 1.55; margin-bottom: var(--sp-md); }
+    .filter-list { display: grid; gap: 4px; }
+    .filter-option { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 7px 8px; border-radius: var(--rounded-md); cursor: pointer; color: var(--body); font-size: 14px; transition: background .15s; }
+    .filter-option:hover { background: var(--surface-soft); }
+    .filter-option input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .filter-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .filter-dot.physics { background: #2d6fa9; }.filter-dot.chemistry { background: #b36600; }.filter-dot.biology { background: #167a63; }.filter-dot.earth { background: #6656a8; }
+    .filter-count { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .filter-group { border-top: 1px solid var(--hairline); padding: var(--sp-sm) 0 2px; }
+    .filter-group:first-child { border-top: 0; padding-top: 0; }
+    .filter-parent { font-weight: 650; color: var(--ink); }
+    .detail-filters { display: grid; gap: 2px; margin: 2px 0 3px 26px; }
+    .detail-filters .filter-option { min-height: 32px; padding: 4px 6px; font-size: 12.5px; }
+    .detail-filters .filter-option input { width: 14px; height: 14px; }
+    .sim-toolbar { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-md); margin-bottom: var(--sp-md); }
+    .sim-toolbar h2 { color: var(--ink); font-size: 18px; }
+    #result-count { color: var(--muted); font-size: 13px; }
+    .sim-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-md); }
+    .simulation-card { background: #fff; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; transition: border-color .15s, transform .15s; }
+    .simulation-card:hover { border-color: var(--muted-soft); transform: translateY(-2px); }
+    .sim-preview { aspect-ratio: 16 / 10; margin: var(--sp-sm); border-radius: 9px; background: var(--surface-soft); }
+    .simulation-card.physics .sim-preview { background: linear-gradient(135deg, #e5f0fa, #d4e5f3); }.simulation-card.chemistry .sim-preview { background: linear-gradient(135deg, #fff4df, #f5e5bf); }.simulation-card.biology .sim-preview { background: linear-gradient(135deg, #e6f4ed, #cfe9db); }.simulation-card.earth .sim-preview { background: linear-gradient(135deg, #eeeafa, #ddd8ef); }
+    .sim-card-body { padding: 2px var(--sp-md) var(--sp-md); }
+    .sim-subject { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+    .sim-subject .filter-dot { width: 7px; height: 7px; }
+    .sim-card-body h3 { color: var(--ink); font-size: 15px; line-height: 1.45; font-weight: 600; word-break: keep-all; }
+    .empty-state { grid-column: 1 / -1; padding: 58px 20px; border: 1px dashed var(--hairline); border-radius: var(--rounded-lg); color: var(--muted); font-size: 14px; text-align: center; }
+    @media (max-width: 920px) { .sim-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 700px) { .sim-page { padding-top: var(--sp-xl); }.sim-layout { grid-template-columns: 1fr; }.filters { position: static; }.filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.sim-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="top-nav">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">
+        <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+          <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">고전 역학</a>
+            <a href="#">빛과 파동</a>
+            <a href="#">천체의 운동</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">전기와 자기</a>
+            <a href="#">열과 통계</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">입지의 운동</a>
+            <a href="#">화학 반응</a>
+            <a href="#">화학 결합</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">산과 염기</a>
+            <a href="#">전기화학</a>
+            <a href="#">방사능</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">개체와 생태계</a>
+            <a href="#">세포의 구조</a>
+            <a href="#">유전과 진화</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">신경과 자극전달</a>
+            <a href="#">순환과 수송</a>
+            <a href="#">대사와 효소</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <a href="#">대기와 기상</a>
+            <a href="#">판과 지각 변동</a>
+          </div>
+          <div class="mega-col">
+            <a href="#">해양과 순환</a>
+            <a href="#">외권과 천체</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+
+
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  </header>
+
+  <main class="container sim-page">
+    <section class="sim-intro">
+      <p class="eyebrow">SCIENCE SIMULATIONS</p>
+      <h1>직접 움직이며 탐구하는 과학</h1>
+      <p>관심 있는 과목을 선택하고, 다양한 시뮬레이션을 둘러보세요.</p>
+    </section>
+
+    <div class="sim-layout">
+      <aside class="filters" aria-label="시뮬레이션 과목 필터">
+        <h2>과목 필터</h2>
+        <p>보고 싶은 과목을 선택하세요.</p>
+        <div class="filter-list">
+          <div class="filter-group"><label class="filter-option filter-parent"><input class="subject-filter" type="checkbox" data-subject="physics" checked><span class="filter-dot physics"></span>물리학 <span class="filter-count">5</span></label><div class="detail-filters"><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="physics" value="mechanics" checked>고전 역학</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="physics" value="wave" checked>빛과 파동</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="physics" value="astronomy" checked>천체의 운동</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="physics" value="electromagnetism" checked>전기와 자기</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="physics" value="thermal" checked>열과 통계</label></div></div>
+          <div class="filter-group"><label class="filter-option filter-parent"><input class="subject-filter" type="checkbox" data-subject="chemistry" checked><span class="filter-dot chemistry"></span>화학 <span class="filter-count">6</span></label><div class="detail-filters"><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="particle" checked>입자의 운동</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="reaction" checked>화학 반응</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="bond" checked>화학 결합</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="acidbase" checked>산과 염기</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="electrochemistry" checked>전기화학</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="chemistry" value="radioactivity" checked>방사능</label></div></div>
+          <div class="filter-group"><label class="filter-option filter-parent"><input class="subject-filter" type="checkbox" data-subject="biology" checked><span class="filter-dot biology"></span>생명과학 <span class="filter-count">6</span></label><div class="detail-filters"><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="ecology" checked>개체와 생태계</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="cell" checked>세포의 구조</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="genetics" checked>유전과 진화</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="neural" checked>신경과 자극전달</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="circulation" checked>순환과 수송</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="biology" value="metabolism" checked>대사와 효소</label></div></div>
+          <div class="filter-group"><label class="filter-option filter-parent"><input class="subject-filter" type="checkbox" data-subject="earth" checked><span class="filter-dot earth"></span>지구과학 <span class="filter-count">4</span></label><div class="detail-filters"><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="earth" value="weather" checked>대기와 기상</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="earth" value="tectonics" checked>판과 지각 변동</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="earth" value="ocean" checked>해양과 순환</label><label class="filter-option"><input class="detail-filter" type="checkbox" data-subject="earth" value="space" checked>외권과 천체</label></div></div>
+        </div>
+      </aside>
+
+      <section aria-labelledby="simulation-title">
+        <div class="sim-toolbar"><h2 id="simulation-title">전체 시뮬레이션</h2><span id="result-count" aria-live="polite">21개 표시 중</span></div>
+        <div class="sim-grid" id="simulation-grid">
+          <article class="simulation-card physics" data-topic="mechanics"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>고전 역학</h3></div></article><article class="simulation-card physics" data-topic="wave"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>빛과 파동</h3></div></article><article class="simulation-card physics" data-topic="astronomy"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>천체의 운동</h3></div></article><article class="simulation-card physics" data-topic="electromagnetism"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>전기와 자기</h3></div></article><article class="simulation-card physics" data-topic="thermal"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>열과 통계</h3></div></article>
+          <article class="simulation-card chemistry" data-topic="particle"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>입자의 운동</h3></div></article><article class="simulation-card chemistry" data-topic="reaction"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>화학 반응</h3></div></article><article class="simulation-card chemistry" data-topic="bond"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>화학 결합</h3></div></article><article class="simulation-card chemistry" data-topic="acidbase"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>산과 염기</h3></div></article><article class="simulation-card chemistry" data-topic="electrochemistry"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>전기화학</h3></div></article><article class="simulation-card chemistry" data-topic="radioactivity"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>방사능</h3></div></article>
+          <article class="simulation-card biology" data-topic="ecology"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>개체와 생태계</h3></div></article><article class="simulation-card biology" data-topic="cell"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>세포의 구조</h3></div></article><article class="simulation-card biology" data-topic="genetics"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>유전과 진화</h3></div></article><article class="simulation-card biology" data-topic="neural"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>신경과 자극전달</h3></div></article><article class="simulation-card biology" data-topic="circulation"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>순환과 수송</h3></div></article><article class="simulation-card biology" data-topic="metabolism"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot biology"></span>생명과학</p><h3>대사와 효소</h3></div></article>
+          <article class="simulation-card earth" data-topic="weather"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot earth"></span>지구과학</p><h3>대기와 기상</h3></div></article><article class="simulation-card earth" data-topic="tectonics"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot earth"></span>지구과학</p><h3>판과 지각 변동</h3></div></article><article class="simulation-card earth" data-topic="ocean"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot earth"></span>지구과학</p><h3>해양과 순환</h3></div></article><article class="simulation-card earth" data-topic="space"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot earth"></span>지구과학</p><h3>외권과 천체</h3></div></article>
+          <p class="empty-state" id="empty-state" hidden>선택한 과목의 시뮬레이션이 없습니다.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="../nav-dropdown.js"></script>
+  <script>
+    const subjectFilters = document.querySelectorAll('.subject-filter');
+    const detailFilters = document.querySelectorAll('.detail-filter');
+    const cards = document.querySelectorAll('.simulation-card');
+    const resultCount = document.getElementById('result-count');
+    const emptyState = document.getElementById('empty-state');
+
+    function updateSimulations() {
+      const selected = [...detailFilters].filter(filter => filter.checked).map(filter => filter.value);
+      let visibleCount = 0;
+      cards.forEach(card => {
+        const visible = selected.includes(card.dataset.topic);
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+      resultCount.textContent = `${visibleCount}개 표시 중`;
+      emptyState.hidden = visibleCount !== 0;
+    }
+    subjectFilters.forEach(parent => parent.addEventListener('change', () => {
+      detailFilters.forEach(detail => { if (detail.dataset.subject === parent.dataset.subject) detail.checked = parent.checked; });
+      updateSimulations();
+    }));
+    detailFilters.forEach(detail => detail.addEventListener('change', () => {
+      const siblings = [...detailFilters].filter(item => item.dataset.subject === detail.dataset.subject);
+      const parent = [...subjectFilters].find(item => item.dataset.subject === detail.dataset.subject);
+      parent.checked = siblings.every(item => item.checked);
+      parent.indeterminate = siblings.some(item => item.checked) && !parent.checked;
+      updateSimulations();
+    }));
+  </script>
+</body>
+</html>
