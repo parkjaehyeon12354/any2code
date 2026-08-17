@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+
+  "platform": {
+    "apiRuntime": "node:20"
+  },
+
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  },
+
+  "routes": [
+    {
+      "route": "/",
+      "rewrite": "/Index.html"
+    },
+    {
+      "route": "/community",
+      "rewrite": "/community.html"
+    },
+    {
+      "route": "/guide",
+      "rewrite": "/guide.html"
+    },
+    {
+      "route": "/login",
+      "rewrite": "/login.html"
+    },
+    {
+      "route": "/admin",
+      "rewrite": "/admin.html"
+    },
+    {
+      "route": "/settings",
+      "rewrite": "/settings.html"
+    },
+    {
+      "route": "/q/*",
+      "rewrite": "/post.html"
+    },
+    {
+      "route": "/api/*",
+      "headers": { "Cache-Control": "no-store" }
+    }
+  ],
+
+  "responseOverrides": {
+    "404": { "rewrite": "/Index.html" }
+  },
+
+  "mimeTypes": {
+    ".json": "application/json",
+    ".webmanifest": "application/manifest+json"
+  }
+}

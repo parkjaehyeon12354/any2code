@@ -1,0 +1,19 @@
+{
+  "name": "ans2quest-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ans2Quest 백엔드 — Azure Functions (Node.js v4 프로그래밍 모델)",
+  "_main주의": "src/functions 안에는 실제 함수 파일만 둘 것. 테스트는 test/ 에 있다 — 여기에 *.test.js 를 두면 런타임이 진입점으로 로드해 SESSION_SECRET 을 테스트값으로 덮어쓴다.",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.10.0",
+    "@azure/functions": "^4.5.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

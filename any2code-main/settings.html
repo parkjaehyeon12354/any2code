@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Ans2Quest 내 설정 — 표시 이름과 계정 정보">
+<title>설정 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다.
+   한 사람이 자기 것만 보는 화면이라 폭을 좁게 잡는다 — 커뮤니티처럼 훑는 화면이
+   아니고, 입력란이 화면 끝까지 늘어나면 어디를 봐야 할지 모르게 된다. */
+.settings { max-width: 680px; padding: var(--sp-xl) 0 var(--sp-section); }
+
+.page-head { margin-bottom: var(--sp-xl); }
+.page-head h1 {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.page-head p { font-size: 15px; color: var(--muted); word-break: keep-all; }
+
+.card {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: var(--sp-lg);
+  overflow: hidden;
+}
+.card-head {
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.card-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.card-head p { margin-top: 3px; font-size: 12.5px; color: var(--muted); word-break: keep-all; }
+.card-body { padding: var(--sp-lg); }
+
+.field { margin-bottom: var(--sp-lg); }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.field input {
+  width: 100%;
+  height: 44px;                /* 모바일 터치 타깃 하한 */
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.field input:focus-visible {
+  outline: none;
+  border-color: var(--primary-active);
+  box-shadow: 0 0 0 3px rgba(15, 92, 74, .18);
+}
+.field input:invalid { border-color: var(--error); }
+.field .hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.field .count { float: right; font-weight: 400; color: var(--muted-soft); }
+
+/* 읽기 전용 정보 — 계정 연동 상태처럼 여기서 바꿀 수 없는 값 */
+.rows { font-size: 13.5px; }
+.rows > div {
+  display: flex;
+  gap: var(--sp-md);
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.rows > div:first-child { padding-top: 0; }
+.rows > div:last-child { border-bottom: none; padding-bottom: 0; }
+.rows dt { width: 96px; flex-shrink: 0; color: var(--muted); }
+.rows dd { color: var(--ink); font-weight: 500; word-break: break-all; }
+
+/* 로그인 제공자 배지 — 색으로 구분하면 어느 계정으로 들어왔는지 한눈에 잡힌다 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--rounded-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.chip-google { background: #f1f3f4; color: #3c4043; }
+.chip-kakao { background: #FEE500; color: rgba(0,0,0,.85); }
+.chip-discord { background: #5865F2; color: #fff; }
+.chip-github { background: #24292f; color: #fff; }
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  flex-wrap: wrap;
+  padding: var(--sp-md) var(--sp-lg);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.foot .btn { height: 44px; }
+.foot .stamp { font-size: 12.5px; color: var(--muted); }
+
+/* 결과 안내 — 성공과 실패를 색으로 가른다 */
+.result {
+  margin-bottom: var(--sp-lg);
+  padding: var(--sp-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--body);
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+.result.bad {
+  background: rgba(189, 59, 59, .07);
+  border-color: rgba(189, 59, 59, .25);
+  color: #9c3030;
+}
+
+.gate { padding: var(--sp-section) 0; text-align: center; }
+.gate p { margin-bottom: var(--sp-lg); font-size: 15px; color: var(--muted); }
+
+/* ── 제재·소명 ── */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--rounded-pill);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
+.badge-bad { background: rgba(189, 59, 59, .1); color: #9c3030; }
+.badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
+.badge-off { background: var(--surface-soft); color: var(--muted); }
+
+.empty { padding: var(--sp-md) 0; font-size: 13.5px; color: var(--muted); }
+
+/* 제재 요약 — 사유와 해제일이 한눈에 보여야 "왜 못 쓰는지" 를 묻지 않는다 */
+.sanction {
+  padding: var(--sp-md);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  background: var(--surface-soft);
+  margin-bottom: var(--sp-lg);
+}
+.sanction-top { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; margin-bottom: 8px; }
+.sanction-top strong { font-size: 14px; font-weight: 600; color: var(--ink); }
+.sanction dl { display: flex; flex-wrap: wrap; gap: 4px var(--sp-lg); font-size: 13px; }
+.sanction dl > div { display: flex; gap: 8px; }
+.sanction dt { color: var(--muted); }
+.sanction dd { color: var(--ink); font-weight: 500; }
+
+/* 소명 이력 — 최근 것이 위 */
+.appeal {
+  padding: var(--sp-md) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.appeal:last-child { border-bottom: none; }
+.appeal:first-child { padding-top: 0; }
+.appeal-top { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; margin-bottom: 6px; }
+.appeal-when { font-size: 12.5px; color: var(--muted); }
+.appeal-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--body);
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding-left: 10px;
+  border-left: 2px solid var(--hairline);
+}
+.appeal-outcome { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+
+/* 소제목 — 한 카드 안에서 '현재 / 이력 / 소명' 을 가른다 */
+.sub-head {
+  margin: var(--sp-lg) 0 var(--sp-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.sub-head:first-child { margin-top: 0; }
+
+/* 제재 이력 — 표가 아니라 한 줄씩. 항목이 세 개뿐이라 표는 과하다 */
+.log { font-size: 13px; }
+.log > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.log > div:last-child { border-bottom: none; }
+.log .when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .what { color: var(--ink); font-weight: 500; }
+.log .why { color: var(--muted); }
+
+@media (max-width: 480px) {
+  .page-head h1 { font-size: 27px; }
+  .rows > div { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .rows dt { width: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links">
+      <li><a href="/community">커뮤니티</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+  </div>
+</header>
+
+<main class="container settings">
+  <div class="page-head">
+    <h1>설정</h1>
+    <p>커뮤니티에 보이는 이름과 계정 정보를 관리합니다.</p>
+  </div>
+
+  <!-- 비로그인 안내. 로그인해야 볼 수 있는 화면이라 빈 폼을 보여주지 않는다. -->
+  <div class="gate" id="gate" hidden>
+    <p>설정은 로그인한 뒤에 볼 수 있습니다.</p>
+    <a href="/login" class="btn btn-primary">로그인</a>
+  </div>
+
+  <div id="panel" hidden>
+    <p class="result" id="result" role="status" hidden></p>
+
+    <form id="form">
+      <div class="card">
+        <div class="card-head">
+          <h2>프로필</h2>
+          <p>표시 이름은 내가 쓴 글과 답변에 그대로 보입니다.</p>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label for="f-name">
+              표시 이름
+              <span class="count" id="name-count"></span>
+            </label>
+            <input type="text" id="f-name" autocomplete="nickname" spellcheck="false" required>
+            <span class="hint" id="name-hint"></span>
+          </div>
+
+          <div class="field">
+            <label for="f-birthday">생일</label>
+            <input type="date" id="f-birthday" autocomplete="bday">
+            <span class="hint">나만 볼 수 있습니다. 다른 사람에게도, 글에도 표시되지 않습니다.
+            비워두면 저장하지 않습니다.</span>
+          </div>
+        </div>
+        <div class="foot">
+          <button type="submit" class="btn btn-primary" id="save">저장</button>
+          <button type="button" class="btn btn-ghost" id="reset">되돌리기</button>
+          <span class="stamp" id="stamp"></span>
+        </div>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>제재 및 소명</h2>
+        <p>받은 제재와, 소명이 어떻게 처리됐는지 확인할 수 있습니다.</p>
+      </div>
+      <div class="card-body" id="discipline"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>연동된 로그인</h2>
+        <p>이 계정으로 로그인하고 있습니다.</p>
+      </div>
+      <div class="card-body">
+        <dl class="rows" id="account"></dl>
+        <span class="hint" style="display:block;margin-top:var(--sp-md)">
+          이메일과 가입 경로는 로그인 제공자에서 가져온 값이라 여기서 바꿀 수 없습니다.
+          다른 제공자를 추가로 연결하는 기능은 아직 없습니다 — 지금은 계정 하나에 로그인 방법 하나입니다.
+        </span>
+      </div>
+      <div class="foot">
+        <a href="#" class="btn btn-ghost" data-logout>로그아웃</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="session.js"></script>
+<script src="nav-user.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+  const esc = escapeHtml;   // session.js 제공
+
+  const form = el('form');
+  const fName = el('f-name');
+  const fBirthday = el('f-birthday');
+  const saveBtn = el('save');
+  const result = el('result');
+
+  let LOADED = null;   // 서버가 준 마지막 값. '되돌리기' 와 변경 여부 판단에 쓴다
+
+  function say(msg, isBad) {
+    result.textContent = msg;
+    result.classList.toggle('bad', !!isBad);
+    result.hidden = false;
+  }
+
+  const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', discord: 'Discord', github: 'GitHub' };
+
+  const shortWhen = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d)) return '—';
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  };
+
+  function syncCount() {
+    const n = fName.value.trim().length;
+    el('name-count').textContent = n + ' / ' + (LOADED ? LOADED.limits.nameMax : 20);
+  }
+  fName.addEventListener('input', syncCount);
+
+  /* 서버가 준 값만 그린다. 화면이 보낸 값을 그리면 서버가 다듬은 결과(공백 정리 등)와
+     어긋나서 "저장했는데 다르다" 가 된다. */
+  function render(data) {
+    LOADED = data;
+    const p = data.profile;
+
+    fName.value = p.name;
+    fName.minLength = data.limits.nameMin;
+    fName.maxLength = data.limits.nameMax;
+    fBirthday.value = p.birthday || '';
+    // 오늘 이후는 고를 수 없게 — 서버도 막지만 달력에서 아예 안 보이는 편이 낫다
+    fBirthday.max = new Date().toISOString().slice(0, 10);
+    fBirthday.min = '1900-01-01';
+    syncCount();
+
+    el('name-hint').textContent = p.nameChanged
+      ? '로그인 제공자 이름은 "' + p.oauthName + '" 입니다. 이름을 바꾸면 이미 쓴 글의 작성자명도 함께 바뀝니다.'
+      : '지금은 로그인 제공자에서 온 이름을 쓰고 있습니다. 바꾸면 이미 쓴 글의 작성자명도 함께 바뀝니다.';
+
+    el('stamp').textContent = p.nameChangedAt
+      ? '이름 마지막 변경: ' + shortWhen(p.nameChangedAt)
+      : '';
+
+    const chip = '<span class="chip chip-' + esc(p.provider) + '">' +
+      esc(PROVIDER_LABEL[p.provider] || p.provider) + '</span>';
+    el('account').innerHTML =
+      '<div><dt>로그인</dt><dd>' + chip + '</dd></div>' +
+      '<div><dt>이메일</dt><dd>' + esc(p.email || '—') + '</dd></div>' +
+      '<div><dt>가입일</dt><dd>' + esc(shortWhen(p.joinedAt)) + '</dd></div>' +
+      '<div><dt>최근 로그인</dt><dd>' + esc(shortWhen(p.lastLoginAt)) + '</dd></div>';
+  }
+
+  /* 소명 결과 문구는 "받아들여졌는지" 를 그대로 말한다. 관리자 화면은 기각·인용·감경
+     이라는 정확한 말을 쓰지만, 처분을 받는 쪽에는 그 단어가 무슨 뜻인지부터 걸린다. */
+  const APPEAL_STATUS = {
+    wait:    { cls: 'badge-wait', text: '검토 중' },
+    granted: { cls: 'badge-ok',   text: '받아들여짐' },
+    reduced: { cls: 'badge-wait', text: '일부 받아들여짐' },
+    denied:  { cls: 'badge-bad',  text: '받아들여지지 않음' }
+  };
+
+  const badge = (cls, text) => '<span class="badge ' + cls + '">' + esc(text) + '</span>';
+
+  /* 제재·소명은 이름을 저장해도 바뀌지 않으므로 불러올 때 한 번만 그린다. */
+  /* 이력 한 줄의 문구. days 는 그 이벤트가 만든 기간이라 해석이 이벤트마다 다르다. */
+  const LOG_EVENT = {
+    issued:  (h) => (h.days ? h.days + '일 이용 제한' : '경고'),
+    reduced: (h) => '소명이 일부 받아들여져 ' + h.days + '일로 줄었습니다',
+    lifted:  () => '소명이 받아들여져 제재가 해제됐습니다'
+  };
+
+  function renderDiscipline(d) {
+    const box = el('discipline');
+    const parts = [];
+
+    if (d.sanction) {
+      const s = d.sanction;
+      parts.push('<p class="sub-head">현재 상태</p>');
+      const state = s.active
+        ? badge('badge-bad', '제한 중')
+        : s.lifted
+          ? badge('badge-ok', '소명으로 해제됨')
+          : badge('badge-off', '기간 만료');
+
+      parts.push(
+        '<div class="sanction">' +
+        '<div class="sanction-top"><strong>' +
+        esc(s.days === 0 ? '경고' : s.days + '일 이용 제한') + '</strong>' + state + '</div>' +
+        '<dl>' +
+        '<div><dt>사유</dt><dd>' + esc(s.reason || '—') + '</dd></div>' +
+        '<div><dt>처리일</dt><dd>' + esc(shortWhen(s.at)) + '</dd></div>' +
+        (s.days > 0
+          ? '<div><dt>' + (s.active ? '해제 예정' : '해제됨') + '</dt><dd>' + esc(shortWhen(s.until)) + '</dd></div>'
+          : '') +
+        '</dl></div>'
+      );
+    }
+
+    if (d.history.length) {
+      parts.push('<p class="sub-head">제재 이력 ' + d.history.length + '건</p>');
+      parts.push('<div class="log">' + d.history.map(function (h) {
+        const label = (LOG_EVENT[h.event] || function () { return h.event; })(h);
+        return '<div>' +
+          '<span class="when">' + esc(shortWhen(h.at)) + '</span>' +
+          '<span class="what">' + esc(label) + '</span>' +
+          (h.reason && h.event === 'issued' ? '<span class="why">· ' + esc(h.reason) + '</span>' : '') +
+          '</div>';
+      }).join('') + '</div>');
+    }
+
+    if (d.appeals.length) {
+      parts.push('<p class="sub-head">낸 소명 ' + d.appeals.length + '건</p>');
+      parts.push(d.appeals.map(function (a) {
+        const st = APPEAL_STATUS[a.status] || { cls: 'badge-off', text: a.status };
+        let outcome = '';
+        if (a.status === 'granted') outcome = '제재가 즉시 해제됐습니다.';
+        else if (a.status === 'reduced') outcome = '제재가 ' + a.reducedDays + '일로 줄었습니다.';
+        else if (a.status === 'denied') outcome = '제재가 유지됩니다.';
+        else outcome = '아직 결과가 나오지 않았습니다.';
+
+        return '<div class="appeal">' +
+          '<div class="appeal-top">' + badge(st.cls, st.text) +
+          '<span class="appeal-when">' + esc(shortWhen(a.createdAt)) + ' 접수' +
+          (a.decidedAt ? ' · ' + esc(shortWhen(a.decidedAt)) + ' 결정' : '') + '</span></div>' +
+          '<p class="appeal-text">' + esc(a.text) + '</p>' +
+          '<p class="appeal-outcome">' + esc(outcome) + '</p>' +
+          '</div>';
+      }).join(''));
+    }
+
+    if (!parts.length) {
+      parts.push('<p class="empty">제재를 받은 적이 없습니다.</p>');
+    } else if (!d.appeals.length) {
+      /* 소명은 제한이 걸려 있는 동안만 낼 수 있다 (서버가 그렇게 막는다).
+         경고만 받았거나 기간이 끝난 사람에게 소명하라고 안내하면, 눌러 봤다가
+         거절당한다 — 화면이 되지 않는 일을 권하는 셈이다. */
+      parts.push('<p class="empty">' + (d.sanction && d.sanction.active
+        ? '아직 낸 소명이 없습니다. 억울한 점이 있으면 커뮤니티 화면에서 소명할 수 있습니다.'
+        : '낸 소명이 없습니다.') + '</p>');
+    }
+
+    box.innerHTML = parts.join('');
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/profile', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      const data = await res.json();
+      render(data);
+      renderDiscipline(data.discipline);
+      result.hidden = true;
+    } catch (e) {
+      say('설정을 불러오지 못했습니다: ' + e.message +
+        '\n현재 값을 모르는 상태로 저장하면 멀쩡한 설정을 덮어씁니다. 저장 버튼을 잠갔습니다.', true);
+      saveBtn.disabled = true;
+    }
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();   // 폼 기본 제출(페이지 이동)을 막는다
+
+    // 브라우저 검사를 먼저 통과시킨다. 서버도 같은 범위를 보지만 왕복 없이 알려주는 편이 낫다
+    for (const input of [fName, fBirthday]) {
+      if (!input.checkValidity()) { input.focus(); input.reportValidity(); return; }
+    }
+
+    const prev = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중…';
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fName.value, birthday: fBirthday.value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '저장하지 못했습니다.');
+
+      render(data);
+      say(data.renamed
+        ? '저장했습니다. 이미 쓴 글·답변 ' + data.renamed + '건의 작성자명도 새 이름으로 바꿨습니다.'
+        : '저장했습니다.');
+
+      // 상단바가 옛 이름을 들고 있으면 방금 바꾼 게 반영 안 된 것처럼 보인다.
+      // 새로고침으로 해결하면 위에서 띄운 안내가 함께 지워지므로 상단바만 다시 그린다.
+      const me = await Session.refresh();
+      if (window.NavUser) window.NavUser.render(me);
+    } catch (e) {
+      say('저장하지 못했습니다: ' + e.message + '\n화면의 값은 그대로 두었습니다.', true);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = prev;
+    }
+  });
+
+  el('reset').addEventListener('click', function () {
+    if (!LOADED) return;
+    render(LOADED);
+    say('불러온 값으로 되돌렸습니다. 저장하지는 않았습니다.');
+  });
+
+  // 로그인 확인이 끝난 뒤에 화면을 고른다. 비로그인에게 빈 폼을 보여주면
+  // 채우고 저장한 다음에야 로그인하라는 말을 듣게 된다.
+  Session.refresh().then(function (user) {
+    if (!user) { el('gate').hidden = false; return; }
+    el('panel').hidden = false;
+    load();
+  });
+})();
+</script>
+
+</body>
+</html>
