@@ -64,7 +64,7 @@
     </a>
           <ul class="nav-links" id="nav-links">
       <li>
-        <a href="#" data-dropdown="physics">물리학</a>
+        <a href="simulation/index.html?subject=physics" data-dropdown="physics">물리학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
             <a href="#">고전 역학</a>
@@ -216,3 +216,22 @@
   </script>
 </body>
 </html>
+
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const subject = params.get("subject");
+
+if (subject) {
+    const checkbox = document.getElementById(subject);
+
+    if (checkbox) {
+        checkbox.checked = true;
+    }
+}
+</script>
+
+<input type="checkbox" id="physics"> 물리학
+<input type="checkbox" id="chemistry"> 화학
+<input type="checkbox" id="biology"> 생명과학
+<input type="checkbox" id="earth"> 지구과학
