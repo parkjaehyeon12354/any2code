@@ -22,8 +22,13 @@ async function active(sub) {
 async function block(sub) {
   const s = await active(sub);
   if (!s) return null;
-  // 언제 풀리는지 알려주지 않으면 "왜 안 되지" 하고 계속 시도한다
-  const when = new Date(s.until).toLocaleDateString('ko-KR');
+  /* 언제 풀리는지 알려주지 않으면 "왜 안 되지" 하고 계속 시도한다.
+
+     시간대를 한국으로 고정한다. Azure Functions 는 UTC 로 돌아서 그냥 찍으면
+     한국 새벽~오전 9시 구간이 하루 전으로 나온다 — 화면의 제재 배너(로컬 시간대)와
+     이 문구가 서로 다른 날짜를 말하게 된다.
+     'sv-SE' 로케일은 YYYY-MM-DD 를 주므로 화면(session.js 의 shortDate)과 모양도 같다. */
+  const when = new Date(s.until).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
   return {
     status: 403,
     jsonBody: {

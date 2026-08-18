@@ -341,7 +341,7 @@
     if (s < 86400) return Math.floor(s / 3600) + '시간 전';
     if (s < 172800) return '어제';
     if (s < 2592000) return Math.floor(s / 86400) + '일 전';
-    return new Date(iso).toLocaleDateString('ko-KR');
+    return shortDate(iso);
   }
 
   const arrow = (path, dir) =>

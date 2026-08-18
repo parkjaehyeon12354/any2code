@@ -10,6 +10,29 @@
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ── 날짜 표시 ──
+   서버는 전부 UTC ISO 문자열로 준다. 그걸 자르면(slice(0, 10)) UTC 날짜가 나오는데,
+   한국은 UTC+9 라 아침 9시 전에 한 일이 전날로 찍힌다. 그래서 항상 Date 로 파싱해
+   보는 사람의 기기 시계(로컬 시간대) 기준으로 그린다.
+
+   화면마다 따로 만들던 것을 여기 모았다 — admin 은 UTC, settings 는 로컬, community 는
+   'ko-KR'(2026. 7. 30.) 로 셋이 갈려 있었다. */
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/** 2026-07-30. ISO 문자열도 Date 객체도 받는다. 값이 없거나 이상하면 '—'. */
+const shortDate = (v) => {
+  if (!v) return '—';
+  const d = v instanceof Date ? v : new Date(v);
+  return isNaN(d) ? '—' : d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+};
+
+/** 2026-07-30 22:15. 같은 날 여러 건이 쌓이는 곳(설정 변경 이력 등)에만 쓴다. */
+const shortWhen = (v) => {
+  if (!v) return '—';
+  const d = v instanceof Date ? v : new Date(v);
+  return isNaN(d) ? '—' : shortDate(d) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+};
+
 const Session = (function () {
   const KEY = 'ans2quest_user';   // 표시용 캐시. 권한 근거가 아니다.
   let verified = null;            // 서버가 확인해 준 사용자

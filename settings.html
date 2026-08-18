@@ -330,13 +330,7 @@
 
   const PROVIDER_LABEL = { google: 'Google', kakao: '카카오', discord: 'Discord', github: 'GitHub' };
 
-  const shortWhen = (iso) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (isNaN(d)) return '—';
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0');
-  };
+  // shortDate 는 session.js 가 전역으로 준다 (모든 화면이 같은 시간대로 그린다)
 
   function syncCount() {
     const n = fName.value.trim().length;
@@ -364,7 +358,7 @@
       : '지금은 로그인 제공자에서 온 이름을 쓰고 있습니다. 바꾸면 이미 쓴 글의 작성자명도 함께 바뀝니다.';
 
     el('stamp').textContent = p.nameChangedAt
-      ? '이름 마지막 변경: ' + shortWhen(p.nameChangedAt)
+      ? '이름 마지막 변경: ' + shortDate(p.nameChangedAt)
       : '';
 
     const chip = '<span class="chip chip-' + esc(p.provider) + '">' +
@@ -372,8 +366,8 @@
     el('account').innerHTML =
       '<div><dt>로그인</dt><dd>' + chip + '</dd></div>' +
       '<div><dt>이메일</dt><dd>' + esc(p.email || '—') + '</dd></div>' +
-      '<div><dt>가입일</dt><dd>' + esc(shortWhen(p.joinedAt)) + '</dd></div>' +
-      '<div><dt>최근 로그인</dt><dd>' + esc(shortWhen(p.lastLoginAt)) + '</dd></div>';
+      '<div><dt>가입일</dt><dd>' + esc(shortDate(p.joinedAt)) + '</dd></div>' +
+      '<div><dt>최근 로그인</dt><dd>' + esc(shortDate(p.lastLoginAt)) + '</dd></div>';
   }
 
   /* 소명 결과 문구는 "받아들여졌는지" 를 그대로 말한다. 관리자 화면은 기각·인용·감경
@@ -414,9 +408,9 @@
         esc(s.days === 0 ? '경고' : s.days + '일 이용 제한') + '</strong>' + state + '</div>' +
         '<dl>' +
         '<div><dt>사유</dt><dd>' + esc(s.reason || '—') + '</dd></div>' +
-        '<div><dt>처리일</dt><dd>' + esc(shortWhen(s.at)) + '</dd></div>' +
+        '<div><dt>처리일</dt><dd>' + esc(shortDate(s.at)) + '</dd></div>' +
         (s.days > 0
-          ? '<div><dt>' + (s.active ? '해제 예정' : '해제됨') + '</dt><dd>' + esc(shortWhen(s.until)) + '</dd></div>'
+          ? '<div><dt>' + (s.active ? '해제 예정' : '해제됨') + '</dt><dd>' + esc(shortDate(s.until)) + '</dd></div>'
           : '') +
         '</dl></div>'
       );
@@ -427,7 +421,7 @@
       parts.push('<div class="log">' + d.history.map(function (h) {
         const label = (LOG_EVENT[h.event] || function () { return h.event; })(h);
         return '<div>' +
-          '<span class="when">' + esc(shortWhen(h.at)) + '</span>' +
+          '<span class="when">' + esc(shortDate(h.at)) + '</span>' +
           '<span class="what">' + esc(label) + '</span>' +
           (h.reason && h.event === 'issued' ? '<span class="why">· ' + esc(h.reason) + '</span>' : '') +
           '</div>';
@@ -446,8 +440,8 @@
 
         return '<div class="appeal">' +
           '<div class="appeal-top">' + badge(st.cls, st.text) +
-          '<span class="appeal-when">' + esc(shortWhen(a.createdAt)) + ' 접수' +
-          (a.decidedAt ? ' · ' + esc(shortWhen(a.decidedAt)) + ' 결정' : '') + '</span></div>' +
+          '<span class="appeal-when">' + esc(shortDate(a.createdAt)) + ' 접수' +
+          (a.decidedAt ? ' · ' + esc(shortDate(a.decidedAt)) + ' 결정' : '') + '</span></div>' +
           '<p class="appeal-text">' + esc(a.text) + '</p>' +
           '<p class="appeal-outcome">' + esc(outcome) + '</p>' +
           '</div>';

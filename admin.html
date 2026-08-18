@@ -790,11 +790,9 @@ Session.refresh().then(function (user) {
   const sanctionText = (days, blocked) =>
     (days === 0 ? '경고' : days + '일 제한') + (blocked ? ' · 글 차단' : '');
 
-  // 제한 해제일. 서버가 붙으면 서버 시각으로 계산해야 한다 (기기 시계는 못 믿는다)
-  const untilDate = (days) => {
-    const d = new Date(Date.now() + days * 86400000);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  };
+  /* 제한 해제일 미리보기. 여기서만 기기 시각으로 계산한다 — 실제 해제 시각은 서버가
+     정하고, 이건 "몇 일이면 언제까지인지" 를 고르는 순간에 보여주는 어림값이다. */
+  const untilDate = (days) => shortDate(new Date(Date.now() + days * 86400000));
   const fill = (id, rows, empty) => {
     const tbody = document.getElementById(id);
     // 표마다 열 수가 다르다. 고정값(6)을 쓰면 열이 늘어난 표에서 안내문이 어긋난다
@@ -961,7 +959,7 @@ Session.refresh().then(function (user) {
     note.classList.toggle('warn', !heldLoading && n > 0);
   }
 
-  const shortDate = (iso) => (iso ? iso.slice(0, 10) : '—');
+  // shortDate·shortWhen 은 session.js 가 전역으로 준다 (모든 화면이 같은 시간대로 그린다)
 
   function renderHeld() {
     if (heldLoading) { fill('held-body', [], '불러오는 중…'); return; }
@@ -1365,11 +1363,6 @@ Session.refresh().then(function (user) {
 
   function setSay(msg) { setResult.textContent = msg; setResult.hidden = false; }
 
-  const shortWhen = (iso) => {
-    const d = new Date(iso);
-    return isNaN(d) ? iso : shortDate(iso) + ' ' +
-      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  };
 
   let SET_DEFAULTS = null;   // '기본값으로' 버튼이 쓴다. 서버가 아는 값이 유일한 기준이다
 

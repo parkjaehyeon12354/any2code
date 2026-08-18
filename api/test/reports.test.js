@@ -4,6 +4,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 
+/* 프로덕션(Azure Functions)이 UTC 로 도는 것과 맞춘다. 이걸 안 걸면 한국 PC 에서
+   테스트를 돌릴 때 로컬 시간대가 우연히 답을 맞혀서, 시간대 버그가 초록불로 지나간다. */
+process.env.TZ = 'UTC';
+
 process.env.SESSION_SECRET = 'r'.repeat(48);
 process.env.ADMIN_EMAILS = 'boss@example.com';
 
@@ -190,6 +194,25 @@ test('제재 — 기간이 지나면 자동으로 풀린다', async () => {
   const res = await routes.postsCreate.handler(req({ cookie: author(), body: okPost }), ctx);
   assert.strictEqual(res.status, 201, '기간이 지났는데 계속 막히면 안 된다');
   assert.ok(state.docs.find((d) => d.type === 'sanction'), '이력은 남아야 반복 위반을 안다');
+});
+
+test('제재 안내의 해제일은 한국 시간대로 찍는다', async () => {
+  /* Azure Functions 는 UTC 로 돈다. 그냥 찍으면 한국 새벽~오전 9시 구간이 하루 전으로
+     나와서, 화면의 제재 배너(기기 시계 기준)와 이 문구가 다른 날짜를 말하게 된다.
+     아래 시각은 UTC 로 12/30, 한국으로 12/31 이다 (제재가 살아있도록 미래로 잡는다). */
+  const sanction = require('../src/lib/sanction');
+  state.docs = [];
+  const until = '2026-12-30T21:00:00.000Z';   // UTC 12-30, 한국 12-31
+  await fake.items.upsert({
+    id: 'discord:1', type: 'sanction', pk: 'discord:1', userSub: 'discord:1',
+    days: 3, until, reason: '도배', at: '2026-07-27T00:00:00.000Z'
+  });
+
+  const res = await sanction.block('discord:1');
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.jsonBody.error.includes('2026-12-31'),
+    'UTC 로 찍히면 12-30 이 되어 화면과 하루 어긋난다: ' + res.jsonBody.error);
+  assert.strictEqual(res.jsonBody.suspendedUntil, until, '원본 시각은 그대로 줘야 화면이 다시 계산할 수 있다');
 });
 
 test('제재 — blockContent 면 대상 글도 차단된다', async () => {

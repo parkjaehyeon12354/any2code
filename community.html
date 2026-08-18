@@ -473,7 +473,7 @@
     if (s < 86400) return Math.floor(s / 3600) + '시간 전';
     if (s < 172800) return '어제';
     if (s < 2592000) return Math.floor(s / 86400) + '일 전';
-    return new Date(iso).toLocaleDateString('ko-KR');
+    return shortDate(iso);
   }
 
   // ── 과목 목록 ──
@@ -703,7 +703,7 @@
 
   function showSuspension(user) {
     if (!user || !user.suspendedUntil) { suspended.hidden = true; return; }
-    const when = new Date(user.suspendedUntil).toLocaleDateString('ko-KR');
+    const when = shortDate(user.suspendedUntil);
     el('suspended-title').textContent = '현재 글쓰기가 제한된 상태입니다';
     el('suspended-detail').textContent =
       '사유: ' + (user.suspendedReason || '운영 정책 위반') + ' · ' + when + '에 자동 해제됩니다. ' +
