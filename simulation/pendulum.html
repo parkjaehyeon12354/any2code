@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="단진자 시뮬레이션 — 길이와 초기 각도를 바꾸며 주기를 직접 재어 봅니다">
+<title>단진자 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim { padding: var(--sp-xl) 0 var(--sp-section); }
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-lg); align-items: start; }
+
+.stage {
+  position: relative;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: var(--sp-lg);
+  overflow: hidden;
+}
+.panel-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: var(--sp-lg); }
+
+.ctrl { margin-bottom: var(--sp-lg); }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 8px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 44px;                 /* 모바일 터치 타깃 하한 */
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 2px; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: #8a5c08; }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links">
+      <li><a href="/simulation">시뮬레이션</a></li>
+      <li><a href="/community">커뮤니티</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+  </div>
+</header>
+
+<main class="container sim">
+  <p class="crumb"><a href="/simulation">시뮬레이션</a> · 물리학 · 고전 역학</p>
+
+  <div class="head">
+    <h1>단진자</h1>
+    <p>길이와 처음 각도를 바꾸면서 주기를 직접 재어 보세요.
+    교과서의 <strong>T = 2π√(L/g)</strong> 는 각도가 작을 때만 맞는 근사식입니다 — 언제부터 어긋나는지 확인해 보세요.</p>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="stage">
+        <canvas id="canvas" aria-label="단진자 운동"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="len">줄 길이</label>
+              <output id="len-out">1.00 m</output>
+            </div>
+            <input type="range" id="len" min="0.2" max="2" step="0.01" value="1">
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="ang">처음 각도</label>
+              <output id="ang-out">20°</output>
+            </div>
+            <input type="range" id="ang" min="5" max="90" step="1" value="20">
+            <span class="hint">각도를 키울수록 근사식에서 멀어집니다. 바꾸면 그 각도에서 다시 시작합니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="damp">공기 저항</label>
+              <output id="damp-out">0.00 /s</output>
+            </div>
+            <input type="range" id="damp" min="0" max="0.5" step="0.01" value="0">
+            <span class="hint">0이면 영원히 흔들립니다. 실제 실험과 비교하려면 조금 넣어 보세요.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 각도</dt><dd id="r-theta">—</dd></div>
+            <div><dt>측정 주기</dt><dd id="r-measured">—</dd></div>
+            <div><dt>근사식 값</dt><dd id="r-ideal">—</dd></div>
+            <div><dt>차이</dt><dd id="r-gap" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다. 평소에는 주소를 건드리지 않으니
+          슬라이더를 움직여도 주소창이 지저분해지지 않습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../session.js"></script>
+<script src="../nav-user.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 물리 ──
+     단진자의 운동방정식. 근사 없이 sin θ 를 그대로 쓴다 —
+     "각도가 크면 근사식과 어긋난다" 를 보여주는 게 이 화면의 목적이라
+     θ 로 근사해 버리면 볼 것이 없어진다.
+
+         θ'' = -(g/L)·sin θ - b·θ'
+
+     적분은 반음(semi-implicit) 오일러다. 속도를 먼저 갱신하고 그 속도로 위치를 옮긴다.
+     보통 오일러법을 쓰면 감쇠를 0으로 둬도 진폭이 서서히 커져서, 학생이 물리가 아니라
+     수치 오차를 관찰하게 된다. 순서만 바꾸면 그 문제가 사라진다. */
+  const G = 9.80665;
+
+  /* 화면 주사율(60Hz·144Hz)이 물리 결과를 바꾸면 안 되므로 고정 간격으로 적분한다.
+     ponytail: 탭을 오래 숨겼다가 돌아오면 밀린 시간이 한꺼번에 들어온다. 0.25초로
+     잘라 흘린다 — 그 구간의 운동은 건너뛰지만, 붙잡고 계산하면 화면이 멈춘다. */
+  const DT = 1 / 480;
+  const MAX_CATCHUP = 0.25;
+
+  const state = {
+    theta: 0,      // 연직에서 잰 각 (rad)
+    omega: 0,      // 각속도 (rad/s)
+    t: 0,          // 시작부터의 시각 (s)
+    running: true
+  };
+
+  const params = { L: 1, deg: 20, b: 0 };
+
+  /* 주기 측정 — 아래로 0을 지나는 순간을 잡아 그 간격을 잰다.
+     최대점을 추적하지 않는 이유: 감쇠가 있으면 최대점이 매번 달라져 흔들린다.
+     0 통과는 감쇠가 있어도 위치가 안정적이다. */
+  let lastCross = null;
+  let periods = [];
+  let prevTheta = 0;
+
+  function reset() {
+    state.theta = params.deg * Math.PI / 180;
+    state.omega = 0;
+    state.t = 0;
+    prevTheta = state.theta;
+    lastCross = null;
+    periods = [];
+  }
+
+  function step() {
+    // 반음 오일러: 속도 먼저, 그 속도로 위치
+    const acc = -(G / params.L) * Math.sin(state.theta) - params.b * state.omega;
+    state.omega += acc * DT;
+    state.theta += state.omega * DT;
+    state.t += DT;
+
+    // 아래로(+ → -) 0 통과. 선형 보간으로 정확한 시각을 잡는다
+    if (prevTheta > 0 && state.theta <= 0) {
+      const frac = prevTheta / (prevTheta - state.theta);   // 0..1
+      const crossAt = state.t - DT + frac * DT;
+      if (lastCross !== null) {
+        periods.push(crossAt - lastCross);
+        if (periods.length > 5) periods.shift();            // 최근 것만 본다
+      }
+      lastCross = crossAt;
+    }
+    prevTheta = state.theta;
+  }
+
+  /** 측정 주기. 아직 한 바퀴도 안 돌았으면 null */
+  const measured = () =>
+    periods.length ? periods.reduce((a, b) => a + b, 0) / periods.length : null;
+
+  const idealPeriod = () => 2 * Math.PI * Math.sqrt(params.L / G);
+
+  /* ── 그리기 ── */
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const w = canvas.clientWidth;
+    const h = Math.round(w * 0.62);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function draw() {
+    const w = canvas.clientWidth;
+    const h = canvas.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, w, h);
+
+    const pivotX = w / 2;
+    const pivotY = h * 0.14;
+    // 줄이 가장 길 때(2m)도 화면 안에 들어오도록 축척을 맞춘다
+    const scale = (h * 0.72) / 2;
+    const len = params.L * scale;
+
+    const bobX = pivotX + len * Math.sin(state.theta);
+    const bobY = pivotY + len * Math.cos(state.theta);
+
+    // 연직선 — 어디가 평형인지 보이면 각도를 읽기 쉽다
+    ctx.strokeStyle = 'rgba(0,0,0,.10)';
+    ctx.setLineDash([4, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(pivotX, pivotY + len + 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 진폭 호 — 어디까지 갔다 오는지
+    const amp = params.deg * Math.PI / 180;
+    ctx.strokeStyle = 'rgba(22,122,99,.18)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, len, Math.PI / 2 - amp, Math.PI / 2 + amp);
+    ctx.stroke();
+
+    // 줄
+    ctx.strokeStyle = '#5d6963';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(bobX, bobY);
+    ctx.stroke();
+
+    // 고정점
+    ctx.fillStyle = '#5d6963';
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 추
+    ctx.fillStyle = '#167a63';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* ── 화면 갱신 ──
+     숫자는 프레임마다 고치면 읽을 수가 없다. 10Hz 로 늦춘다. */
+  let lastRead = 0;
+
+  function paintNumbers() {
+    const deg = state.theta * 180 / Math.PI;
+    el('r-theta').textContent = deg.toFixed(1) + '°';
+
+    const m = measured();
+    const ideal = idealPeriod();
+    el('r-ideal').textContent = ideal.toFixed(3) + ' s';
+    el('r-measured').textContent = m ? m.toFixed(3) + ' s' : '재는 중…';
+
+    const gapEl = el('r-gap');
+    if (!m) {
+      gapEl.textContent = '—';
+      gapEl.className = 'gap same';
+      el('note').textContent = '한 번 왕복하면 주기가 나옵니다.';
+      return;
+    }
+
+    const pct = (m - ideal) / ideal * 100;
+    gapEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    // 0.5% 아래면 사실상 같다고 봐도 되는 구간이라 색을 뺀다
+    gapEl.className = Math.abs(pct) < 0.5 ? 'gap same' : 'gap';
+
+    el('note').textContent = Math.abs(pct) < 0.5
+      ? '이 각도에서는 근사식이 거의 그대로 맞습니다.'
+      : '측정 주기가 근사식보다 깁니다. 각도가 커질수록 이 차이가 벌어집니다 — '
+        + 'T = 2π√(L/g) 가 sin θ ≈ θ 로 놓고 유도한 식이기 때문입니다.';
+  }
+
+  let prev = performance.now();
+  let acc = 0;
+
+  function frame(now) {
+    let elapsed = (now - prev) / 1000;
+    prev = now;
+    if (elapsed > MAX_CATCHUP) elapsed = MAX_CATCHUP;
+
+    if (state.running) {
+      acc += elapsed;
+      while (acc >= DT) { step(); acc -= DT; }
+    }
+
+    draw();
+    if (now - lastRead > 100) { paintNumbers(); lastRead = now; }
+    requestAnimationFrame(frame);
+  }
+
+  /* ── 조작 ── */
+  const lenIn = el('len'), angIn = el('ang'), dampIn = el('damp');
+
+  function syncLabels() {
+    el('len-out').textContent = params.L.toFixed(2) + ' m';
+    el('ang-out').textContent = params.deg + '°';
+    el('damp-out').textContent = params.b.toFixed(2) + ' /s';
+  }
+
+  lenIn.addEventListener('input', function () {
+    params.L = Number(this.value);
+    syncLabels();
+    periods = []; lastCross = null;   // 길이가 바뀌면 이전 측정은 의미가 없다
+  });
+
+  angIn.addEventListener('input', function () {
+    params.deg = Number(this.value);
+    syncLabels();
+    reset();                          // 처음 각도는 다시 놓아야 바뀐다
+  });
+
+  dampIn.addEventListener('input', function () {
+    params.b = Number(this.value);
+    syncLabels();
+    periods = []; lastCross = null;
+  });
+
+  el('toggle').addEventListener('click', function () {
+    state.running = !state.running;
+    this.textContent = state.running ? '일시정지' : '이어서';
+  });
+
+  el('reset').addEventListener('click', function () {
+    reset();
+    el('stage-said').textContent = '';
+  });
+
+  /* ── 공유 ──
+     평소에는 주소를 손대지 않는다. 슬라이더를 움직일 때마다 history 를 바꾸면
+     뒤로가기가 슬라이더 되감기가 되어 버린다. 누를 때만 주소를 만든다. */
+  function shareUrl() {
+    const u = new URL(location.href);
+    u.search = new URLSearchParams({
+      L: params.L.toFixed(2),
+      a: String(params.deg),
+      b: params.b.toFixed(2)
+    }).toString();
+    return u.toString();
+  }
+
+  el('share').addEventListener('click', async function () {
+    const url = shareUrl();
+    const said = el('share-said');
+    const box = el('share-url');
+    try {
+      await navigator.clipboard.writeText(url);
+      said.textContent = '복사했습니다.';
+      box.hidden = true;
+    } catch {
+      // 권한이 없거나 브라우저가 막으면 직접 복사할 수 있게 보여준다
+      box.value = url;
+      box.hidden = false;
+      box.select();
+      said.textContent = '복사가 막혀 있어 주소를 띄웠습니다.';
+    }
+  });
+
+  /* 공유 링크로 들어왔을 때만 조건을 복원한다. 값이 범위를 벗어나면 무시한다 —
+     주소는 누구나 고칠 수 있고, 이상한 값이 들어오면 화면이 깨진다. */
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    const num = (key, lo, hi, fallback) => {
+      const v = Number(q.get(key));
+      return Number.isFinite(v) && v >= lo && v <= hi ? v : fallback;
+    };
+    params.L = num('L', 0.2, 2, 1);
+    params.deg = Math.round(num('a', 5, 90, 20));
+    params.b = num('b', 0, 0.5, 0);
+
+    lenIn.value = params.L;
+    angIn.value = params.deg;
+    dampIn.value = params.b;
+
+    if (q.has('L') || q.has('a') || q.has('b')) {
+      el('stage-said').textContent = '공유된 조건으로 시작했습니다.';
+    }
+  }
+
+  applyQuery();
+  syncLabels();
+  reset();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

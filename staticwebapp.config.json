@@ -41,6 +41,10 @@
       "rewrite": "/settings.html"
     },
     {
+      "route": "/simulation/pendulum",
+      "rewrite": "/simulation/pendulum.html"
+    },
+    {
       "route": "/q/*",
       "rewrite": "/post.html"
     },
