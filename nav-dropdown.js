@@ -1,5 +1,4 @@
-/* 상단 네비의 메가드롭다운 — Index/community 공용.
-   #nav-links 가 없는 페이지(login, admin)에서는 아무것도 하지 않는다. */
+/* 상단 네비 메가드롭다운 */
 (function () {
   const navLinks = document.getElementById('nav-links');
   if (!navLinks) return;
@@ -8,13 +7,17 @@
 
   function closeAll() {
     clearTimeout(closeTimer);
-    navLinks.querySelectorAll('.open,.active').forEach(el => el.classList.remove('open', 'active'));
+    navLinks.querySelectorAll('.open,.active').forEach(el => {
+      el.classList.remove('open', 'active');
+    });
   }
 
   function openDropdown(li) {
     clearTimeout(closeTimer);
+
     const panel = li.querySelector('.mega-dropdown');
     if (!panel || panel.classList.contains('open')) return;
+
     closeAll();
     panel.classList.add('open');
     li.classList.add('active');
@@ -25,15 +28,20 @@
       clearTimeout(closeTimer);
       openDropdown(li);
     });
-    // 250ms 여유 — 링크와 패널 사이를 지날 때 닫히면 못 쓴다
+
     li.addEventListener('mouseleave', function () {
       closeTimer = setTimeout(closeAll, 250);
     });
   });
 
-  // 드롭다운 여는 링크는 이동시키지 않는다 (href="#" 로 맨 위로 튀는 것 방지)
+  // href="#"인 링크만 이동 방지
+  // 실제 주소가 있는 과목 링크는 정상 이동
   navLinks.addEventListener('click', function (e) {
-    if (e.target.closest('[data-dropdown]')) e.preventDefault();
+    const link = e.target.closest('[data-dropdown]');
+
+    if (link && link.getAttribute('href') === '#') {
+      e.preventDefault();
+    }
   });
 
   document.addEventListener('keydown', function (e) {
