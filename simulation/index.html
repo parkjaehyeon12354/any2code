@@ -216,32 +216,32 @@
       detailFilters.forEach(detail => { if (detail.dataset.subject === parent.dataset.subject) detail.checked = parent.checked; });
       updateSimulations();
     }));
-    detailFilters.forEach(detail => detail.addEventListener('change', () => {
+       detailFilters.forEach(detail => detail.addEventListener('change', () => {
       const siblings = [...detailFilters].filter(item => item.dataset.subject === detail.dataset.subject);
       const parent = [...subjectFilters].find(item => item.dataset.subject === detail.dataset.subject);
+
       parent.checked = siblings.every(item => item.checked);
       parent.indeterminate = siblings.some(item => item.checked) && !parent.checked;
+
       updateSimulations();
     }));
+
+    const params = new URLSearchParams(window.location.search);
+    const subject = params.get('subject');
+
+    if (subject) {
+      subjectFilters.forEach(filter => {
+        filter.checked = filter.dataset.subject === subject;
+        filter.indeterminate = false;
+      });
+
+      detailFilters.forEach(filter => {
+        filter.checked = filter.dataset.subject === subject;
+      });
+    }
+
+    updateSimulations();
   </script>
 </body>
 </html>
 
-
-<script>
-const params = new URLSearchParams(window.location.search);
-const subject = params.get("subject");
-
-if (subject) {
-    const checkbox = document.getElementById(subject);
-
-    if (checkbox) {
-        checkbox.checked = true;
-    }
-}
-</script>
-
-<input type="checkbox" id="physics"> 물리학
-<input type="checkbox" id="chemistry"> 화학
-<input type="checkbox" id="biology"> 생명과학
-<input type="checkbox" id="earth"> 지구과학
