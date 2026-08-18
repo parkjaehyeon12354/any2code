@@ -138,7 +138,7 @@ const settingsBody = (editable) => ({
   editable,
   fixed: settings.FIXED,
   env: envView(),
-  limits: { wordsMax: settings.WORDS_MAX, wordMaxLen: settings.WORD_MAX_LEN },
+  limits: { wordsMax: settings.WORDS_MAX },
   defaults: settings.DEFAULTS
 });
 

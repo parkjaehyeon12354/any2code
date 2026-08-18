@@ -141,18 +141,7 @@
 .gate p { margin-bottom: var(--sp-lg); font-size: 15px; color: var(--muted); }
 
 /* ── 제재·소명 ── */
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: var(--rounded-pill);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
-.badge-bad { background: rgba(189, 59, 59, .1); color: #9c3030; }
-.badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
-.badge-off { background: var(--surface-soft); color: var(--muted); }
+/* 상태 배지는 styles.css 에 있다 (admin.html 과 공용) */
 
 .empty { padding: var(--sp-md) 0; font-size: 13.5px; color: var(--muted); }
 
@@ -448,7 +437,7 @@
     if (d.appeals.length) {
       parts.push('<p class="sub-head">낸 소명 ' + d.appeals.length + '건</p>');
       parts.push(d.appeals.map(function (a) {
-        const st = APPEAL_STATUS[a.status] || { cls: 'badge-off', text: a.status };
+        const st = APPEAL_STATUS[a.status];
         let outcome = '';
         if (a.status === 'granted') outcome = '제재가 즉시 해제됐습니다.';
         else if (a.status === 'reduced') outcome = '제재가 ' + a.reducedDays + '일로 줄었습니다.';

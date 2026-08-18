@@ -76,4 +76,4 @@ async function history(sub) {
   return rows.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 
-module.exports = { active, block, log, history, EVENTS };
+module.exports = { active, block, log, history };

@@ -96,4 +96,4 @@ async function save(input, user) {
   return merge(doc);
 }
 
-module.exports = { get, save, normalize, DEFAULTS, FIXED, WORDS_MAX, WORD_MAX_LEN };
+module.exports = { get, save, DEFAULTS, FIXED, WORDS_MAX };

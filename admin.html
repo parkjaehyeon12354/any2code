@@ -157,18 +157,7 @@
 .table .cell-name { color: var(--ink); font-weight: 500; }
 .table .cell-muted { color: var(--muted); }
 
-/* 상태 배지 */
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: var(--rounded-pill);
-  font-size: 12px;
-  font-weight: 500;
-}
-.badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
-/* 새 --error(#bd3b3b) 기준 배지 배경·텍스트 */
-.badge-hold { background: rgba(189, 59, 59, .1); color: #9c3030; }
-.badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
+/* 상태 배지는 styles.css 에 있다 (settings.html 과 공용) */
 
 .row-action {
   padding: 5px 10px;
@@ -784,13 +773,13 @@ Session.refresh().then(function (user) {
   const STATUS = {
     wait:    { cls: 'badge-wait',  text: '대기' },
     done:    { cls: 'badge-ok',    text: '처리됨' },  // text 는 제재 내용으로 덮어쓴다
-    denied:  { cls: 'badge-hold',  text: '기각' },
+    denied:  { cls: 'badge-bad',   text: '기각' },
     granted: { cls: 'badge-ok',    text: '인용' },
     reduced: { cls: 'badge-wait',  text: '감경' },
     // 아래 셋은 서버가 글 문서에 저장하는 status 값과 이름이 같아야 한다
     held:    { cls: 'badge-wait', text: '보류' },
     public:  { cls: 'badge-ok',   text: '공개됨' },
-    blocked: { cls: 'badge-hold', text: '차단됨' }
+    blocked: { cls: 'badge-bad',  text: '차단됨' }
   };
 
   const esc = escapeHtml;   // session.js 제공

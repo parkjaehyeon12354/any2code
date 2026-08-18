@@ -198,9 +198,7 @@ const appealView = (a) => ({
   createdAt: a.createdAt,
   status: a.status,                                        // wait | denied | granted | reduced
   decidedAt: (a.decision && a.decision.at) || null,
-  reducedDays: a.decision && a.decision.decision === 'reduced' ? a.decision.days : null,
-  origDays: a.orig ? a.orig.days : null,
-  origReason: a.orig ? a.orig.reason : null
+  reducedDays: a.decision && a.decision.decision === 'reduced' ? a.decision.days : null
 });
 
 /* 제재 이력 한 줄. by(관리자 식별자)는 빼고 내보낸다. */
@@ -235,8 +233,5 @@ async function discipline(sub) {
   };
 }
 
-module.exports = {
-  ensure, read, save, view, displayName, discipline,
-  checkName, checkBirthday,
-  NAME_MIN, NAME_MAX, RESERVED
-};
+// NAME_MIN·NAME_MAX 는 화면이 input 의 minlength/maxlength 에 그대로 쓴다 (functions/profile.js)
+module.exports = { ensure, read, save, view, displayName, discipline, NAME_MIN, NAME_MAX };

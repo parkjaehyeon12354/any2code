@@ -80,6 +80,22 @@ a { color: inherit; text-decoration: none; }
 .btn-primary:active { background: #0a4234; }
 .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
 
+/* ── 상태 배지 ──
+   admin.html 과 settings.html 이 같은 값을 각자 정의하고 있었다. 색은 --error(#bd3b3b)
+   기준으로 맞춘 값이라 한쪽만 고치면 두 화면이 갈린다. */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--rounded-pill);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-ok { background: rgba(61, 125, 81, .12); color: #2f6640; }
+.badge-bad { background: rgba(189, 59, 59, .1); color: #9c3030; }
+.badge-wait { background: rgba(217, 119, 6, .14); color: #8a5c08; }
+.badge-off { background: var(--surface-soft); color: var(--muted); }
+
 /* ── Modal (native <dialog>) ──
    admin.html 과 community.html 이 함께 쓴다. */
 .modal {
