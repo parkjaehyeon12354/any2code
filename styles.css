@@ -22,6 +22,12 @@
   /* 시뮬레이션 무대 — 밝기 모드와 무관하게 어둡다 (관측 대상만 밝게 남긴다) */
   --stage-bg: #0b100e;
 
+  /* 로그인 카드처럼 배경 위에 반투명으로 얹히는 면. 하드코딩하면 다크에서
+     밝은 판에 밝은 글자가 얹혀 안 읽힌다. */
+  --glass: rgba(247, 249, 248, .82);
+  --glass-shadow: 0 12px 40px rgba(20, 32, 27, .06);
+  --error-soft: rgba(189, 59, 59, .07);
+
   /* 상태 배지 — 다크에서 갈아끼워야 해서 토큰으로 뺀다 */
   --badge-ok-bg: rgba(61, 125, 81, .12);   --badge-ok-fg: #2f6640;
   --badge-bad-bg: rgba(189, 59, 59, .1);   --badge-bad-fg: #9c3030;
@@ -81,6 +87,9 @@
     --surface-dark-elevated: #1b2620;
     --on-primary: #06211a;
     --error: #ff8a8a;
+    --glass: rgba(28, 37, 33, .86);
+    --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+    --error-soft: rgba(255, 138, 138, .12);
 
     --badge-ok-bg: rgba(76, 191, 159, .16);  --badge-ok-fg: #7fd9bd;
     --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;
@@ -105,6 +114,9 @@
   --surface-dark-elevated: #1b2620;
   --on-primary: #06211a;
   --error: #ff8a8a;
+  --glass: rgba(28, 37, 33, .86);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+  --error-soft: rgba(255, 138, 138, .12);
 
   --badge-ok-bg: rgba(76, 191, 159, .16);  --badge-ok-fg: #7fd9bd;
   --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;

@@ -38,9 +38,9 @@
   border: 1px solid var(--hairline);
   border-radius: var(--rounded-lg);
   /* 반투명 + 블러 — 뒤의 구가 비쳐서 첫 화면과 이어진다 */
-  background: rgba(247, 249, 248, 0.82);
+  background: var(--glass);
   backdrop-filter: blur(12px);
-  box-shadow: 0 12px 40px rgba(20, 32, 27, 0.06);
+  box-shadow: var(--glass-shadow);
 }
 
 .auth-card h1 {
@@ -65,7 +65,7 @@
   line-height: 1.5;
   word-break: keep-all;
   border: 1px solid var(--error);
-  background: rgba(189, 59, 59, .07);
+  background: var(--error-soft);
   color: var(--error);
 }
 .auth-notice.show { display: block; }
