@@ -74,24 +74,24 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --primary: #4cbf9f;
-    --primary-active: #6fd4b8;
-    --ink: #eef3f0;
-    --body: #c4cfc9;
-    --muted: #96a29c;
-    --muted-soft: #6f7c76;
-    --hairline: #2b3733;
-    --canvas: #131a17;
-    --surface-soft: #1c2521;
-    --surface-dark: #0b120f;
-    --surface-dark-elevated: #1b2620;
-    --on-primary: #06211a;
+    --primary: #f2f2f2;
+    --primary-active: #ffffff;
+    --ink: #f2f2f2;
+    --body: #d0d0d0;
+    --muted: #9a9a9a;
+    --muted-soft: #6e6e6e;
+    --hairline: #2e2e2e;
+    --canvas: #101010;
+    --surface-soft: #1b1b1b;
+    --surface-dark: #080808;
+    --surface-dark-elevated: #1b1b1b;
+    --on-primary: #101010;
     --error: #ff8a8a;
-    --glass: rgba(28, 37, 33, .86);
+    --glass: rgba(26, 26, 26, .88);
     --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45);
     --error-soft: rgba(255, 138, 138, .12);
 
-    --badge-ok-bg: rgba(76, 191, 159, .16);  --badge-ok-fg: #7fd9bd;
+    --badge-ok-bg: rgba(255, 255, 255, .10); --badge-ok-fg: #e6e6e6;
     --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;
     --badge-wait-bg: rgba(232, 165, 60, .16); --badge-wait-fg: #f0bc72;
     --warn-fg: #f0bc72;
@@ -101,24 +101,24 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --primary: #4cbf9f;
-  --primary-active: #6fd4b8;
-  --ink: #eef3f0;
-  --body: #c4cfc9;
-  --muted: #96a29c;
-  --muted-soft: #6f7c76;
-  --hairline: #2b3733;
-  --canvas: #131a17;
-  --surface-soft: #1c2521;
-  --surface-dark: #0b120f;
-  --surface-dark-elevated: #1b2620;
-  --on-primary: #06211a;
+  --primary: #f2f2f2;
+  --primary-active: #ffffff;
+  --ink: #f2f2f2;
+  --body: #d0d0d0;
+  --muted: #9a9a9a;
+  --muted-soft: #6e6e6e;
+  --hairline: #2e2e2e;
+  --canvas: #101010;
+  --surface-soft: #1b1b1b;
+  --surface-dark: #080808;
+  --surface-dark-elevated: #1b1b1b;
+  --on-primary: #101010;
   --error: #ff8a8a;
-  --glass: rgba(28, 37, 33, .86);
+  --glass: rgba(26, 26, 26, .88);
   --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45);
   --error-soft: rgba(255, 138, 138, .12);
 
-  --badge-ok-bg: rgba(76, 191, 159, .16);  --badge-ok-fg: #7fd9bd;
+  --badge-ok-bg: rgba(255, 255, 255, .10); --badge-ok-fg: #e6e6e6;
   --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;
   --badge-wait-bg: rgba(232, 165, 60, .16); --badge-wait-fg: #f0bc72;
   --warn-fg: #f0bc72;

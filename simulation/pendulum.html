@@ -345,14 +345,14 @@
 
     // 진폭 호 — 어디까지 갔다 오는지
     const amp = params.deg * Math.PI / 180;
-    ctx.strokeStyle = 'rgba(76,191,159,.28)';
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(pivotX, pivotY, len, Math.PI / 2 - amp, Math.PI / 2 + amp);
     ctx.stroke();
 
     // 줄
-    ctx.strokeStyle = '#9fb0a8';
+    ctx.strokeStyle = '#9a9a9a';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(pivotX, pivotY);
@@ -360,13 +360,13 @@
     ctx.stroke();
 
     // 고정점
-    ctx.fillStyle = '#9fb0a8';
+    ctx.fillStyle = '#9a9a9a';
     ctx.beginPath();
     ctx.arc(pivotX, pivotY, 5, 0, Math.PI * 2);
     ctx.fill();
 
     // 추 — 무대에서 가장 밝다. 눈이 여기로 오게 한다
-    ctx.fillStyle = '#4cbf9f';
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(bobX, bobY, 15, 0, Math.PI * 2);
     ctx.fill();
