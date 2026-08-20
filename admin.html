@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="/theme.js"></script>
 <style>
 /* 이 페이지 전용. 공용 토큰/네비는 styles.css 에 있다.
    운영 화면이라 랜딩과 목적이 반대다 — 파티클·큰 여백 대신 밀도와 스캔 가능성.
@@ -92,7 +93,7 @@
   word-break: keep-all;
 }
 /* 앰버 강조 텍스트 — surface-soft 위 4.5:1 확보값 */
-.mock-banner .mark { color: #8a5c08; font-weight: 600; flex-shrink: 0; }
+.mock-banner .mark { color: var(--warn-fg); font-weight: 600; flex-shrink: 0; }
 .mock-banner strong { color: var(--ink); font-weight: 600; }
 
 /* ── 지표 카드 ── */
@@ -113,7 +114,7 @@
 .stat-value { font-size: 26px; font-weight: 600; color: var(--ink); margin-top: 6px; line-height: 1.1; }
 /* 12px 보조 문구에 --muted-soft(3.23:1)·--primary(3.11:1)는 AA 미달 */
 .stat-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.stat-note.warn { color: #8a5c08; font-weight: 500; }
+.stat-note.warn { color: var(--warn-fg); font-weight: 500; }
 
 /* ── 표 ── */
 .panel {
@@ -211,7 +212,7 @@
 /* 표 안의 해제일 보조 표기 */
 .cell-sub { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
 /* 반복 위반 — 표를 훑을 때 걸려야 한다. 앰버는 surface 위 4.5:1 확보값 */
-.cell-sub.warn-text { color: #8a5c08; font-weight: 600; }
+.cell-sub.warn-text { color: var(--warn-fg); font-weight: 600; }
 
 /* 모달 이력.
    한 줄에 날짜·조치·사유·처리자가 들어가야 하는데 dt(52px) 옆 칸으로는 좁아서

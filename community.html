@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="/theme.js"></script>
 <style>
 /* 이 페이지 전용. 공용 토큰/네비/푸터는 styles.css 에 있다.
    커뮤니티는 '훑어보고 찾는' 화면이라 랜딩보다 밀도가 높고 파티클도 없다. */
@@ -169,7 +170,7 @@
 .field select, .field input, .field textarea {
   width: 100%; padding: 10px 12px;
   font-family: var(--font-body); font-size: 14px; line-height: 1.55;
-  color: var(--body); background: #fff;
+  color: var(--body); background: var(--canvas);
   border: 1px solid var(--hairline); border-radius: var(--rounded-md);
 }
 .field textarea { min-height: 148px; resize: vertical; }
@@ -222,7 +223,8 @@
           </div>
         </div>
       </li>
-               <a href="#" data-dropdown="chemistry">화학</a>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
         <div class="mega-dropdown">
           <div class="mega-col">
             <span class="soon">입자의 운동</span>
