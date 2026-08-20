@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="전자기 유도 시뮬레이션 — 자석의 세기와 속도, 코일 감은 수를 바꾸며 유도 전류를 관찰합니다">
+<title>전자기 유도 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<script src="/theme.js"></script>
+<style>
+.sim { padding: var(--sp-xl) 0 var(--sp-section); }
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+.head { margin-bottom: var(--sp-xl); }
+.head h1 { font-family: var(--font-display); font-size: clamp(28px,3.4vw,38px); font-weight:700; color:var(--ink); margin-bottom:6px; }
+.head p { font-size:15px; color:var(--muted); word-break:keep-all; max-width:65ch; }
+.layout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:var(--sp-lg); align-items:start; }
+.stage { position:relative; background:var(--stage-bg); border:1px solid var(--hairline); border-radius:var(--rounded-lg); overflow:hidden; }
+#canvas { display:block; width:100%; height:auto; touch-action:none; }
+.stage-foot { display:flex; align-items:center; gap:var(--sp-sm); flex-wrap:wrap; padding:var(--sp-md); border-top:1px solid var(--hairline); background:var(--surface-soft); }
+.stage-foot .btn { height:40px; padding:0 16px; font-size:13.5px; }
+.stage-tip { margin-left:auto; font-size:12.5px; color:var(--muted); }
+.panel { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--rounded-lg); margin-bottom:var(--sp-lg); overflow:hidden; }
+.panel-head { padding:var(--sp-md) var(--sp-lg); border-bottom:1px solid var(--hairline); }
+.panel-head h2 { font-size:14px; font-weight:600; color:var(--ink); }
+.panel-body { padding:var(--sp-lg); }
+.ctrl { margin-bottom:var(--sp-lg); }
+.ctrl:last-child { margin-bottom:0; }
+.ctrl-top { display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-sm); margin-bottom:8px; }
+.ctrl-top label { font-size:12px; font-weight:600; color:var(--muted); }
+.ctrl-top output { font-size:13.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+.ctrl input[type="range"] { width:100%; height:44px; accent-color:var(--primary-active); cursor:pointer; }
+.hint,.note { display:block; margin-top:2px; font-size:12px; line-height:1.65; color:var(--muted); word-break:keep-all; }
+.seg { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.seg button { height:38px; border:1px solid var(--hairline); border-radius:var(--rounded-md); color:var(--muted); background:var(--surface-soft); cursor:pointer; font:600 12.5px var(--font-body); }
+.seg button.active { color:var(--primary-active); border-color:var(--primary-active); background:color-mix(in srgb,var(--primary-active) 9%,var(--canvas)); }
+.read { font-size:13.5px; }
+.read>div { display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-sm); padding:9px 0; border-bottom:1px solid var(--hairline); }
+.read>div:last-child { border-bottom:none; padding-bottom:0; }
+.read dt { color:var(--muted); }
+.read dd { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+.read .positive { color:#dc4c64; }
+.read .negative { color:#4386e6; }
+.read .zero { color:var(--muted); font-weight:500; }
+.legend { display:flex; gap:14px; margin-top:var(--sp-md); font-size:11.5px; color:var(--muted); }
+.legend span::before { content:""; display:inline-block; width:14px; height:2px; margin-right:5px; vertical-align:middle; background:var(--key); }
+@media(max-width:860px){.layout{grid-template-columns:1fr}.stage-tip{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round"/><line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/><circle cx="11.5" cy="17" r="1.2" fill="#d97706"/><circle cx="15" cy="19" r=".9" fill="#167a63"/></svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links"><li><a href="/community">커뮤니티</a></li></ul>
+    <div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div>
+  </div>
+</header>
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 물리학 · 전자기학</p>
+  <div class="head">
+    <h1>전자기 유도</h1>
+    <p>막대자석을 코일 가까이 움직여 보세요. 자석의 세기와 속도, 코일 감은 수에 따라 자기선속이 얼마나 빠르게 변하고 유도 전류가 어떻게 달라지는지 관찰할 수 있습니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="stage">
+      <canvas id="canvas" aria-label="자석과 코일의 전자기 유도 실험"></canvas>
+      <div class="stage-foot">
+        <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+        <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+        <span class="stage-tip">자석을 직접 좌우로 끌어도 됩니다.</span>
+      </div>
+    </div>
+
+    <div>
+      <section class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="strength">자석의 세기</label><output id="strength-out">60%</output></div>
+            <input type="range" id="strength" min="20" max="100" step="1" value="60">
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="speed">움직이는 속도</label><output id="speed-out">1.0×</output></div>
+            <input type="range" id="speed" min="0.2" max="2" step="0.1" value="1">
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="turns">코일 감은 수</label><output id="turns-out">100회</output></div>
+            <input type="range" id="turns" min="20" max="200" step="10" value="100">
+            <span class="hint">감은 수가 많을수록 같은 자기선속 변화에서 더 큰 유도 기전력이 생깁니다.</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label>코일을 향하는 극</label><output id="pole-out">N극</output></div>
+            <div class="seg" role="group" aria-label="자석 극 선택">
+              <button type="button" id="pole-n" class="active" aria-pressed="true">N극</button>
+              <button type="button" id="pole-s" aria-pressed="false">S극</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>자석의 운동</dt><dd id="r-motion">가까워지는 중</dd></div>
+            <div><dt>자기선속</dt><dd id="r-flux">0.00</dd></div>
+            <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
+            <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
+          </dl>
+          <div class="legend"><span style="--key:#d7a04b">자기선속</span><span style="--key:#69c6ac">유도 기전력</span></div>
+          <p class="note" id="note">자석이 움직이면 코일을 지나는 자기선속이 변합니다.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="../session.js"></script>
+<script src="../nav-user.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const canvas=el('canvas'),ctx=canvas.getContext('2d');
+  const params={strength:.6,speed:1,turns:100,pole:1};
+  const state={running:true,t:0,x:0,prevX:0,flux:0,prevFlux:0,emf:0,dragging:false};
+  const history={flux:[],emf:[]};
+  let last=performance.now(),lastSample=0;
+
+  function resize(){
+    const w=canvas.clientWidth,h=Math.round(w*.62),dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function bounds(){const w=canvas.clientWidth;return{left:w*.12,right:w*.57,coil:w*.72};}
+  function autoPosition(){const b=bounds();return b.left+(b.right-b.left)*(.5-.5*Math.cos(state.t*params.speed*1.7));}
+  function magneticFlux(x){
+    const b=bounds(),distance=Math.max(10,b.coil-x),spread=canvas.clientWidth*.18;
+    return params.pole*params.strength*Math.exp(-Math.pow(distance/spread,2));
+  }
+  function update(dt){
+    state.t+=dt;
+    if(!state.dragging){state.prevX=state.x;state.x=autoPosition();}
+    state.prevFlux=state.flux;state.flux=magneticFlux(state.x);
+    const raw=-params.turns*(state.flux-state.prevFlux)/Math.max(dt,.001)*.0022;
+    state.emf=state.emf*.72+Math.max(-3.2,Math.min(3.2,raw))*.28;
+  }
+  function roundedRect(x,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
+  function drawArrow(x1,y1,x2,color){ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y1);ctx.stroke();const s=x2>x1?1:-1;ctx.beginPath();ctx.moveTo(x2,y1);ctx.lineTo(x2-8*s,y1-5);ctx.lineTo(x2-8*s,y1+5);ctx.fill();}
+  function draw(){
+    const w=canvas.clientWidth,h=canvas.height/(window.devicePixelRatio||1),b=bounds();
+    ctx.clearRect(0,0,w,h);const floor=h*.65,magW=Math.max(88,w*.14),magH=48;
+    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w*.06,floor+35);ctx.lineTo(w*.94,floor+35);ctx.stroke();
+    // magnetic field lines
+    const alpha=.08+Math.abs(state.flux)*.28;ctx.strokeStyle=`rgba(113,174,255,${alpha})`;ctx.lineWidth=1.3;
+    for(let i=-2;i<=2;i++){ctx.beginPath();ctx.ellipse((state.x+b.coil)/2,floor+i*13,(b.coil-state.x)/2,42+Math.abs(i)*10,0,Math.PI,0);ctx.stroke();}
+    // bar magnet: the leading half changes with pole
+    const mx=state.x-magW/2,my=floor-magH/2,leftColor=params.pole===1?'#4386e6':'#dc4c64',rightColor=params.pole===1?'#dc4c64':'#4386e6';
+    roundedRect(mx,my,magW/2+5,magH,7,leftColor);roundedRect(mx+magW/2-5,my,magW/2+5,magH,7,rightColor);
+    ctx.fillStyle='#fff';ctx.font='700 17px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(params.pole===1?'S':'N',mx+magW*.25,floor);ctx.fillText(params.pole===1?'N':'S',mx+magW*.75,floor);
+    // coil
+    ctx.strokeStyle='#d7a04b';ctx.lineWidth=3;const rings=Math.max(6,Math.round(params.turns/20));
+    for(let i=0;i<rings;i++){const ox=(i-(rings-1)/2)*4;ctx.beginPath();ctx.ellipse(b.coil+ox,floor,17,66,0,0,Math.PI*2);ctx.stroke();}
+    ctx.strokeStyle='#d7a04b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.coil-rings*2,floor+66);ctx.lineTo(b.coil-rings*2,floor+92);ctx.lineTo(w*.87,floor+92);ctx.lineTo(w*.87,floor+42);ctx.stroke();
+    // galvanometer
+    ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.arc(w*.87,floor,40,Math.PI,0);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.stroke();
+    const needle=Math.max(-1,Math.min(1,state.emf/2.5));ctx.save();ctx.translate(w*.87,floor);ctx.rotate(needle*.85);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-31);ctx.stroke();ctx.restore();
+    ctx.fillStyle='rgba(255,255,255,.65)';ctx.font='11px system-ui';ctx.fillText('검류계',w*.87,floor+18);
+    const moving=state.x-state.prevX;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
+    drawGraph(w*.08,h*.08,w*.84,h*.22);
+  }
+  function drawGraph(x,y,w,h){
+    ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();
+    const line=(values,color,scale)=>{if(values.length<2)return;ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();values.forEach((v,i)=>{const px=x+i/(119)*w,py=y+h/2-v/scale*h*.42;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();};
+    line(history.flux,'#d7a04b',1);line(history.emf,'#69c6ac',3.2);
+  }
+  function sample(now){if(now-lastSample<50)return;lastSample=now;history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
+  function numbers(){
+    const velocity=state.x-state.prevX,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
+    el('r-motion').textContent=near;el('r-flux').textContent=Math.abs(state.flux).toFixed(2);
+    const emf=state.emf;el('r-emf').textContent=(emf>=0?'+':'')+emf.toFixed(2)+' V';
+    const current=Math.abs(emf)<.04?'—':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
+    el('r-direction').className=Math.abs(emf)<.04?'zero':emf>0?'positive':'negative';
+    el('note').textContent=Math.abs(emf)<.04?'자석이 멈추면 자기선속이 변하지 않아 유도 전류가 흐르지 않습니다.':near==='가까워지는 중'?'코일은 자기선속의 증가를 방해하는 방향으로 자기장을 만듭니다.':'코일은 줄어드는 자기선속을 유지하는 방향으로 자기장을 만듭니다.';
+  }
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running&&!state.dragging)update(dt);else if(state.dragging)update(dt);draw();sample(now);numbers();requestAnimationFrame(frame);}
+  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.emf=0;history.flux=[];history.emf=[];}
+  function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
+  canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
+  canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
+  canvas.addEventListener('pointerup',()=>{state.dragging=false;});
+  el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
+  el('speed').addEventListener('input',function(){params.speed=Number(this.value);el('speed-out').textContent=params.speed.toFixed(1)+'×';});
+  el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
+  function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.emf=0;}
+  el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
+  el('toggle').addEventListener('click',function(){state.running=!state.running;this.textContent=state.running?'일시정지':'이어서';});
+  el('reset').addEventListener('click',()=>{reset();state.running=true;el('toggle').textContent='일시정지';});
+  resize();reset();window.addEventListener('resize',()=>{resize();reset();});requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
