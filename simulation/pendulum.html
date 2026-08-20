@@ -223,7 +223,8 @@
             <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
           </div>
           <p class="note">지금 조건이 담긴 주소를 만듭니다. 평소에는 주소를 건드리지 않으니
-          슬라이더를 움직여도 주소창이 지저분해지지 않습니다.</p>
+          슬라이더를 움직여도 주소창이 지저분해지지 않습니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
         </div>
       </div>
     </div>
@@ -472,9 +473,28 @@
   }
 
   el('share').addEventListener('click', async function () {
-    const url = shareUrl();
     const said = el('share-said');
     const box = el('share-url');
+    const url = shareUrl();
+
+    /* 로그인한 사람만 링크를 만든다.
+       캐시(Session.load)가 아니라 서버에 물어본다 — 캐시는 로그아웃 뒤에도 잠시 남아
+       있어서, 없는 세션을 믿고 링크를 내주게 된다. */
+    let user = null;
+    said.textContent = '확인 중…';
+    try { user = await Session.refresh(); } catch { user = null; }
+
+    if (!user) {
+      /* 로그인하면 홈으로 떨어진다 (콜백이 '/' 로 고정). 지금 조건을 들고 있다가
+         돌아왔을 때 이어서 쓸 수 있게 저장해 둔다 — 슬라이더를 다시 맞추게 하면
+         공유하려던 그 조건이 아니게 된다. */
+      try { sessionStorage.setItem('pendulum_share_pending', url); } catch { /* 저장만 못 할 뿐 */ }
+      said.textContent = '로그인이 필요합니다. 로그인 화면으로 이동합니다…';
+      box.hidden = true;
+      window.location.href = '/login';
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(url);
       said.textContent = '복사했습니다.';
@@ -506,10 +526,41 @@
 
     if (q.has('L') || q.has('a') || q.has('b')) {
       el('stage-said').textContent = '공유된 조건으로 시작했습니다.';
+      return true;
     }
+    return false;
   }
 
-  applyQuery();
+  /* 공유하려다 로그인하러 갔던 사람을 위해. 로그인 콜백이 홈으로 고정돼 있어서
+     이 화면으로 자동으로 돌아오지는 못한다. 다시 들어왔을 때 그때 조건을 되살린다. */
+  function restorePending(hadQuery) {
+    let pending = null;
+    try {
+      pending = sessionStorage.getItem('pendulum_share_pending');
+      if (pending) sessionStorage.removeItem('pendulum_share_pending');
+    } catch { return; }
+
+    if (!pending || hadQuery) return;   // 주소에 조건이 있으면 그쪽이 우선이다
+
+    let q;
+    try { q = new URL(pending, location.href).searchParams; } catch { return; }
+
+    const num = (key, lo, hi, fallback) => {
+      const v = Number(q.get(key));
+      return Number.isFinite(v) && v >= lo && v <= hi ? v : fallback;
+    };
+    params.L = num('L', 0.2, 2, params.L);
+    params.deg = Math.round(num('a', 5, 90, params.deg));
+    params.b = num('b', 0, 0.5, params.b);
+
+    lenIn.value = params.L;
+    angIn.value = params.deg;
+    dampIn.value = params.b;
+    el('stage-said').textContent = '로그인 전 조건을 되살렸습니다.';
+    el('share-said').textContent = '공유 링크 만들기를 다시 눌러 주세요.';
+  }
+
+  restorePending(applyQuery());
   syncLabels();
   reset();
   resize();
