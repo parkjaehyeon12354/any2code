@@ -45,6 +45,10 @@
       "rewrite": "/simulation/pendulum.html"
     },
     {
+      "route": "/simulation/electromagnetic-induction",
+      "rewrite": "/simulation/electromagnetic-induction.html"
+    },
+    {
       "route": "/q/*",
       "rewrite": "/post.html"
     },
