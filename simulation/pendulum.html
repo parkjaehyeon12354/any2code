@@ -13,7 +13,14 @@
 <script src="/theme.js"></script>
 <style>
 /* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
-.sim { padding: var(--sp-xl) 0 var(--sp-section); }
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+}
 
 .crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
 .crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
@@ -121,6 +128,8 @@
 
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 </style>
 </head>
