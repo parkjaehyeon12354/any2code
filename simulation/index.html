@@ -18,7 +18,7 @@
     .sim-intro h1 { color: var(--ink); font-family: var(--font-display); font-size: clamp(32px, 4vw, 46px); line-height: 1.25; letter-spacing: -.03em; margin-bottom: 12px; word-break: keep-all; }
     .sim-intro p:not(.eyebrow) { color: var(--muted); font-size: 16px; word-break: keep-all; }
     .sim-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-xl); align-items: start; }
-    .filters { position: sticky; top: 80px; padding: var(--sp-lg); background: #fff; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); }
+    .filters { position: sticky; top: 80px; padding: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); }
     .filters h2 { color: var(--ink); font-size: 15px; margin-bottom: 6px; }
     .filters p { color: var(--muted); font-size: 12px; line-height: 1.55; margin-bottom: var(--sp-md); }
     .filter-list { display: grid; gap: 4px; }
@@ -38,7 +38,7 @@
     .sim-toolbar h2 { color: var(--ink); font-size: 18px; }
     #result-count { color: var(--muted); font-size: 13px; }
     .sim-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-md); }
-    .simulation-card { background: #fff; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; transition: border-color .15s, transform .15s; }
+    .simulation-card { background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; transition: border-color .15s, transform .15s; }
     .simulation-card:hover { border-color: var(--muted-soft); transform: translateY(-2px); }
     .sim-preview { aspect-ratio: 16 / 10; margin: var(--sp-sm); border-radius: 9px; background: var(--surface-soft); }
     .simulation-card.physics .sim-preview { background: linear-gradient(135deg, #e5f0fa, #d4e5f3); }.simulation-card.chemistry .sim-preview { background: linear-gradient(135deg, #fff4df, #f5e5bf); }.simulation-card.biology .sim-preview { background: linear-gradient(135deg, #e6f4ed, #cfe9db); }.simulation-card.earth .sim-preview { background: linear-gradient(135deg, #eeeafa, #ddd8ef); }
