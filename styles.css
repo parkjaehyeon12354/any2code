@@ -363,6 +363,17 @@ a { color: inherit; text-decoration: none; }
 }
 .mega-col .soon::after { content: ' · 준비 중'; font-size: 11.5px; }
 
+/* 시뮬레이션 목록으로 가는 유일한 길. 주제 이름들과 섞이면 또 하나의 주제로 읽히므로
+   선으로 끊고 톤을 낮춘다. */
+.mega-col a.mega-all {
+  margin-top: var(--sp-sm);
+  padding-top: var(--sp-sm);
+  border-top: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--muted);
+}
+.mega-col a.mega-all:hover { color: var(--primary); }
+
 .nav-cta { display: flex; align-items: center; gap: var(--sp-sm); }
 /* 직계 자식만 — 안 그러면 프로필 드롭다운 안의 링크까지 코랄 알약이 된다 */
 .nav-cta > a {
