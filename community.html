@@ -710,6 +710,17 @@
 
   function showSuspension(user) {
     if (!user || !user.suspendedUntil) { suspended.hidden = true; return; }
+    /* 영구 제재는 해제일이 없다. until 이 9999-12-31 이라 그대로 찍으면
+       "9999-12-31 에 자동 해제됩니다" 가 나온다 — 사용자에게 거짓말이 된다.
+       영구는 소명으로만 풀리므로 그 경로를 안내한다. */
+    if (user.suspendedPermanent) {
+      el('suspended-title').textContent = '계정이 영구 정지된 상태입니다';
+      el('suspended-detail').textContent =
+        '사유: ' + (user.suspendedReason || '운영 정책 위반') + ' · 자동으로 해제되지 않습니다. ' +
+        '해제를 원하면 아래에서 소명을 제출해 주세요.';
+      suspended.hidden = false;
+      return;
+    }
     const when = shortDate(user.suspendedUntil);
     el('suspended-title').textContent = '현재 글쓰기가 제한된 상태입니다';
     el('suspended-detail').textContent =

@@ -22,6 +22,22 @@ async function active(sub) {
 async function block(sub) {
   const s = await active(sub);
   if (!s) return null;
+
+  /* 영구 제재는 해제일을 말하지 않는다.
+     영구는 until 을 먼 미래(9999-12-31)로 두어 표현하는데, 그 날짜를 그대로
+     찍으면 "9999-12-31 해제" 라는 무의미한 안내가 나간다. 소명으로만 풀리므로
+     그 경로를 알려주는 편이 사용자에게 실제로 도움이 된다. */
+  if (s.permanent) {
+    return {
+      status: 403,
+      jsonBody: {
+        error: `계정이 영구 정지된 상태입니다. (${s.reason} · 해제하려면 설정 화면에서 소명을 제출하세요)`,
+        suspendedUntil: s.until,
+        permanent: true
+      }
+    };
+  }
+
   /* 언제 풀리는지 알려주지 않으면 "왜 안 되지" 하고 계속 시도한다.
 
      시간대를 한국으로 고정한다. Azure Functions 는 UTC 로 돌아서 그냥 찍으면

@@ -44,6 +44,23 @@
     .msg.bot hr { margin: 10px 0; border: 0; border-top: 1px solid var(--hairline); }
     .msg.bot .math { padding: 0 2px; color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; white-space: nowrap; }
     .msg.bot .math-block { display: block; margin: 10px 0; padding: 10px 12px; border-left: 2px solid var(--primary); border-radius: 0 7px 7px 0; background: var(--surface-soft); color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; font-size: 1.02em; overflow-x: auto; white-space: pre-wrap; }
+
+    /* 제재 배너 · 소명 — community.html 과 같은 규격을 쓴다.
+       AI 도우미는 인젝션 시도 시 영구 정지가 걸리므로, 정지된 사용자가
+       여기서 바로 소명할 수 있어야 한다. 커뮤니티까지 찾아가게 하면
+       "왜 안 되는지"만 알고 푸는 법은 모르는 상태로 남는다. */
+    .suspended {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-md); flex-wrap: wrap;
+      margin-bottom: var(--sp-lg); padding: var(--sp-md) var(--sp-lg);
+      background: rgba(189, 59, 59, .08);
+      border: 1px solid rgba(189, 59, 59, .25);
+      border-radius: var(--rounded-lg);
+    }
+    .suspended strong { display: block; font-size: 14px; font-weight: 600; color: #9c3030; }
+    .suspended p { margin-top: 3px; font-size: 13px; line-height: 1.6; color: var(--body); word-break: keep-all; }
+    .suspended .btn { flex-shrink: 0; }
+    .ap-note { margin-top: var(--sp-sm); font-size: 12.5px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
     .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--line, #e5e7eb); }
     .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: var(--canvas); font: inherit; }
     .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
@@ -76,6 +93,14 @@
         <h1>궁금한 과학을<br>함께 풀어봐요</h1>
         <p>개념부터 실험 결과 해석까지, 이해하기 쉬운 말로 차근차근 설명해 드려요.</p>
       </section>
+
+      <div class="suspended" id="suspended" hidden>
+        <div>
+          <strong id="suspended-title"></strong>
+          <p id="suspended-detail"></p>
+        </div>
+        <button type="button" class="btn btn-ghost" id="appeal-open">소명하기</button>
+      </div>
 
       <section class="science-layout" aria-label="AI 과학 도우미">
         <aside class="science-tips">
@@ -116,6 +141,118 @@
       </section>
     </div>
   </main>
+
+  <!-- 소명 — community.html 과 동일한 규격 -->
+  <dialog class="modal" id="appeal-modal" aria-labelledby="appeal-title">
+    <form id="appeal-form">
+      <div class="modal-head">
+        <h3 id="appeal-title">소명하기</h3>
+        <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="form-error" id="appeal-error" hidden></p>
+        <div class="field">
+          <label for="ap-text">어떤 점이 억울한지 적어주세요
+            <span class="count" id="ap-count">0 / 2000</span>
+          </label>
+          <textarea id="ap-text" maxlength="2000" required
+            placeholder="어떤 상황이었는지, 왜 오해라고 생각하시는지 구체적으로 적어주시면 판단에 도움이 됩니다."></textarea>
+        </div>
+        <p class="ap-note">접수 후에는 검토가 끝날 때까지 추가로 낼 수 없습니다. 한 번에 정리해서 적어주세요.</p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" data-close>취소</button>
+        <button type="submit" class="btn btn-primary" id="ap-submit">접수</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/session.js"></script>
+  <script src="/nav-user.js"></script>
   <script src="/llm.js"></script>
+  <script>
+  /* 제재 배너 · 소명 — community.html 의 흐름을 그대로 가져왔다.
+     AI 도우미는 인젝션 시도 시 영구 정지가 걸리므로 여기서 바로 소명할 수 있어야 한다. */
+  (function () {
+    const el = (id) => document.getElementById(id);
+    const suspended = el('suspended');
+    const apModal = el('appeal-modal');
+    const apForm = el('appeal-form');
+    const apError = el('appeal-error');
+
+    function showSuspension(user) {
+      if (!user || !user.suspendedUntil) { suspended.hidden = true; return; }
+      /* 영구 제재는 해제일이 없다. until 이 9999-12-31 이라 그대로 찍으면
+         "9999-12-31 에 자동 해제됩니다" 가 나온다 — 사용자에게 거짓말이 된다. */
+      if (user.suspendedPermanent) {
+        el('suspended-title').textContent = '계정이 영구 정지된 상태입니다';
+        el('suspended-detail').textContent =
+          '사유: ' + (user.suspendedReason || '운영 정책 위반') + ' · 자동으로 해제되지 않습니다. ' +
+          '해제를 원하면 소명을 제출해 주세요.';
+        suspended.hidden = false;
+        return;
+      }
+      const when = (typeof shortDate === 'function') ? shortDate(user.suspendedUntil) : user.suspendedUntil.slice(0, 10);
+      el('suspended-title').textContent = '현재 이용이 제한된 상태입니다';
+      el('suspended-detail').textContent =
+        '사유: ' + (user.suspendedReason || '운영 정책 위반') + ' · ' + when + '에 자동 해제됩니다.';
+      suspended.hidden = false;
+    }
+
+    el('ap-text').addEventListener('input', function () {
+      el('ap-count').textContent = this.value.length + ' / 2000';
+    });
+
+    el('appeal-open').addEventListener('click', function () {
+      apError.hidden = true;
+      apModal.showModal();
+      el('ap-text').focus();
+    });
+
+    apModal.addEventListener('click', function (e) {
+      if (e.target.closest('[data-close]') || e.target === apModal) apModal.close();
+    });
+
+    apForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const submit = el('ap-submit');
+      const text = el('ap-text').value.trim();
+      if (!text) { el('ap-text').focus(); return; }
+
+      submit.disabled = true;
+      submit.textContent = '접수 중…';
+      try {
+        const res = await fetch('/api/appeals', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          // 실패하면 닫지 않는다 — 닫으면 접수된 줄 알고 기다린다
+          apError.textContent = data.error || '소명을 접수하지 못했습니다.';
+          apError.hidden = false;
+          return;
+        }
+        apModal.close();
+        apForm.reset();
+        el('ap-count').textContent = '0 / 2000';
+        el('suspended-detail').textContent = data.message || '소명이 접수됐습니다. 검토 후 결과를 반영하겠습니다.';
+      } catch {
+        apError.textContent = '네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+        apError.hidden = false;
+      } finally {
+        submit.disabled = false;
+        submit.textContent = '접수';
+      }
+    });
+
+    if (window.Session) {
+      showSuspension(Session.load());            // 캐시로 즉시
+      Session.refresh().then(showSuspension);    // 서버 확인 후 다시
+    }
+  })();
+  </script>
 </body>
 </html>

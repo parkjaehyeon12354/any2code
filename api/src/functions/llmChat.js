@@ -5,9 +5,13 @@ const sanction = require('../lib/sanction');
 const { container } = require('../lib/db');
 const { lockdown } = require('../lib/lockdown');
 
-// 인젝션 시도 적발 시 정지 일수. 영구가 아니라 기간제다 —
-// 자동 판정이라 오탐이 있을 수 있고, 소명 절차로 되돌릴 수 있어야 한다.
-const INJECTION_SUSPEND_DAYS = 7;
+// 인젝션 시도는 영구 차단한다. 해제는 소명을 통해서만 가능하다.
+//
+// 왜 '영구'를 먼 미래 날짜로 표현하는가 —
+// 집행은 sanction.active() 의 `until > now` 하나로 판정한다. 별도 플래그를
+// 만들면 그 검사를 통과하는 경로가 둘이 되고, 한쪽을 빠뜨리면 제재가 새어나간다.
+// 날짜 하나로 유지하면 기존 소명·해제·감경 경로가 전부 그대로 동작한다.
+const PERMANENT_UNTIL = '9999-12-31T23:59:59.999Z';
 
 // Subjects mirror the site taxonomy — only these are allowed from clients
 const SUBJECTS = ['physics', 'chem', 'bio', 'earth'];
@@ -210,19 +214,20 @@ app.http('llmChat', {
 
       if (user) {
         const at = new Date().toISOString();
-        const days = INJECTION_SUSPEND_DAYS;
-        const until = new Date(Date.now() + days * 86400000).toISOString();
+        const until = PERMANENT_UNTIL;
         const reason = 'AI 도우미 프롬프트 조작 시도';
 
         try {
           await container().items.upsert({
             id: user.sub, type: 'sanction', pk: user.sub,
             userSub: user.sub, userName: user.name || null,
-            days, until, reason, by: 'system:llm-guard', at
+            days: null,              // 기간제가 아니다. null 이 영구를 뜻한다
+            permanent: true,         // 화면 표기용. 집행은 until 만 본다
+            until, reason, by: 'system:llm-guard', at
           });
           // 이력은 따로 쌓는다. 제재 문서는 덮이지만 이력은 남아야 반복을 안다.
           // 실패해도 제재 처리는 성공으로 끝낸다(sanction.js 의 규칙).
-          await sanction.log({ sub: user.sub, event: 'issued', days, until, reason, by: 'system:llm-guard' })
+          await sanction.log({ sub: user.sub, event: 'issued', until, reason, by: 'system:llm-guard' })
             .catch((e) => context.error('제재 이력 기록 실패:', e.message));
         } catch (e) {
           context.error('제재 적용 실패:', e.message);
@@ -231,8 +236,9 @@ app.http('llmChat', {
         return {
           status: 403,
           jsonBody: {
-            error: `AI 도우미의 지침을 바꾸려는 시도가 확인되어 이용이 ${days}일간 제한되었습니다. 부당하다고 생각되면 설정 화면에서 소명할 수 있습니다.`,
-            suspendedUntil: until
+            error: 'AI 도우미의 지침을 바꾸려는 시도가 확인되어 계정이 영구 정지되었습니다. 해제를 원하면 설정 화면에서 소명을 제출해야 합니다.',
+            suspendedUntil: until,
+            permanent: true
           }
         };
       }

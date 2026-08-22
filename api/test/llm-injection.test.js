@@ -75,11 +75,34 @@ test('탐지 결과에 근거 범주가 담긴다', () => {
   assert.ok(r.tags.includes('override'));
 });
 
-test('정지 기간은 유한하다 — 소명으로 되돌릴 수 있어야 한다', () => {
-  const m = SRC.match(/INJECTION_SUSPEND_DAYS\s*=\s*(\d+)/);
-  assert.ok(m, '정지 일수 상수를 찾지 못했다');
-  const days = Number(m[1]);
-  assert.ok(days > 0 && days <= 30, `정지 일수가 비정상이다: ${days}`);
+test('정지는 영구다 — 소명으로만 풀린다', () => {
+  assert.ok(/PERMANENT_UNTIL\s*=\s*'9999-/.test(SRC), '영구 표기 상수가 있어야 한다');
+  assert.ok(/permanent:\s*true/.test(SRC), '제재 문서에 permanent 표시가 있어야 한다');
+  assert.ok(/days:\s*null/.test(SRC), '영구는 기간제가 아니므로 days 가 null 이어야 한다');
+
+  // 영구를 먼 미래 날짜로 표현하는 이유: 집행이 until > now 하나로만 판정하기
+  // 때문이다. 이 날짜가 과거가 되면 제재가 저절로 풀린다.
+  const m = SRC.match(/PERMANENT_UNTIL\s*=\s*'([^']+)'/);
+  assert.ok(new Date(m[1]).getTime() > Date.now() + 100 * 365 * 86400000,
+    '영구 표기 날짜가 충분히 멀어야 한다');
+});
+
+test('영구 제재 안내에 해제일을 쓰지 않는다', () => {
+  // until 이 9999-12-31 이라 그대로 찍으면 "9999-12-31 해제" 가 나간다
+  const sanctionSrc = fs.readFileSync(path.join(__dirname, '../src/lib/sanction.js'), 'utf8');
+  assert.ok(/s\.permanent/.test(sanctionSrc), 'block() 이 영구 여부를 봐야 한다');
+  const permBranch = sanctionSrc.slice(sanctionSrc.indexOf('if (s.permanent)'));
+  const branchBody = permBranch.slice(0, permBranch.indexOf('const when'));
+  assert.ok(!/toLocaleDateString/.test(branchBody), '영구 분기에서 날짜를 찍으면 안 된다');
+  assert.ok(/소명/.test(branchBody), '영구 분기는 소명 경로를 안내해야 한다');
+});
+
+test('영구 제재도 소명 대상이다', () => {
+  // appealCreate 는 sanction.active() 만 확인한다. 영구는 until 이 미래라
+  // active 로 잡히므로 별도 처리 없이 소명이 접수된다 — 그 전제를 고정한다.
+  const reportsSrc = fs.readFileSync(path.join(__dirname, '../src/functions/reports.js'), 'utf8');
+  assert.ok(/sanction\.active\(user\.sub\)/.test(reportsSrc),
+    '소명 접수는 현재 유효한 제재를 근거로 해야 한다');
 });
 
 test('제재 경로가 이력을 남긴다', () => {

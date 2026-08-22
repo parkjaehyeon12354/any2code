@@ -137,6 +137,9 @@ app.http('me', {
         authenticated: true,
         suspendedUntil: suspended ? suspended.until : null,
         suspendedReason: suspended ? suspended.reason : null,
+        // 영구 제재는 화면이 해제일 대신 '영구'로 표기해야 한다.
+        // 이 값이 없으면 제재 배너가 9999-12-31 을 그대로 보여준다.
+        suspendedPermanent: suspended ? !!suspended.permanent : false,
         name,
         email: user.email,
         picture: user.picture,

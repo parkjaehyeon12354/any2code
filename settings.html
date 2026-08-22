@@ -383,9 +383,10 @@
   const badge = (cls, text) => '<span class="badge ' + cls + '">' + esc(text) + '</span>';
 
   /* 제재·소명은 이름을 저장해도 바뀌지 않으므로 불러올 때 한 번만 그린다. */
-  /* 이력 한 줄의 문구. days 는 그 이벤트가 만든 기간이라 해석이 이벤트마다 다르다. */
+  /* 이력 한 줄의 문구. days 는 그 이벤트가 만든 기간이라 해석이 이벤트마다 다르다.
+     영구 제재는 days 가 null 이다 — 그대로 이으면 "null일 이용 제한" 이 나온다. */
   const LOG_EVENT = {
-    issued:  (h) => (h.days ? h.days + '일 이용 제한' : '경고'),
+    issued:  (h) => (h.permanent ? '영구 정지' : h.days ? h.days + '일 이용 제한' : '경고'),
     reduced: (h) => '소명이 일부 받아들여져 ' + h.days + '일로 줄었습니다',
     lifted:  () => '소명이 받아들여져 제재가 해제됐습니다'
   };
@@ -398,21 +399,28 @@
       const s = d.sanction;
       parts.push('<p class="sub-head">현재 상태</p>');
       const state = s.active
-        ? badge('badge-bad', '제한 중')
+        ? badge('badge-bad', s.permanent ? '영구 정지' : '제한 중')
         : s.lifted
           ? badge('badge-ok', '소명으로 해제됨')
           : badge('badge-off', '기간 만료');
 
+      /* 영구 제재는 해제일을 보여주지 않는다. until 이 9999-12-31 이라
+         "해제 예정 9999-12-31" 이 되는데, 자동 해제가 없으므로 거짓말이다. */
+      const title = s.permanent ? '영구 정지' : (s.days === 0 ? '경고' : s.days + '일 이용 제한');
+      const untilRow = (!s.permanent && s.days > 0)
+        ? '<div><dt>' + (s.active ? '해제 예정' : '해제됨') + '</dt><dd>' + esc(shortDate(s.until)) + '</dd></div>'
+        : s.permanent && s.active
+          ? '<div><dt>해제 방법</dt><dd>소명 제출 후 관리자 검토</dd></div>'
+          : '';
+
       parts.push(
         '<div class="sanction">' +
         '<div class="sanction-top"><strong>' +
-        esc(s.days === 0 ? '경고' : s.days + '일 이용 제한') + '</strong>' + state + '</div>' +
+        esc(title) + '</strong>' + state + '</div>' +
         '<dl>' +
         '<div><dt>사유</dt><dd>' + esc(s.reason || '—') + '</dd></div>' +
         '<div><dt>처리일</dt><dd>' + esc(shortDate(s.at)) + '</dd></div>' +
-        (s.days > 0
-          ? '<div><dt>' + (s.active ? '해제 예정' : '해제됨') + '</dt><dd>' + esc(shortDate(s.until)) + '</dd></div>'
-          : '') +
+        untilRow +
         '</dl></div>'
       );
     }
