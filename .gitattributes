@@ -1,0 +1,20 @@
+# 줄바꿈 정책 — 저장소에는 항상 LF로 저장한다.
+#
+# 왜 필요한가: 팀이 Windows(WSL)와 macOS를 섞어 쓴다. .gitattributes가 없으면
+# 각자의 core.autocrlf 설정에 따라 같은 파일이 CRLF/LF로 엇갈려 커밋되고,
+# 내용은 한 글자도 안 바뀐 diff가 파일 전체 크기로 잡힌다.
+# 실제로 WSL에서 git status에 22개 파일이 떴는데 --ignore-all-space diff는
+# 완전히 비어 있었다. 그 재발을 막는 파일이다.
+
+# 기본: 텍스트로 판정되는 모든 파일은 저장소에 LF로 넣는다.
+* text=auto eol=lf
+
+# 바이너리 — 절대 변환하지 않는다.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff  binary
+*.woff2 binary
+*.zip  binary
