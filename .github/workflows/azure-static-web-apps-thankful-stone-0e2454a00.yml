@@ -54,9 +54,11 @@ jobs:
           app_location: "/" # App source code path
           api_location: "api" # Api source code path - optional
           output_location: "" # Built app content directory - optional
-          # 이 프로젝트의 화면은 별도 빌드가 필요 없는 HTML/CSS/JS 파일이다.
-          # 지정하지 않으면 Azure가 npm run build를 찾다가 배포가 실패한다.
-          skip_app_build: true
+          # skip_app_build 를 켜지 말 것. 켜면 Oryx 앱 빌드를 건너뛰고 app_location 을
+          # 그대로 올리는데, 이 시점엔 API 빌드가 이미 api/node_modules(1만 개 파일)를
+          # 작업 폴더에 만들어둔 뒤라 그게 통째로 정적 콘텐츠로 올라가 배포가
+          # "Failure during content distribution" 으로 죽는다. 루트에 package.json 이
+          # 없으면 Oryx 는 알아서 정적 사이트로 처리하니 아무 설정도 필요 없다.
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:

@@ -43,3 +43,8 @@ desktop.ini
 # ── 로그 ──
 *.log
 npm-debug.log*
+
+# ── 루트 lock 파일 ──
+# 루트엔 package.json 이 없다. lock 파일만 있으면 Azure 가 루트를 Node 앱으로
+# 오인해 빌드를 시도하다 배포가 실패한다. api/package-lock.json 은 정상이니 제외.
+/package-lock.json
