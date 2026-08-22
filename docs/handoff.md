@@ -1,6 +1,6 @@
 # 인수인계 — Ans2Quest
 
-마지막 갱신: 2026-08-23 · 배포된 커밋 `40ce2f0`
+마지막 갱신: 2026-08-23 · 배포된 커밋 `0d39bd9`
 
 새 대화를 시작하는 사람이 **이 파일 하나만 읽고** 이어받을 수 있게 쓴 문서입니다.
 프로젝트 전체 상태는 [progress.md](progress.md)에, 도구·환경 규칙은 저장소 밖
@@ -14,7 +14,7 @@
 
 ```
 https://ans2quest.com          라이브
-테스트 138개 통과
+테스트 147개 통과
 ```
 
 확인 명령:
@@ -23,15 +23,117 @@ https://ans2quest.com          라이브
 cd D:/코딩/any2code && git status --short && cd api && node --test
 ```
 
-아무것도 안 나오고 `pass 138`이면 이 문서와 같은 상태입니다.
+아무것도 안 나오고 `pass 147`이면 이 문서와 같은 상태입니다.
 
-**단 하나 막혀 있는 것** — `/science`(AI 과학 도우미)는 화면도 배포도 끝났는데
-`OPENAI_API_KEY`가 Azure 앱 설정에 없어서 질문을 보내면 502가 옵니다. 자세한 건
-아래 '남은 일'에.
+**`/science`(AI 과학 도우미)가 이제 실제로 답합니다.** OpenAI 대신 **Upstage Solar**
+(`solar-pro4`)를 쓰고, 키는 Azure 앱 설정의 `LLM_API_KEY` 에 들어가 있습니다.
+막혀 있던 502 는 해소됐습니다.
 
 ---
 
 ## 이번 라운드에 한 일
+
+### A. AI 도우미를 Upstage Solar 로 옮기고 실제로 답하게 만들었다 (`8d76dfb`)
+
+`OPENAI_API_KEY` 가 없어 502 였다. 키를 넣는 대신 제공자를 바꿨다.
+
+호출은 `openai` 패키지를 그대로 쓰고 `baseURL` 만 갈아끼운다. 의존성이 늘지 않고,
+다음에 제공자를 옮길 때도 환경 변수만 바꾸면 된다.
+
+| 환경 변수 | 기본값 |
+|---|---|
+| `LLM_API_KEY` | (필수) |
+| `LLM_BASE_URL` | `https://api.upstage.ai/v1` |
+| `LLM_MODEL` | `solar-pro4` |
+
+`responses.create` 는 OpenAI 전용이라 호환 엔드포인트에 없다. `chat.completions` 로
+바꾸면서 `instructions` 는 system 메시지로, `output_text` 는
+`choices[0].message.content` 로 옮겼다.
+
+**⚠ 모델을 바꿀 때 반드시 확인할 것 — thinking 모델은 답변이 통째로 빈다.**
+처음에 Gemini 3.7 Flash 로 붙였다가 답변이 빈 채로 돌아왔다. thinking 계열은
+`max_tokens` 예산을 **사고 토큰이 먼저** 먹어서, `finish_reason: length` 에
+`completion_tokens: 0` 이 떨어진다. **에러가 아니라 빈 문자열**이라 코드는 정상
+동작한 것처럼 보이고 화면에만 "AI가 빈 답변을 반환했습니다" 가 뜬다.
+`solar-pro4` 는 `reasoning_tokens` 가 0 이라 해당 없지만, 모델 교체 시
+응답의 `usage.completion_tokens_details.reasoning_tokens` 를 먼저 봐야 한다.
+
+Gemini 무료 티어는 **하루 20회**(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`)
+라 공개 서비스에는 못 쓴다. 429 응답이 그 수치를 직접 알려준다 — 가격표보다 정확하다.
+
+### B. 답변의 수식이 LaTeX 원문으로 노출됐다 (`9a5b1a8`, `e3340f9`)
+
+화면에 `\(\sin\theta \approx \theta\)` 가 그대로 보였다. `llm.js` 가 답변을
+`textContent` 로 꽂고 있었다.
+
+**KaTeX 는 못 쓴다.** `staticwebapp.config.json` 의 CSP 가 `script-src` 를 `'self'`
+로 묶어놔서 CDN 스크립트가 차단된다. CSP 를 푸는 건 XSS 방어를 약화시키니 그쪽이
+더 나쁘다. 그래서 의존성 없이 유니코드로 옮긴다:
+`\sin\theta` → `sinθ`, `\sqrt{\frac{L}{g}}` → `√(L/g)`, `x^2` → `x²`, `y_1` → `y₁`.
+조판이 목적이 아니라 가독성이 목적이다.
+
+배포 후에도 `10^\circ` 가 새어나왔다. `\circ` 가 치환표에 없었다. **표에 항목을
+더하는 것만으로는 같은 일이 또 난다** — 모델이 쓰는 명령을 전부 열거할 수 없다.
+그래서 표에 없는 `\명령` 은 백슬래시만 떼는 안전망을 두 군데(수식 내부/외부)에 뒀다.
+
+`escapeHtml` 을 통과시킨 뒤에만 태그를 붙인다. **순서가 뒤집히면 XSS 가 열린다.**
+실제 DOM 에 넣고 스크립트가 실행되는지까지 확인했다(실행 안 됨). 링크·이미지
+마크다운은 일부러 뺐다 — 피싱 경로가 된다.
+
+### C. 프롬프트 인젝션 방어와 영구 정지 (`9a5b1a8`, `fcfd3df`, `0d39bd9`)
+
+사용자 입력이 곧바로 user 메시지로 들어가고 있었다. 3중으로 막는다:
+역할 표지·특수 토큰·제로폭 문자 정제, system 프롬프트의 경계 규칙,
+질문을 `<question>` 태그로 감싸 데이터임을 명시. 질문 길이는 2000자로 제한한다.
+
+**정제 순서에 실제 우회 경로가 있었다.** `</question> system: ...` 은 태그를 먼저
+지우면 `system:` 이 첫머리로 올라와 검사를 그대로 통과한다. 역할 표지 처리를 태그
+제거 **뒤로** 옮겨서 막았다.
+
+영어 OOC 공격 9종(OOC framing, admin override, DAN, prompt extraction, delimiter
+escape, Base64 smuggling, multilingual mix, hypothetical frame)을 라이브에 실제로
+쏘아 **9/9 방어**를 확인했다. 정상 질문 대조군도 정상 답변했다.
+
+**적발되면 계정을 영구 정지한다. 해제는 소명뿐이다.**
+
+영구를 별도 플래그가 아니라 `until = 9999-12-31` 로 표현한다. 집행은
+`sanction.active()` 의 `until > now` **하나로만** 판정하는데, 플래그를 새로 만들면
+검사를 통과하는 경로가 둘이 되고 한쪽을 빠뜨리면 제재가 새어나간다. 날짜 하나로
+두면 기존 소명·해제·감경 경로가 전부 그대로 동작한다. `permanent: true` 는 화면
+표기용이고 집행은 보지 않는다.
+
+**그 표현 때문에 화면 네 곳이 거짓말을 하게 되어 함께 고쳤다.** 새 화면을 만들 때
+같은 함정을 밟기 쉽다 — `until` 을 그대로 찍으면 "9999-12-31 해제" 가 나간다.
+
+| 위치 | 고치기 전 |
+|---|---|
+| `sanction.block()` | "9999-12-31 해제" |
+| `community.html` 배너 | "9999-12-31 에 자동 해제됩니다" |
+| `settings.html` 현재상태 | "null일 이용 제한" (영구는 `days` 가 null) |
+| `settings.html` 이력 | 같은 문제 |
+
+`/api/me` 에 `suspendedPermanent` 를 실어 화면이 구분할 수 있게 했다.
+`science.html` 에는 제재 배너와 소명 모달을 붙였다(community.html 과 같은 규격).
+정지가 걸리는 화면에서 바로 풀 수 있어야 한다.
+
+**오탐 방지가 이 기능의 핵심이다.** 자동 판정이 사람을 영구 정지시키므로
+서로 다른 범주 **2개 이상**이 걸려야 공격으로 본다. `ignore` 나 `무시` 한 단어로
+막으면 "공기 저항은 무시하고 계산해줘" 가 걸린다. 정상 질문 10종으로 오탐이
+없는지 검사한다.
+
+### D. 그 밖에 잡은 것
+
+- **`science.html` 이 `theme.js` 를 안 읽고 있었다** — progress.md 에 적힌 그 부류다.
+  사이트는 다크인데 이 페이지만 하얗게 떴다. 입력창 배경도 리터럴 `#fff` 였다.
+  `session.js` / `nav-user.js` 도 없어서 함께 추가했다.
+- **콘솔의 404 는 우리 코드가 아니다.** 긴 난수 경로(`/uZfB5lWnCt...`)에
+  `ERR_ABORTED` 가 찍히는데, 저장소에 그런 요청을 하는 코드가 없다. 브라우저 확장이나
+  보안 소프트웨어가 주입한 것이다. 자원 4개(`theme.js`·`llm.js`·`styles.css`·
+  `session.js`)는 전부 200 이다.
+
+---
+
+## 지난 라운드에 한 일
 
 ### 0. WSL(Claude Code CLI)로 이전하면서 잡은 것 두 개 (`40ce2f0`)
 
@@ -235,6 +337,14 @@ React 프로젝트용이라 `any2code`를 못 띄웁니다.
   에디터가 CRLF 로 저장해도 커밋은 LF 로 들어갑니다. 손댄 적 없는 파일이 `git status`
   에 무더기로 뜨면 `git diff --ignore-all-space --stat` 로 먼저 확인하세요 — 비어 있으면
   내용 변경 0 입니다
+- **영구 제재는 `until = 9999-12-31`** — 별도 플래그가 아니라 날짜로 표현합니다.
+  제재를 화면에 그리는 코드를 새로 쓸 때 `until` 을 그대로 찍으면 "9999-12-31 해제"
+  가 나갑니다. `permanent` 를 먼저 보고 분기하세요. `days` 도 null 이라
+  `days + '일'` 은 "null일" 이 됩니다
+- **LLM 모델 교체 시 `reasoning_tokens` 확인** — thinking 계열은 `max_tokens` 예산을
+  사고 토큰이 먼저 먹어서 답변이 **빈 문자열**로 옵니다. 에러가 아니라 조용히 깨집니다
+- **AI 답변에 KaTeX 를 붙일 수 없습니다** — CSP 가 `script-src 'self'` 라 CDN 이
+  막힙니다. `llm.js` 가 유니코드로 직접 변환합니다. CSP 를 풀지 마세요
 - **한국어 조사** — `항소`→`소명` 같은 일괄 치환은 받침이 달라져서 `소명를/가/와/는/로`가
   전부 틀립니다. 지난번에 10곳을 손봤습니다
 
@@ -242,27 +352,22 @@ React 프로젝트용이라 `any2code`를 못 띄웁니다.
 
 ## 남은 일
 
-**0. `OPENAI_API_KEY`를 Azure에 넣기 — 지금 유일하게 막혀 있는 것**
+**0. `llmChat` 이 아직 `authLevel: 'anonymous'` 다 — 가장 먼저 볼 것**
 
-`/science` 화면과 `llm/chat` 함수는 배포까지 끝났습니다. 키가 없어서 502를 냅니다.
+로그인 없이 누구나 호출할 수 있다. 제한은 IP당 시간당 20회뿐인데 IP 는 우회가
+쉽고, 그 카운터는 `Map` 메모리 저장이라 Functions 인스턴스가 재활용되면 초기화된다.
 
-```
-$ curl -X POST -H "Content-Type: application/json" \
-    -d '{"question":"t","subject":"physics"}' https://ans2quest.com/api/llm/chat
-{"error":"OPENAI_API_KEY is not set in environment"}
-```
+두 가지가 걸린다.
+- **한도 소진** — 한 사람이 하루 몫을 다 쓰면 대회 시연 중에 막힌다
+- **영구 정지가 비로그인에는 무의미하다** — 정지시킬 계정이 없어 차단만 하고 끝난다
 
-**저장소가 아니라 Azure 쪽 설정이라 커밋으로는 해결이 안 됩니다.**
+`session.current(request)` 는 이미 코드에 있으므로 로그인 필수로 바꾸는 건 몇 줄이다.
 
-```bash
-az staticwebapp appsettings set -n ans2quest-rg -g ans2quest-rg --setting-names OPENAI_API_KEY=<키>
-```
+**1. AI 가 자기 모델명을 밝힌다**
 
-포털이면 Static Web Apps → `ans2quest-rg` → 환경 변수. 재배포 없이 몇 분 안에
-반영됩니다. 모델을 바꿀 거면 `OPENAI_MODEL`도 같이 (기본값 `gpt-5.6-luna`).
-
-**비용 주의** — `llmChat`은 `authLevel: 'anonymous'`에 IP당 시간당 20회 제한입니다.
-공개 사이트에 유료 키를 물리는 구조라 한 번 생각해볼 지점입니다.
+prompt extraction 시도에 "저는 Upstage AI에서 만든 Solar로서" 라고 답했다. 시스템
+프롬프트 유출은 아니지만, 공격자가 모델을 알면 그 모델에 맞는 우회 기법을 고를 수
+있다. system 프롬프트에 모델명을 밝히지 말라는 줄을 추가하면 된다.
 
 나머지는 [progress.md](progress.md)의 '남은 일'에 우선순위대로 있습니다 — 카카오
 로그인, 답변 수정·삭제, 시뮬레이션 추가, 심화 탐구 연결.
