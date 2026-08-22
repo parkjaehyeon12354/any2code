@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
 
   "platform": {
-    "apiRuntime": "node:20"
+    "apiRuntime": "node:22"
   },
 
   "globalHeaders": {
