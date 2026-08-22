@@ -1,6 +1,6 @@
 # 인수인계 — Ans2Quest
 
-마지막 갱신: 2026-08-22 · 배포된 커밋 `9808e04`
+마지막 갱신: 2026-08-23 · 배포된 커밋 `40ce2f0`
 
 새 대화를 시작하는 사람이 **이 파일 하나만 읽고** 이어받을 수 있게 쓴 문서입니다.
 프로젝트 전체 상태는 [progress.md](progress.md)에, 도구·환경 규칙은 저장소 밖
@@ -32,6 +32,39 @@ cd D:/코딩/any2code && git status --short && cd api && node --test
 ---
 
 ## 이번 라운드에 한 일
+
+### 0. WSL(Claude Code CLI)로 이전하면서 잡은 것 두 개 (`40ce2f0`)
+
+**`SESSION_SECRET` 이 실제 시크릿이 아니라 생성 명령어 문자열이었습니다.** Azure 앱
+설정에 이 값이 그대로 들어가 있었습니다:
+
+```
+node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))" | clip
+```
+
+명령을 복사해 붙여넣는 과정에서 결과 대신 명령 자체가 들어간 것으로 보입니다. 값이
+고정 문자열이라 이걸 아는 사람은 세션 쿠키를 위조할 수 있습니다 — progress.md 가
+경고한 "SESSION_SECRET 이 공개값으로 덮이면 누구나 관리자 쿠키 위조" 와 같은 상황입니다.
+64 자 난수로 교체했습니다. **그 시점의 로그인 세션은 전부 무효화됐습니다** (정상 동작).
+
+```bash
+az staticwebapp appsettings list -n ans2quest-rg -g ans2quest-rg   # 값 확인
+```
+
+**줄바꿈 전용 diff 22 개 파일.** WSL 에서 `git status --short` 에 22 개가 뜨는데
+`git diff --ignore-all-space` 는 완전히 비어 있었습니다. 삽입 6460 / 삭제 6460 으로
+숫자가 정확히 같은 게 신호입니다 — HEAD 는 LF 인데 작업 트리만 CRLF 였고 내용은 한
+글자도 안 바뀐 상태였습니다. 그대로 커밋했으면 22 개 파일이 통째로 CRLF 로 올라가
+**맥북에서 작업하는 최윤지와 다음 병합에서 전 파일 충돌**이 났을 겁니다.
+
+`.gitattributes` 에 `* text=auto eol=lf` 를 넣어 고정하고, 작업 트리는
+`git reset --hard` 로 HEAD(LF) 에 맞췄습니다.
+
+**`git status` 에 손댄 적 없는 파일이 무더기로 뜨면 먼저 이걸 의심하세요:**
+
+```bash
+git diff --ignore-all-space --stat   # 비어 있으면 EOL 문제, 내용 변경 0
+```
 
 ### 1. 드롭다운에서 시뮬레이션 목록으로 가는 길 (`af81e10`)
 
@@ -118,8 +151,13 @@ curl -s "https://api.github.com/repos/parkjaehyeon12354/any2code/actions/runs/<i
 자동 생성된 액션에 붙는 경고일 뿐입니다. 이걸 쫓아 `apiRuntime`을 22로 올린 커밋이
 하나 있는데(`ac24341`) 실패 지점이 1초도 안 움직였습니다.
 
-**3. 로그 본문은 API로 못 받습니다** (403, 인증 필요). 브라우저에서
-`Build and Deploy Job` → 4번 `Build And Deploy` 스텝을 펼쳐야 합니다.
+**3. 로그 본문은 `gh` 로 받습니다.** 공개 REST API 로는 403(인증 필요)이라 예전엔
+브라우저로 펼쳐 봐야 했지만, 이제 터미널에서 바로 됩니다:
+
+```bash
+gh run view <id> --log-failed    # 실패한 스텝의 로그만
+gh run view <id> --log           # 전체 로그
+```
 
 **4. 마지막 성공 커밋과의 차이를 지우는 게 가장 빠릅니다.** 원인을 완전히 몰라도
 복구됩니다. 추측으로 새 설정을 얹으면 `61804cd`처럼 문제가 하나 더 늘어납니다.
@@ -149,14 +187,15 @@ az staticwebapp hostname list -n ans2quest-rg -g ans2quest-rg      # 도메인 �
 `main`에 push하면 GitHub Actions가 바로 배포합니다. **스테이징 없습니다.**
 테스트가 게이트라 빨간 테스트는 배포를 막습니다.
 
-`gh` CLI가 없으니 공개 API로 확인합니다:
+- **`gh` CLI가 설치돼 있습니다.** 배포 상태는 이걸로 봅니다:
 
 ```bash
-curl -s "https://api.github.com/repos/parkjaehyeon12354/any2code/actions/runs?per_page=1"
+gh run list --limit 3          # 최근 배포
+gh run watch <id> --exit-status # 끝날 때까지 지켜보기
 ```
 
-`WebFetch`는 URL당 15분 캐시라 폴링에 쓰면 **끝난 배포가 이전 결과로 나옵니다.**
-`curl`을 쓰세요.
+  공개 REST API(`curl`)도 여전히 됩니다. 다만 `WebFetch`는 URL당 15분 캐시라
+  폴링에 쓰면 **끝난 배포가 이전 결과로 나옵니다.** 폴링은 `gh` 나 `curl` 로 하세요.
 
 **루트에서 `npm install`을 하지 마세요.** 의존성은 `api/` 안에서만 설치합니다.
 `.gitignore`가 커밋은 막아주지만 로컬에 잔재가 남습니다.
@@ -192,6 +231,10 @@ React 프로젝트용이라 `any2code`를 못 띄웁니다.
 - **혼합 타입에 `ORDER BY` 금지** — 정렬 필드가 없는 문서가 통째로 사라집니다
 - **HTML에 캐시 헤더가 없습니다** — 배포 직후 "안 고쳐졌다" 싶으면 이걸 먼저 의심하고
   `?cachebust=<sha>`로 확인하세요
+- **줄바꿈은 LF 고정** — `.gitattributes` 가 `* text=auto eol=lf` 로 잡아둡니다. Windows
+  에디터가 CRLF 로 저장해도 커밋은 LF 로 들어갑니다. 손댄 적 없는 파일이 `git status`
+  에 무더기로 뜨면 `git diff --ignore-all-space --stat` 로 먼저 확인하세요 — 비어 있으면
+  내용 변경 0 입니다
 - **한국어 조사** — `항소`→`소명` 같은 일괄 치환은 받침이 달라져서 `소명를/가/와/는/로`가
   전부 틀립니다. 지난번에 10곳을 손봤습니다
 
