@@ -68,10 +68,19 @@ cd api && node --test
 
 ## LLM 챗 엔드포인트
 
-로컬 또는 배포 환경에서 LLM(예: OpenAI)을 호출하려면 아래 환경 변수를 설정하세요:
+LLM 은 **OpenAI 호환 엔드포인트**로 부릅니다. 현재 기본값은 Upstage Solar 입니다.
+`openai` 패키지를 그대로 쓰되 `baseURL` 만 갈아끼우는 방식이라, 다른 제공자로 옮길 때도
+환경 변수만 바꾸면 됩니다 (코드 수정 불필요).
 
-| 이름 | 용도 |
-|---|---|
-| `OPENAI_API_KEY` | OpenAI API 키(Bearer). Azure 앱 설정에 저장하세요. |
+| 이름 | 필수 | 기본값 | 용도 |
+|---|---|---|---|
+| `LLM_API_KEY` | 필수 | — | API 키(Bearer). Azure 앱 설정에 저장하세요. |
+| `LLM_BASE_URL` | 선택 | `https://api.upstage.ai/v1` | OpenAI 호환 엔드포인트 |
+| `LLM_MODEL` | 선택 | `solar-pro4` | 모델 이름 |
 
 환경변수를 설정하면 사이트의 `/api/llm/chat` 엔드포인트로 질문을 보낼 수 있습니다.
+
+**모델을 바꿀 때 반드시 확인할 것** — 코드는 `max_tokens: 800` 을 보냅니다. thinking
+계열 모델(Gemini 3.x 등)은 이 예산을 **사고 토큰이 먼저 소비**해서, 답변이 빈 채로
+`finish_reason: length` 가 떨어집니다. 에러가 아니라 빈 문자열이라 조용히 깨집니다.
+응답의 `usage.completion_tokens_details.reasoning_tokens` 가 0 인지 먼저 확인하세요.
