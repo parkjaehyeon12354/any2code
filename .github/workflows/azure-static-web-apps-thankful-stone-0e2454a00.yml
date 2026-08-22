@@ -54,6 +54,9 @@ jobs:
           app_location: "/" # App source code path
           api_location: "api" # Api source code path - optional
           output_location: "" # Built app content directory - optional
+          # 이 프로젝트의 화면은 별도 빌드가 필요 없는 HTML/CSS/JS 파일이다.
+          # 지정하지 않으면 Azure가 npm run build를 찾다가 배포가 실패한다.
+          skip_app_build: true
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
