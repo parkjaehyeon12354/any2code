@@ -33,7 +33,9 @@ const OPS = {
   approx: '≈', neq: '≠', leq: '≤', geq: '≥', ll: '≪', gg: '≫',
   equiv: '≡', propto: '∝', infty: '∞', partial: '∂', nabla: '∇',
   int: '∫', sum: '∑', prod: '∏', to: '→', rightarrow: '→',
-  leftarrow: '←', Rightarrow: '⇒', Leftrightarrow: '⇔', in: '∈', ldots: '…', dots: '…'
+  leftarrow: '←', Rightarrow: '⇒', Leftrightarrow: '⇔', in: '∈', ldots: '…', dots: '…',
+  circ: '°', degree: '°', prime: '′', angle: '∠', perp: '⊥', parallel: '∥',
+  Delta: 'Δ', simeq: '≃', sim: '∼', pi: 'π'
 };
 const SUP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ','i':'ⁱ' };
 const SUB = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋','a':'ₐ','e':'ₑ','o':'ₒ','x':'ₓ','i':'ᵢ','n':'ₙ' };
@@ -68,6 +70,7 @@ function latexToText(src) {
   // 그리스 문자 · 연산자
   s = s.replace(/\\([A-Za-z]+)/g, (m, name) => GREEK[name] || OPS[name] || m);
   // 위첨자 / 아래첨자
+  s = s.replace(/\^\{?\s*°\s*\}?/g, '°');          // 10^\circ -> 10° (^ 가 남지 않게)
   s = s.replace(/\^\{([^{}]+)\}/g, (m, g) => [...g].every((c) => SUP[c]) ? [...g].map((c) => SUP[c]).join('') : `^(${g})`);
   s = s.replace(/\^(\w)/g, (m, c) => SUP[c] || `^${c}`);
   s = s.replace(/_\{([^{}]+)\}/g, (m, g) => [...g].every((c) => SUB[c]) ? [...g].map((c) => SUB[c]).join('') : `_(${g})`);
@@ -75,6 +78,9 @@ function latexToText(src) {
   // 남은 정렬/간격 제어 문자 정리
   s = s.replace(/\\[,;:!qh]uad|\\[,;:!]/g, ' ').replace(/\\\\/g, ' ');
   s = s.replace(/[{}]/g, '');
+  // 안전망: 표에 없는 명령이 남아 백슬래시가 화면에 노출되는 일이 없게 이름만 남긴다.
+  // 이게 없으면 \circ 처럼 빠진 항목이 그대로 새어나간다(실제로 한 번 새어나갔다).
+  s = s.replace(/\\([A-Za-z]+)/g, '$1');
   return s.trim();
 }
 
@@ -107,6 +113,12 @@ function renderAnswer(el, raw) {
   work = work
     .replace(/\u0000B(\d+)\u0000/g, (m, i) => `<span class="math-block">${escapeHtml(blocks[+i])}</span>`)
     .replace(/\u0000I(\d+)\u0000/g, (m, i) => `<span class="math">${escapeHtml(blocks[+i])}</span>`);
+
+  // 5) 수식 구간 밖에 떠 있는 LaTeX 잔재 정리.
+  //    모델이 구분자 없이 \theta 만 툭 던지는 경우가 있는데, 그대로 두면
+  //    화면에 백슬래시가 그대로 보인다. 태그는 이미 붙은 뒤라 <b>, <span>
+  //    같은 마크업은 건드리지 않도록 백슬래시로 시작하는 것만 고른다.
+  work = work.replace(/\\([A-Za-z]+)/g, (m, name) => GREEK[name] || OPS[name] || name);
 
   el.innerHTML = work;
 }
