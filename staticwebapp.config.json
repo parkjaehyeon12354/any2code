@@ -29,6 +29,10 @@
       "rewrite": "/guide.html"
     },
     {
+      "route": "/science",
+      "rewrite": "/science.html"
+    },
+    {
       "route": "/login",
       "rewrite": "/login.html"
     },

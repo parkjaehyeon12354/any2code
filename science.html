@@ -2,34 +2,111 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>과학 질문 — Ans2Quest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ans2Quest AI 과학 도우미">
+  <title>AI 과학 도우미 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    .chat { max-width:720px; margin:2rem auto; }
-    .messages { border:1px solid #ddd; padding:1rem; min-height:200px; background:#fff }
-    .msg { margin-bottom:0.75rem }
-    .msg.user { text-align:right }
-    .controls { margin-top:1rem; display:flex; gap:0.5rem }
-    .controls input, .controls select { flex:1 }
+    .science-page { min-height: calc(100vh - 56px); padding: 68px 0 96px; background: var(--canvas); }
+    .science-intro { text-align: center; max-width: 690px; margin: 0 auto 36px; }
+    .science-kicker { display: inline-flex; gap: 8px; align-items: center; color: var(--primary); font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 14px; }
+    .science-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #d97706); }
+    .science-intro h1 { font-family: var(--font-display); color: var(--ink); font-size: clamp(32px, 5vw, 48px); line-height: 1.25; letter-spacing: -.5px; margin: 0 0 14px; }
+    .science-intro p { color: var(--body); font-size: 17px; line-height: 1.7; margin: 0; word-break: keep-all; }
+    .science-layout { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .science-tips, .science-chat { background: var(--surface, #fff); border: 1px solid var(--line, #e5e7eb); border-radius: 16px; box-shadow: 0 8px 30px rgba(19, 42, 35, .05); }
+    .science-tips { padding: 22px; }
+    .science-tips h2 { font-family: var(--font-display); color: var(--ink); font-size: 18px; margin: 0 0 8px; }
+    .science-tips > p { color: var(--muted, #64748b); font-size: 13px; line-height: 1.55; margin: 0 0 16px; }
+    .tip-list { display: grid; gap: 9px; }
+    .tip { width: 100%; text-align: left; padding: 10px 11px; color: var(--body); background: var(--canvas); border: 1px solid transparent; border-radius: 9px; font: inherit; font-size: 13px; line-height: 1.45; cursor: pointer; }
+    .tip:hover { border-color: var(--primary); color: var(--primary); }
+    .science-chat { overflow: hidden; }
+    .chat-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--line, #e5e7eb); }
+    .chat-head strong { color: var(--ink); font-size: 16px; }
+    .subject-select { appearance: none; border: 1px solid var(--line, #d6ddd9); border-radius: 8px; padding: 8px 30px 8px 10px; color: var(--body); background: var(--canvas); font: inherit; font-size: 13px; cursor: pointer; }
+    .messages { height: 370px; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .welcome { margin: auto 0; padding: 10px 4px; }
+    .welcome-mark { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 13px; color: var(--primary); background: rgba(22,122,99,.1); border-radius: 12px; font-size: 21px; }
+    .welcome h2 { font-family: var(--font-display); color: var(--ink); font-size: 24px; margin: 0 0 7px; }
+    .welcome p { max-width: 430px; color: var(--body); line-height: 1.65; margin: 0; }
+    .msg { max-width: 84%; padding: 12px 14px; border-radius: 13px; color: var(--body); line-height: 1.65; white-space: pre-wrap; word-break: break-word; background: var(--canvas); }
+    .msg.user { align-self: flex-end; color: var(--on-primary, #fff); background: var(--primary); border-bottom-right-radius: 3px; }
+    .msg.bot { align-self: flex-start; border-bottom-left-radius: 3px; }
+    .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--line, #e5e7eb); }
+    .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: #fff; font: inherit; }
+    .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
+    .chat-form button { flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 9px; color: var(--on-primary, #fff); background: var(--primary); font: inherit; font-weight: 700; cursor: pointer; }
+    .chat-form button:hover { background: var(--primary-active); }
+    .chat-form button:disabled { opacity: .55; cursor: wait; }
+    .chat-note { color: var(--muted, #64748b); font-size: 12px; line-height: 1.5; padding: 0 20px 16px; margin: 0; }
+    @media (max-width: 720px) { .science-page { padding: 42px 0 64px; } .science-layout { grid-template-columns: 1fr; } .science-tips { order: 2; } .tip-list { grid-template-columns: repeat(2, 1fr); } .messages { height: 330px; } }
+    @media (max-width: 440px) { .chat-head { align-items: flex-start; flex-direction: column; } .tip-list { grid-template-columns: 1fr; } .chat-form { padding: 12px; } .chat-form button { padding: 0 13px; } }
   </style>
 </head>
 <body>
-  <main class="chat">
-    <h1>과학 질문 도우미</h1>
-    <p>간단한 과학 질문을 입력하면 답변을 제공합니다. 전문가 수준의 진단·치료·법적 자문 등은 제공하지 않습니다.</p>
-    <div class="messages" id="messages"></div>
+  <header class="top-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand">Ans2Quest</a>
+      <nav class="nav-links" aria-label="주요 메뉴">
+        <li><a href="/simulation/">시뮬레이션</a></li>
+        <li><a href="/community">커뮤니티</a></li>
+        <li><a href="/science" class="active-link">AI 과학 도우미</a></li>
+        <li><a href="/guide">가이드</a></li>
+      </nav>
+      <div class="nav-cta"><a href="/login">시작하기</a></div>
+    </div>
+  </header>
 
-    <div class="controls">
-      <select id="subject">
-        <option value="">전체 과학</option>
-        <option value="physics">물리</option>
-        <option value="chem">화학</option>
-        <option value="bio">생물</option>
-        <option value="earth">지구과학</option>
-      </select>
-      <input id="q" placeholder="질문을 입력하세요" />
-      <button id="ask">질문</button>
+  <main class="science-page">
+    <div class="container">
+      <section class="science-intro">
+        <div class="science-kicker">AI SCIENCE HELPER</div>
+        <h1>궁금한 과학을<br>함께 풀어봐요</h1>
+        <p>개념부터 실험 결과 해석까지, 이해하기 쉬운 말로 차근차근 설명해 드려요.</p>
+      </section>
+
+      <section class="science-layout" aria-label="AI 과학 도우미">
+        <aside class="science-tips">
+          <h2>이렇게 물어보세요</h2>
+          <p>아래 예시를 누르면 질문칸에 바로 들어가요.</p>
+          <div class="tip-list">
+            <button class="tip" type="button" data-question="뉴턴의 운동 법칙을 쉽게 설명해줘">뉴턴의 운동 법칙이 뭐야?</button>
+            <button class="tip" type="button" data-question="단진자 실험에서 주기에 영향을 주는 요인을 알려줘">단진자 주기는 왜 달라져?</button>
+            <button class="tip" type="button" data-question="광합성과 호흡의 차이를 표 없이 쉽게 설명해줘">광합성과 호흡은 어떻게 달라?</button>
+            <button class="tip" type="button" data-question="산과 염기의 특징을 일상생활 예시와 함께 알려줘">산과 염기를 예로 설명해줘</button>
+          </div>
+        </aside>
+
+        <div class="science-chat">
+          <div class="chat-head">
+            <strong>AI 과학 도우미</strong>
+            <select id="subject" class="subject-select" aria-label="과목 선택">
+              <option value="">전체 과학</option>
+              <option value="physics">물리학</option>
+              <option value="chem">화학</option>
+              <option value="bio">생명과학</option>
+              <option value="earth">지구과학</option>
+            </select>
+          </div>
+          <div class="messages" id="messages" aria-live="polite">
+            <div class="welcome">
+              <div class="welcome-mark">⌁</div>
+              <h2>무엇이 궁금한가요?</h2>
+              <p>과목을 선택하고 질문을 남겨 주세요. 어려운 용어는 쉬운 예시와 함께 설명할게요.</p>
+            </div>
+          </div>
+          <form class="chat-form" id="chat-form">
+            <input id="q" autocomplete="off" placeholder="예: 전자기 유도는 왜 일어나나요?" aria-label="과학 질문">
+            <button id="ask" type="submit">질문하기</button>
+          </form>
+          <p class="chat-note">AI 답변은 학습을 돕기 위한 참고 자료예요. 중요한 내용은 교과서와 선생님께도 확인해 보세요.</p>
+        </div>
+      </section>
     </div>
   </main>
   <script src="/llm.js"></script>
