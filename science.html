@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>과학 질문 — Ans2Quest</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .chat { max-width:720px; margin:2rem auto; }
+    .messages { border:1px solid #ddd; padding:1rem; min-height:200px; background:#fff }
+    .msg { margin-bottom:0.75rem }
+    .msg.user { text-align:right }
+    .controls { margin-top:1rem; display:flex; gap:0.5rem }
+    .controls input, .controls select { flex:1 }
+  </style>
+</head>
+<body>
+  <main class="chat">
+    <h1>과학 질문 도우미</h1>
+    <p>간단한 과학 질문을 입력하면 답변을 제공합니다. 전문가 수준의 진단·치료·법적 자문 등은 제공하지 않습니다.</p>
+    <div class="messages" id="messages"></div>
+
+    <div class="controls">
+      <select id="subject">
+        <option value="">전체 과학</option>
+        <option value="physics">물리</option>
+        <option value="chem">화학</option>
+        <option value="bio">생물</option>
+        <option value="earth">지구과학</option>
+      </select>
+      <input id="q" placeholder="질문을 입력하세요" />
+      <button id="ask">질문</button>
+    </div>
+  </main>
+  <script src="/llm.js"></script>
+</body>
+</html>

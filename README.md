@@ -65,3 +65,13 @@ Free 플랜이 커스텀 OIDC 를 지원하지 않아 카카오를 붙일 수 �
 ```
 cd api && node --test
 ```
+
+## LLM 챗 엔드포인트
+
+로컬 또는 배포 환경에서 LLM(예: OpenAI)을 호출하려면 아래 환경 변수를 설정하세요:
+
+| 이름 | 용도 |
+|---|---|
+| `OPENAI_API_KEY` | OpenAI API 키(Bearer). Azure 앱 설정에 저장하세요. |
+
+환경변수를 설정하면 사이트의 `/api/llm/chat` 엔드포인트로 질문을 보낼 수 있습니다.
