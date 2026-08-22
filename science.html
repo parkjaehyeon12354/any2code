@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&amp;display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/theme.js"></script>
   <style>
     .science-page { min-height: calc(100vh - 56px); padding: 68px 0 96px; background: var(--canvas); }
     .science-intro { text-align: center; max-width: 690px; margin: 0 auto 36px; }
@@ -37,8 +38,14 @@
     .msg { max-width: 84%; padding: 12px 14px; border-radius: 13px; color: var(--body); line-height: 1.65; white-space: pre-wrap; word-break: break-word; background: var(--canvas); }
     .msg.user { align-self: flex-end; color: var(--on-primary, #fff); background: var(--primary); border-bottom-right-radius: 3px; }
     .msg.bot { align-self: flex-start; border-bottom-left-radius: 3px; }
+    /* 답변 안의 마크다운/수식 — llm.js 의 renderAnswer 가 붙이는 태그들 */
+    .msg.bot b { color: var(--ink); font-weight: 700; }
+    .msg.bot code { padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+    .msg.bot hr { margin: 10px 0; border: 0; border-top: 1px solid var(--hairline); }
+    .msg.bot .math { padding: 0 2px; color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; white-space: nowrap; }
+    .msg.bot .math-block { display: block; margin: 10px 0; padding: 10px 12px; border-left: 2px solid var(--primary); border-radius: 0 7px 7px 0; background: var(--surface-soft); color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; font-size: 1.02em; overflow-x: auto; white-space: pre-wrap; }
     .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--line, #e5e7eb); }
-    .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: #fff; font: inherit; }
+    .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: var(--canvas); font: inherit; }
     .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
     .chat-form button { flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 9px; color: var(--on-primary, #fff); background: var(--primary); font: inherit; font-weight: 700; cursor: pointer; }
     .chat-form button:hover { background: var(--primary-active); }
