@@ -191,6 +191,25 @@ test('구간이 바뀌면 사용량을 0으로 본다', () => {
     'consume 이 구간을 비교해야 한다');
 });
 
+test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
+  /* 크레딧 기능을 붙이기 전에 만들어진 문서에는 `period` 필드가 없다.
+     patch 의 `set /period` 는 그런 문서에서 실패해 503 이 난다.
+
+     실제로 겪었다 — 관리자 지급이 "기존에 쓴 적 있는 사용자" 에게만 실패했다.
+     새 사용자는 create 경로라 멀쩡해서 원인이 늦게 드러났다.
+     차감(consume)이 같은 식으로 조용히 실패하면 한도가 사실상 없어진다. */
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+
+  assert.ok(!/\.item\(sub, sub\)\.patch\(/.test(src),
+    'credit 문서에 patch 를 쓰면 옛 문서에서 실패한다 — upsert 를 쓸 것');
+  // consume 과 grant 양쪽 모두 upsert 여야 한다
+  const upserts = src.match(/items\.upsert\(/g) || [];
+  assert.ok(upserts.length >= 2,
+    `consume 과 grant 둘 다 upsert 여야 한다 (현재 ${upserts.length}곳)`);
+});
+
 /* ── 관리자 크레딧 지급 ── */
 
 const ADMIN_SRC = require('fs').readFileSync(

@@ -118,21 +118,19 @@ async function consume(sub, tokens, userName) {
   const granted = doc && !rolled ? doc.granted : FREE_CREDITS;
   const used = prevUsed + cost;
 
-  if (!doc) {
-    await c.items.create({
-      id: sub, type: 'credit', pk: sub,
-      userSub: sub, userName: userName || null,
-      granted: FREE_CREDITS, used: cost, period,
-      createdAt: now, updatedAt: now
-    });
-  } else {
-    await c.item(sub, sub).patch([
-      { op: 'set', path: '/used', value: used },
-      { op: 'set', path: '/granted', value: granted },
-      { op: 'set', path: '/period', value: period },
-      { op: 'set', path: '/updatedAt', value: now }
-    ]);
-  }
+  /* upsert 로 통째로 쓴다. patch 는 쓰지 않는다 —
+     크레딧 기능 이전에 만들어진 문서에는 `period` 필드가 없어서 `set /period`
+     가 실패한다. 차감이 조용히 실패하면 한도가 사실상 없어진다. */
+  await c.items.upsert({
+    id: sub, type: 'credit', pk: sub,
+    userSub: sub,
+    userName: userName || (doc && doc.userName) || null,
+    granted,
+    used,
+    period,
+    createdAt: (doc && doc.createdAt) || now,
+    updatedAt: now
+  });
 
   return {
     cost,
@@ -174,12 +172,22 @@ async function grant(sub, amount, userName) {
   const base = rolled ? FREE_CREDITS : doc.granted;
   const used = rolled ? 0 : doc.used;
 
-  await c.item(sub, sub).patch([
-    { op: 'set', path: '/granted', value: base + amount },
-    { op: 'set', path: '/used', value: used },
-    { op: 'set', path: '/period', value: period },
-    { op: 'set', path: '/updatedAt', value: now }
-  ]);
+  /* upsert 로 통째로 쓴다.
+
+     patch 를 쓰면 안 된다 — 크레딧 기능을 붙이기 전에 만들어진 문서에는
+     `period` 필드가 없어서 `set /period` 가 실패한다. 실제로 그렇게 짰다가
+     기존 문서를 가진 사용자만 503 이 났다(새 사용자는 create 경로라 멀쩡했다).
+     같은 이유로 llmChat 의 제재 문서도 upsert 를 쓴다. */
+  await c.items.upsert({
+    id: sub, type: 'credit', pk: sub,
+    userSub: sub,
+    userName: userName || doc.userName || null,
+    granted: base + amount,
+    used,
+    period,
+    createdAt: doc.createdAt || now,
+    updatedAt: now
+  });
   return {
     granted: base + amount,
     used,
