@@ -38,6 +38,17 @@ const TOKENS_PER_CREDIT = 30;
 const FREE_CREDITS = 200;
 const RESET_HOURS = 3;
 
+/* 문서 id.
+
+   ⚠ `sub` 을 그대로 id 로 쓰면 안 된다. Cosmos 는 (id, partitionKey) 로 문서를
+   구분하는데, 제재 문서(sanction)가 이미 `id: sub, pk: sub` 을 쓰고 있다.
+   같은 자리를 두 문서가 다투게 되어 서로를 덮어쓴다.
+
+   실제로 그렇게 만들었다가, 제재를 받은 적 있는 계정만 크레딧 지급이 503 으로
+   실패했다. 제재 이력이 없는 계정은 멀쩡해서 원인이 한참 늦게 드러났다.
+   profile.js 가 `'user:' + sub` 를 쓰는 것과 같은 이유다. */
+const docId = (sub) => 'credit:' + sub;
+
 /* 지금이 속한 초기화 구간의 시작 시각(ISO).
 
    한국 시간(UTC+9) 기준 00시부터 3시간 단위로 끊는다. 같은 구간 안에서는 항상
@@ -122,7 +133,7 @@ async function consume(sub, tokens, userName) {
      크레딧 기능 이전에 만들어진 문서에는 `period` 필드가 없어서 `set /period`
      가 실패한다. 차감이 조용히 실패하면 한도가 사실상 없어진다. */
   await c.items.upsert({
-    id: sub, type: 'credit', pk: sub,
+    id: docId(sub), type: 'credit', pk: sub,
     userSub: sub,
     userName: userName || (doc && doc.userName) || null,
     granted,
@@ -159,7 +170,7 @@ async function grant(sub, amount, userName) {
 
   if (!doc) {
     await c.items.create({
-      id: sub, type: 'credit', pk: sub,
+      id: docId(sub), type: 'credit', pk: sub,
       userSub: sub, userName: userName || null,
       granted: FREE_CREDITS + amount, used: 0, period,
       createdAt: now, updatedAt: now
@@ -179,7 +190,7 @@ async function grant(sub, amount, userName) {
      기존 문서를 가진 사용자만 503 이 났다(새 사용자는 create 경로라 멀쩡했다).
      같은 이유로 llmChat 의 제재 문서도 upsert 를 쓴다. */
   await c.items.upsert({
-    id: sub, type: 'credit', pk: sub,
+    id: docId(sub), type: 'credit', pk: sub,
     userSub: sub,
     userName: userName || doc.userName || null,
     granted: base + amount,

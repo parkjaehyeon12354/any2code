@@ -191,6 +191,28 @@ test('구간이 바뀌면 사용량을 0으로 본다', () => {
     'consume 이 구간을 비교해야 한다');
 });
 
+test('credit 문서 id 는 sanction 과 겹치지 않는다', () => {
+  /* Cosmos 는 (id, partitionKey) 로 문서를 구분한다. 제재 문서가 이미
+     `id: sub, pk: sub` 을 쓰므로, credit 이 같은 값을 쓰면 두 문서가 같은
+     자리를 다투게 되어 서로를 덮어쓴다.
+
+     실제로 그렇게 만들었다가 제재 이력이 있는 계정만 크레딧 지급이 503 으로
+     실패했다. 제재를 받은 적 없는 계정은 멀쩡해서 원인이 한참 늦게 드러났다. */
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+
+  assert.ok(/const docId = \(sub\) => 'credit:' \+ sub/.test(src),
+    'credit 문서는 접두사 붙은 id 를 써야 한다');
+  assert.ok(!/id: sub, type: 'credit'/.test(src),
+    "id 에 sub 을 그대로 쓰면 sanction 문서와 충돌한다");
+
+  // pk 는 sub 그대로여야 한다 — 조회가 pk 로 걸린다
+  const writes = src.match(/id: docId\(sub\), type: 'credit', pk: sub,/g) || [];
+  assert.ok(writes.length >= 3,
+    `문서를 쓰는 모든 곳이 같은 규칙이어야 한다 (현재 ${writes.length}곳)`);
+});
+
 test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
   /* 크레딧 기능을 붙이기 전에 만들어진 문서에는 `period` 필드가 없다.
      patch 의 `set /period` 는 그런 문서에서 실패해 503 이 난다.
