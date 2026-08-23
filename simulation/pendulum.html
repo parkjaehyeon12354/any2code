@@ -134,11 +134,8 @@
 .formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
 .formula-box summary { padding: 12px 14px; color: var(--primary-active); font-weight: 700; cursor: pointer; }
 .proof { padding: 0 14px 14px; font-size: 13.5px; }
-.data-wrap { max-height: 420px; overflow: auto; }
-.data-table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.data-table th,.data-table td { padding: 9px 11px; border-bottom: 1px solid var(--hairline); text-align: right; white-space: nowrap; }
-.data-table th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: var(--surface-soft); font-weight: 650; }
-.data-table th:first-child,.data-table td:first-child { text-align: left; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 260px; }
 
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr; }
@@ -254,6 +251,11 @@
     </div>
   </div>
 
+  <section class="analysis-panel" aria-labelledby="pendulum-graph-title">
+    <div class="analysis-head"><h2 id="pendulum-graph-title">시간에 따른 각도와 각속도</h2><p>파란선은 각도 θ, 주황선은 각속도 ω이며 오른쪽 끝 점이 현재 값입니다.</p></div>
+    <div class="graph-wrap"><canvas id="pendulum-graph" aria-label="시간에 따른 단진자 각도와 각속도 그래프"></canvas></div>
+  </section>
+
   <section class="analysis-panel" aria-labelledby="pendulum-formula-title">
     <div class="analysis-head"><h2 id="pendulum-formula-title">단진자의 운동과 주기 공식</h2><p>시뮬레이션은 sin θ를 그대로 사용하는 비선형 운동방정식을 계산합니다.</p></div>
     <div class="formula-box">
@@ -261,11 +263,6 @@
       <p>정확한 운동은 sinθ가 포함된 비선형 방정식으로 계산합니다. 교과서의 주기 공식은 |θ|가 충분히 작아 sinθ ≈ θ로 둘 수 있을 때의 근사값입니다.</p>
       <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>추의 접선 방향 복원력은 −mg sinθ이고, 회전 운동식 mLθ″ = −mg sinθ에서 θ″ + (g/L)sinθ = 0을 얻습니다. 공기 저항을 각속도에 비례한다고 두면 bθ′ 항이 추가됩니다.</p><p>작은 각도에서 sinθ ≈ θ이므로 θ″ + (g/L)θ = 0인 단순 조화 운동이 됩니다. 각진동수는 ω₀ = √(g/L), 따라서 주기는 T = 2π/ω₀ = 2π√(L/g)입니다. 큰 각도에서는 sinθ ≈ θ가 성립하지 않아 실제 주기가 이 값보다 길어집니다.</p></div></details>
     </div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="pendulum-table-title">
-    <div class="analysis-head"><h2 id="pendulum-table-title">시간별 측정값</h2><p>0.25초 간격으로 기록하며 최신 200개를 유지합니다.</p></div>
-    <div class="data-wrap"><table class="data-table"><thead><tr><th>시간 (s)</th><th>각도 (°)</th><th>각속도 (rad/s)</th><th>측정 주기 (s)</th><th>근사 주기 (s)</th></tr></thead><tbody id="pendulum-data"></tbody></table></div>
   </section>
 </main>
 
@@ -308,8 +305,8 @@
   let lastCross = null;
   let periods = [];
   let prevTheta = 0;
-  let lastTableSample = -Infinity;
-  let tableRows = [];
+  const graphHistory = { theta: [], omega: [] };
+  let lastGraphSample = -Infinity;
 
   function reset() {
     state.theta = params.deg * Math.PI / 180;
@@ -318,9 +315,9 @@
     prevTheta = state.theta;
     lastCross = null;
     periods = [];
-    lastTableSample = -Infinity;
-    tableRows = [];
-    el('pendulum-data').innerHTML = '';
+    lastGraphSample = -Infinity;
+    graphHistory.theta = [];
+    graphHistory.omega = [];
   }
 
   function step() {
@@ -352,6 +349,8 @@
   /* ── 그리기 ── */
   const canvas = el('canvas');
   const ctx = canvas.getContext('2d');
+  const graphCanvas = el('pendulum-graph');
+  const graphCtx = graphCanvas.getContext('2d');
 
   function resize() {
     const w = canvas.clientWidth;
@@ -361,6 +360,11 @@
     canvas.height = Math.round(h * dpr);
     canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const gw = graphCanvas.clientWidth, gh = 260;
+    graphCanvas.width = Math.round(gw * dpr);
+    graphCanvas.height = Math.round(gh * dpr);
+    graphCanvas.style.height = gh + 'px';
+    graphCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function draw() {
@@ -448,14 +452,26 @@
         + 'T = 2π√(L/g) 가 sin θ ≈ θ 로 놓고 유도한 식이기 때문입니다.';
   }
 
-  function recordTable() {
-    if (state.t - lastTableSample < 0.25) return;
-    lastTableSample = state.t;
-    tableRows.push([state.t, state.theta * 180 / Math.PI, state.omega, measured(), idealPeriod()]);
-    if (tableRows.length > 200) tableRows.shift();
-    el('pendulum-data').innerHTML = tableRows.slice().reverse().map(row =>
-      `<tr><td>${row[0].toFixed(3)}</td><td>${row[1].toFixed(4)}</td><td>${row[2].toFixed(5)}</td><td>${row[3] === null ? '—' : row[3].toFixed(4)}</td><td>${row[4].toFixed(4)}</td></tr>`
-    ).join('');
+  function sampleGraph() {
+    if (state.t - lastGraphSample < 0.05) return;
+    lastGraphSample = state.t;
+    graphHistory.theta.push(state.theta * 180 / Math.PI);
+    graphHistory.omega.push(state.omega);
+    if (graphHistory.theta.length > 240) { graphHistory.theta.shift(); graphHistory.omega.shift(); }
+  }
+
+  function drawGraph() {
+    const g = graphCtx, cw = graphCanvas.clientWidth, ch = graphCanvas.height / (window.devicePixelRatio || 1);
+    const x = 48, y = 18, w = cw - 68, h = ch - 42;
+    g.clearRect(0, 0, cw, ch); g.fillStyle = 'rgba(255,255,255,.035)'; g.fillRect(x, y, w, h);
+    g.strokeStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.moveTo(x, y + h / 2); g.lineTo(x + w, y + h / 2); g.stroke();
+    g.font = '600 12px system-ui'; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#71aeff'; g.fillText(`● 각도 θ ${(state.theta * 180 / Math.PI).toFixed(3)}°`, x + 10, y + 8);
+    g.fillStyle = '#e6a85c'; g.fillText(`● 각속도 ω ${state.omega.toFixed(4)} rad/s`, x + 10, y + 27);
+    g.fillStyle = 'rgba(255,255,255,.55)'; g.textAlign = 'right'; g.fillText('과거 ← 시간(최근 12초) → 현재', x + w, y + h + 8); g.textAlign = 'left';
+    const maxTheta = Math.max(5, params.deg), maxOmega = Math.max(.5, Math.sqrt(G / params.L) * params.deg * Math.PI / 180);
+    const line = (values, color, scale) => { if (values.length < 2) return; const end = values.length - 1; g.strokeStyle = color; g.lineWidth = 2; g.beginPath(); values.forEach((v, i) => { const px = x + i / end * w, py = y + h / 2 - v / scale * h * .42; i ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke(); const v = values[end], py = y + h / 2 - v / scale * h * .42; g.fillStyle = color; g.beginPath(); g.arc(x + w, py, 4, 0, Math.PI * 2); g.fill(); };
+    line(graphHistory.theta, '#71aeff', maxTheta); line(graphHistory.omega, '#e6a85c', maxOmega);
   }
 
   let prev = performance.now();
@@ -473,7 +489,8 @@
 
     draw();
     if (now - lastRead > 100) { paintNumbers(); lastRead = now; }
-    recordTable();
+    sampleGraph();
+    drawGraph();
     requestAnimationFrame(frame);
   }
 

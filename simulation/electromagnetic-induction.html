@@ -68,11 +68,10 @@
 .formula-box details { margin-top:var(--sp-md); border:1px solid var(--hairline); border-radius:var(--rounded-md); }
 .formula-box summary { padding:12px 14px; color:var(--primary-active); font-weight:700; cursor:pointer; }
 .proof { padding:0 14px 14px; font-size:13.5px; }
-.data-wrap { max-height:420px; overflow:auto; }
-.data-table { width:100%; border-collapse:collapse; min-width:760px; font-size:12.5px; font-variant-numeric:tabular-nums; }
-.data-table th,.data-table td { padding:9px 11px; border-bottom:1px solid var(--hairline); text-align:right; white-space:nowrap; }
-.data-table th { position:sticky; top:0; z-index:1; color:var(--muted); background:var(--surface-soft); font-weight:650; }
-.data-table th:first-child,.data-table td:first-child { text-align:left; }
+.concept-list { display:grid; gap:10px; margin-top:var(--sp-md); }
+.concept { padding:13px 15px; border:1px solid var(--hairline); border-radius:var(--rounded-md); background:var(--surface-soft); }
+.concept strong { display:block; margin-bottom:3px; color:var(--ink); }
+.concept p { margin:0; font-size:13.5px; }
 @media(max-width:860px){.layout{grid-template-columns:1fr}.stage-tip{width:100%;margin-left:0}
   /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
   .sim{padding-left:var(--sp-lg);padding-right:var(--sp-lg)}}
@@ -154,15 +153,17 @@
     <div class="analysis-head"><h2 id="induction-graph-title">시간에 따른 자기선속 변화율과 유도 기전력</h2><p>오른쪽 끝 점이 현재 값입니다. 노란선은 dΦ/dt, 초록선은 ε를 나타냅니다.</p></div>
     <div class="graph-wrap"><canvas id="graph-canvas" aria-label="시간에 따른 자기선속 변화율과 유도 기전력 그래프"></canvas></div>
     <div class="formula-box">
-      <p class="formula-main">Φ(x) = sB₀e<sup>−((x−x<sub>c</sub>)/σ)²</sup>, &nbsp; dΦ/dt = (dΦ/dx)v, &nbsp; ε = −N·dΦ/dt</p>
-      <p>자기선속의 양이 아니라 <strong>시간에 따른 변화율 dΦ/dt</strong>가 유도 기전력을 결정합니다. 단, 이 시뮬레이션의 Φ와 dΦ/dt는 상대값이며 ε는 화면 관찰을 위한 비례 축척을 적용한 값입니다.</p>
+      <p class="formula-main">Φ = BA cosθ &nbsp; | &nbsp; dΦ/dt = (dΦ/dx)v &nbsp; | &nbsp; ε = −N·dΦ/dt &nbsp; | &nbsp; I = ε/R</p>
+      <div class="concept-list">
+        <div class="concept"><strong>전자기 유도</strong><p>코일과 자석의 상대적인 운동으로 코일을 통과하는 자기선속이 변할 때 코일에 유도 기전력이 생기고, 닫힌 회로에는 유도 전류가 흐르는 현상입니다.</p></div>
+        <div class="concept"><strong>자기선속 공식: Φ = BA cosθ</strong><p>B는 자기장 세기(T), A는 코일의 단면적(m²), θ는 자기장과 면의 수직 방향이 이루는 각입니다. 자기선속 Φ의 단위는 Wb(웨버)입니다. 자기장이 면에 수직이면 θ = 0°이므로 Φ = BA입니다.</p></div>
+        <div class="concept"><strong>자기선속 변화율: dΦ/dt</strong><p>단위 시간 동안 자기선속이 얼마나 빠르게 변하는지를 뜻합니다. 그래프의 노란선이 이 값입니다. 자석이 멈추면 위치가 일정해져 dΦ/dt = 0이 됩니다.</p></div>
+        <div class="concept"><strong>패러데이 전자기 유도 법칙: ε = −N·dΦ/dt</strong><p>유도 기전력 ε는 자기선속의 시간 변화율과 코일 감은 수 N에 비례합니다. 자석을 빠르게 움직이거나 코일을 많이 감을수록 유도 기전력의 크기가 커집니다.</p></div>
+        <div class="concept"><strong>렌츠 법칙과 마이너스 부호</strong><p>− 부호는 유도 전류가 원래 자기선속의 변화를 방해하는 방향으로 흐른다는 뜻입니다. 자석이 코일 중심을 지나면 dΦ/dt의 부호가 바뀌어 유도 기전력과 전류 방향도 반전됩니다.</p></div>
+        <div class="concept"><strong>유도 전류 공식: I = ε/R</strong><p>회로의 저항이 R일 때 유도 전류 I는 유도 기전력에 비례하고 저항에 반비례합니다. 현재 시뮬레이션은 전압과 방향을 중심으로 보여주며, Φ와 dΦ/dt는 상대값입니다.</p></div>
+      </div>
       <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>코일을 지나는 자기선속은 Φ = ∫B·dA입니다. 자석이 움직이면 B가 위치 x에 따라 달라지므로 연쇄법칙으로 dΦ/dt = (dΦ/dx)(dx/dt) = (dΦ/dx)v가 됩니다.</p><p>패러데이 법칙에 따라 N회 감은 코일의 유도 기전력은 ε = −N·dΦ/dt입니다. 마이너스 부호는 렌츠 법칙을 뜻하며, 유도 전류가 자기선속의 변화를 방해하는 방향으로 흐른다는 의미입니다. 코일 중심을 지난 뒤에는 dΦ/dx의 부호가 바뀌므로 ε와 전류 방향도 반전됩니다.</p></div></details>
     </div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="induction-table-title">
-    <div class="analysis-head"><h2 id="induction-table-title">시간별 측정값</h2><p>0.25초 간격으로 기록하며 최신 200개를 유지합니다.</p></div>
-    <div class="data-wrap"><table class="data-table"><thead><tr><th>시간 (s)</th><th>자석 위치 (상대값)</th><th>Φ (상대값)</th><th>dΦ/dt (/s)</th><th>ε (V)</th><th>전류 방향</th></tr></thead><tbody id="induction-data"></tbody></table></div>
   </section>
 </main>
 
@@ -175,7 +176,7 @@
   const params={strength:.6,speed:1,turns:100,pole:1};
   const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,dragging:false,lastMovedAt:0};
   const history={fluxRate:[],emf:[]};
-  let last=performance.now(),lastSample=0,lastTableSample=-Infinity,tableRows=[];
+  let last=performance.now(),lastSample=0;
 
   function resize(){
     const w=canvas.clientWidth,h=Math.round(w*.62),dpr=window.devicePixelRatio||1;
@@ -239,18 +240,12 @@
     g.font='600 12px system-ui';g.textAlign='left';g.textBaseline='top';
     g.fillStyle='#d7a04b';g.fillText(`● dΦ/dt ${state.fluxRate.toFixed(3)} /s`,x+10,y+8);
     g.fillStyle='#69c6ac';g.fillText(`● ε ${Math.abs(state.emf)<.0005?'0.000':state.emf.toFixed(3)} V`,x+10,y+27);
+    g.fillStyle='rgba(255,255,255,.55)';g.textAlign='right';g.fillText('과거 ← 시간(최근 6초) → 현재',x+w,y+h+8);g.textAlign='left';
     const line=(values,color,scale)=>{if(values.length<2)return;const end=Math.max(1,values.length-1);g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+i/end*w,py=y+h/2-v/scale*h*.42;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const value=values[values.length-1],py=y+h/2-value/scale*h*.42;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();};
     line(history.fluxRate,'#d7a04b',3.2);line(history.emf,'#69c6ac',3.2);
   }
   function pushSample(){history.fluxRate.push(state.fluxRate);history.emf.push(state.emf);if(history.fluxRate.length>120){history.fluxRate.shift();history.emf.shift();}}
   function sample(now){if(now-lastSample<50)return;lastSample=now;pushSample();}
-  function recordTable(){
-    if(state.t-lastTableSample<.25)return;lastTableSample=state.t;
-    const b=bounds(),position=(state.x-b.coil)/canvas.clientWidth;
-    const direction=Math.abs(state.emf)<.0005?'흐르지 않음':state.emf>0?'반시계':'시계';
-    tableRows.push([state.t,position,state.flux,state.fluxRate,state.emf,direction]);if(tableRows.length>200)tableRows.shift();
-    el('induction-data').innerHTML=tableRows.slice().reverse().map(r=>`<tr><td>${r[0].toFixed(3)}</td><td>${r[1].toFixed(4)}</td><td>${r[2].toFixed(4)}</td><td>${r[3].toFixed(4)}</td><td>${r[4].toFixed(4)}</td><td>${r[5]}</td></tr>`).join('');
-  }
   function numbers(){
     const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
     // 위치 변화가 없으면 자기선속도 변하지 않는다. 잔류 보간값까지 제거해
@@ -262,8 +257,8 @@
     el('r-direction').className=Math.abs(emf)<.0005?'zero':emf>0?'positive':'negative';
     el('note').textContent=Math.abs(emf)<.0005?'dΦ/dt = 0이므로 유도 기전력과 전류가 0입니다.':state.fluxRate>0?'자기선속이 증가하여 이를 방해하는 방향으로 유도 전류가 흐릅니다.':'자기선속이 감소하여 변화를 막는 반대 방향으로 유도 전류가 흐릅니다.';
   }
-  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);drawGraph();recordTable();requestAnimationFrame(frame);}
-  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.fluxRate=[];history.emf=[];lastTableSample=-Infinity;tableRows=[];el('induction-data').innerHTML='';}
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);drawGraph();requestAnimationFrame(frame);}
+  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.fluxRate=[];history.emf=[];}
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
   canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
