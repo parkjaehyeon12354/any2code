@@ -284,7 +284,13 @@ app.http('llmChat', {
         status: 402,
         jsonBody: {
           error: 'AI 도우미 크레딧을 모두 사용했습니다.',
-          credit: { remaining: 0, granted: bal.granted, used: bal.used }
+          credit: {
+            remaining: 0,
+            granted: bal.granted,
+            used: bal.used,
+            // 3시간마다 채워지므로 언제 풀리는지 함께 알려준다
+            resetInMs: bal.resetInMs
+          }
         }
       };
     }
@@ -305,7 +311,12 @@ app.http('llmChat', {
         jsonBody: {
           answer,
           credit: after
-            ? { spent: after.cost, remaining: after.remaining, granted: after.granted }
+            ? {
+                spent: after.cost,
+                remaining: after.remaining,
+                granted: after.granted,
+                resetInMs: after.resetInMs
+              }
             : null
         }
       };

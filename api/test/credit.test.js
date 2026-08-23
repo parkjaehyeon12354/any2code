@@ -92,3 +92,101 @@ test('차감 실패가 답변을 막지 않는다', () => {
   assert.ok(/credit\.consume\([\s\S]{0,120}\}\s*catch/.test(src),
     'consume 은 try/catch 로 감싸야 한다');
 });
+
+/* ── 3시간 주기 초기화 ──
+   시간대 실수는 조용히 틀린다. 한국 00시에 초기화돼야 하는데 UTC 로 계산하면
+   오전 9시에 초기화된다. 경계값을 직접 박아 확인한다. */
+
+const { currentPeriod, msUntilReset, RESET_HOURS } = credit;
+
+// 한국 시각을 UTC 밀리초로. (KST = UTC+9)
+const kst = (y, mo, d, h, mi = 0) => Date.UTC(y, mo - 1, d, h - 9, mi);
+
+test('초기화는 3시간마다', () => {
+  assert.strictEqual(RESET_HOURS, 3);
+});
+
+test('한국 00시·03시·…·21시에 구간이 바뀐다', () => {
+  const boundaries = [0, 3, 6, 9, 12, 15, 18, 21];
+  for (const h of boundaries) {
+    const at = kst(2026, 8, 24, h);
+    // 경계 직전과 직후는 서로 다른 구간이어야 한다
+    assert.notStrictEqual(
+      currentPeriod(at - 1000), currentPeriod(at),
+      `한국 ${h}시 경계에서 구간이 바뀌어야 한다`
+    );
+  }
+});
+
+test('같은 구간 안에서는 값이 변하지 않는다', () => {
+  // 한국 13:00 과 14:59 는 같은 구간(12~15시)
+  const a = currentPeriod(kst(2026, 8, 24, 13, 0));
+  const b = currentPeriod(kst(2026, 8, 24, 14, 59));
+  assert.strictEqual(a, b, '같은 3시간 구간이면 같은 값이어야 한다');
+
+  // 15:00 은 다음 구간
+  const c = currentPeriod(kst(2026, 8, 24, 15, 0));
+  assert.notStrictEqual(b, c, '15시부터는 다음 구간이어야 한다');
+});
+
+test('한국 자정에 초기화된다 — UTC 자정이 아니다', () => {
+  /* ⚠ 이 검사를 "경계에서 값이 바뀌는가" 로만 짜면 시간대 버그를 못 잡는다.
+     KST 오프셋 9시간이 초기화 주기 3시간의 배수라, 보정을 빼먹어도 경계 위치는
+     그대로다(실제로 보정을 지우고 돌려봤더니 전부 통과했다).
+
+     그래서 구간 경계의 '실제 시각' 을 본다. 한국 시간으로 읽었을 때 반드시
+     0·3·6·9·12·15·18·21시 정각이어야 한다. */
+  const toKstHour = (iso) => {
+    const d = new Date(iso);
+    return (d.getUTCHours() + 9) % 24;
+  };
+
+  for (const h of [0, 1, 2, 5, 8, 11, 14, 17, 20, 23]) {
+    for (const mi of [0, 17, 45]) {
+      const iso = currentPeriod(kst(2026, 8, 24, h, mi));
+      const kh = toKstHour(iso);
+      assert.strictEqual(kh % RESET_HOURS, 0,
+        `한국 ${h}:${mi} → 구간 시작이 ${kh}시. 3의 배수여야 한다`);
+      assert.strictEqual(kh, h - (h % RESET_HOURS),
+        `한국 ${h}:${mi} 는 ${h - (h % RESET_HOURS)}시 구간에 속해야 한다`);
+      // 분·초는 항상 0
+      const d = new Date(iso);
+      assert.strictEqual(d.getUTCMinutes(), 0, '구간 시작은 정각이어야 한다');
+      assert.strictEqual(d.getUTCSeconds(), 0, '구간 시작은 정각이어야 한다');
+    }
+  }
+
+  // 한국 자정을 넘으면 반드시 다른 구간
+  assert.notStrictEqual(
+    currentPeriod(kst(2026, 8, 24, 23, 59)),
+    currentPeriod(kst(2026, 8, 25, 0, 0)),
+    '한국 자정에 바뀌어야 한다'
+  );
+});
+
+test('남은 시간은 0보다 크고 3시간 이하', () => {
+  for (const h of [0, 1, 2, 3, 7, 13, 22]) {
+    for (const mi of [0, 1, 30, 59]) {
+      const ms = msUntilReset(kst(2026, 8, 24, h, mi));
+      assert.ok(ms > 0, `${h}:${mi} — 남은 시간이 0 이하면 안 된다`);
+      assert.ok(ms <= RESET_HOURS * 3600 * 1000, `${h}:${mi} — 3시간을 넘으면 안 된다`);
+    }
+  }
+});
+
+test('경계 직전에는 남은 시간이 1분 이내', () => {
+  const ms = msUntilReset(kst(2026, 8, 24, 14, 59.5));
+  assert.ok(ms <= 60000, `15시 직전인데 ${Math.round(ms / 1000)}초 남았다고 나온다`);
+});
+
+test('구간이 바뀌면 사용량을 0으로 본다', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+  // balance / consume 양쪽 모두 period 를 비교해야 한다.
+  // 한쪽만 하면 잔액은 회복됐는데 차감이 옛 값에 누적되는 식으로 어긋난다.
+  assert.ok(/doc\.period === period \? doc\.used : 0/.test(src),
+    'balance 가 구간을 비교해야 한다');
+  assert.ok(/doc\.period !== period/.test(src),
+    'consume 이 구간을 비교해야 한다');
+});

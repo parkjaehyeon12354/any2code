@@ -159,8 +159,17 @@ async function askQuestion() {
       if (data.credit && typeof updateCredit === 'function') updateCredit(data.credit);
     } else if (response.status === 402) {
       /* 크레딧 소진. 이건 오류가 아니라 정상적인 한도 도달이라, 빨간 오류처럼
-         보이지 않게 안내 문구로 남긴다. */
-      pending.textContent = data.error || 'AI 도우미 크레딧을 모두 사용했습니다.';
+         보이지 않게 안내 문구로 남긴다. 3시간마다 다시 채워지므로 언제 풀리는지
+         함께 알려준다 — 그게 없으면 막연히 기다리게 된다. */
+      var msg = data.error || 'AI 도우미 크레딧을 모두 사용했습니다.';
+      var ms = data.credit && data.credit.resetInMs;
+      if (typeof ms === 'number' && ms > 0) {
+        var mins = Math.ceil(ms / 60000);
+        msg += mins >= 60
+          ? ' ' + Math.floor(mins / 60) + '시간 ' + (mins % 60) + '분 뒤에 다시 채워져요.'
+          : ' ' + mins + '분 뒤에 다시 채워져요.';
+      }
+      pending.textContent = msg;
       if (data.credit && typeof updateCredit === 'function') updateCredit(data.credit);
     } else if (response.status === 401) {
       /* 비로그인. /login 으로 페이지를 넘기지 않고 그 자리에서 모달을 띄운다 —

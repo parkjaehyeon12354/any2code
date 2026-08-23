@@ -390,9 +390,16 @@
       // "다음 질문이 마지막" 이라는 신호다.
       creditBadge.classList.toggle('empty', c.remaining <= 0);
       creditBadge.classList.toggle('low', c.remaining > 0 && c.remaining <= 25);
-      creditBadge.title = c.granted
-        ? '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음'
-        : '';
+
+      // 언제 다시 채워지는지 알려준다. 없으면 막연히 기다리게 된다.
+      var tip = c.granted ? '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음' : '';
+      if (typeof c.resetInMs === 'number' && c.resetInMs > 0) {
+        var m = Math.ceil(c.resetInMs / 60000);
+        var when = m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분';
+        tip += (tip ? ' · ' : '') + when + ' 뒤 충전';
+        if (c.remaining <= 0) creditNum.textContent = '0';
+      }
+      creditBadge.title = tip;
     };
 
     /* 로그인 상태면 처음부터 잔액을 보여준다. 쓰기 시작한 뒤에야 알면 늦다. */
