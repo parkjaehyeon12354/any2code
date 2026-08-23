@@ -151,10 +151,13 @@
     canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.height=h+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
   }
-  function bounds(){const w=canvas.clientWidth;return{left:w*.12,right:w*.57,coil:w*.72};}
+  // 자석이 코일 앞에서 멈추지 않고 중심을 지나 반대편까지 통과할 수 있게 한다.
+  function bounds(){const w=canvas.clientWidth;return{left:w*.10,right:w*.80,coil:w*.55};}
   function autoPosition(){const b=bounds();return b.left+(b.right-b.left)*(.5-.5*Math.cos(state.t*params.speed*1.7));}
   function magneticFlux(x){
-    const b=bounds(),distance=Math.max(10,b.coil-x),spread=canvas.clientWidth*.18;
+    // 코일 중심에서 선속이 가장 크고, 어느 쪽으로 멀어져도 대칭으로 감소한다.
+    // 따라서 접근할 때와 통과해 나갈 때 dΦ/dt의 부호가 바뀐다.
+    const b=bounds(),distance=b.coil-x,spread=canvas.clientWidth*.14;
     return params.pole*params.strength*Math.exp(-Math.pow(distance/spread,2));
   }
   function update(dt){
@@ -179,7 +182,7 @@
     ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w*.06,floor+35);ctx.lineTo(w*.94,floor+35);ctx.stroke();
     // magnetic field lines
     const alpha=.08+Math.abs(state.flux)*.28;ctx.strokeStyle=`rgba(113,174,255,${alpha})`;ctx.lineWidth=1.3;
-    for(let i=-2;i<=2;i++){ctx.beginPath();ctx.ellipse((state.x+b.coil)/2,floor+i*13,(b.coil-state.x)/2,42+Math.abs(i)*10,0,Math.PI,0);ctx.stroke();}
+    for(let i=-2;i<=2;i++){ctx.beginPath();ctx.ellipse((state.x+b.coil)/2,floor+i*13,Math.max(2,Math.abs(b.coil-state.x)/2),42+Math.abs(i)*10,0,Math.PI,0);ctx.stroke();}
     // bar magnet: the leading half changes with pole
     const mx=state.x-magW/2,my=floor-magH/2,leftColor=params.pole===1?'#4386e6':'#dc4c64',rightColor=params.pole===1?'#dc4c64':'#4386e6';
     roundedRect(mx,my,magW/2+5,magH,7,leftColor);roundedRect(mx+magW/2-5,my,magW/2+5,magH,7,rightColor);
@@ -187,23 +190,24 @@
     // coil
     ctx.strokeStyle='#d7a04b';ctx.lineWidth=3;const rings=Math.max(6,Math.round(params.turns/20));
     for(let i=0;i<rings;i++){const ox=(i-(rings-1)/2)*4;ctx.beginPath();ctx.ellipse(b.coil+ox,floor,17,66,0,0,Math.PI*2);ctx.stroke();}
-    ctx.strokeStyle='#d7a04b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.coil-rings*2,floor+66);ctx.lineTo(b.coil-rings*2,floor+92);ctx.lineTo(w*.87,floor+92);ctx.lineTo(w*.87,floor+42);ctx.stroke();
+    ctx.strokeStyle='#d7a04b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.coil-rings*2,floor+66);ctx.lineTo(b.coil-rings*2,floor+92);ctx.lineTo(w*.89,floor+92);ctx.lineTo(w*.89,floor+42);ctx.stroke();
     // galvanometer
-    ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.arc(w*.87,floor,40,Math.PI,0);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.stroke();
-    const needle=Math.max(-1,Math.min(1,state.emf/2.5));ctx.save();ctx.translate(w*.87,floor);ctx.rotate(needle*.85);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-31);ctx.stroke();ctx.restore();
-    ctx.fillStyle='rgba(255,255,255,.65)';ctx.font='11px system-ui';ctx.fillText('검류계',w*.87,floor+18);
+    ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.arc(w*.89,floor,40,Math.PI,0);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.stroke();
+    const needle=Math.max(-1,Math.min(1,state.emf/2.5));ctx.save();ctx.translate(w*.89,floor);ctx.rotate(needle*.85);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-31);ctx.stroke();ctx.restore();
+    ctx.fillStyle='rgba(255,255,255,.65)';ctx.font='11px system-ui';ctx.fillText('검류계',w*.89,floor+18);
     const moving=state.velocity;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
     drawGraph(w*.08,h*.08,w*.84,h*.22);
   }
   function drawGraph(x,y,w,h){
     ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();
     ctx.font='600 11px system-ui';ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillStyle='#d7a04b';ctx.fillText('● 자기선속 Φ — 코일을 통과하는 자기장의 양',x+10,y+8);
-    ctx.fillStyle='#69c6ac';ctx.fillText('● 유도 기전력 ε — 자기선속 변화로 생기는 전압',x+10,y+25);
-    const line=(values,color,scale)=>{if(values.length<2)return;ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();values.forEach((v,i)=>{const px=x+i/(119)*w,py=y+h/2-v/scale*h*.42;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();};
+    ctx.fillStyle='#d7a04b';ctx.fillText(`● 자기선속 Φ  현재 ${Math.abs(state.flux).toFixed(2)} — 정지해도 남을 수 있음`,x+10,y+8);
+    ctx.fillStyle='#69c6ac';ctx.fillText(`● 유도 기전력 ε  현재 ${Math.abs(state.emf)<.04?'0.00':state.emf.toFixed(2)} V — 정지하면 0`,x+10,y+25);
+    const line=(values,color,scale)=>{if(values.length<2)return;const last=Math.max(1,values.length-1);ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();values.forEach((v,i)=>{const px=x+i/last*w,py=y+h/2-v/scale*h*.42;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();const value=values[values.length-1],py=y+h/2-value/scale*h*.42;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x+w,py,3.5,0,Math.PI*2);ctx.fill();};
     line(history.flux,'#d7a04b',1);line(history.emf,'#69c6ac',3.2);
   }
-  function sample(now){if(now-lastSample<50)return;lastSample=now;history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
+  function pushSample(){history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
+  function sample(now){if(now-lastSample<50)return;lastSample=now;pushSample();}
   function numbers(){
     const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
     // 위치 변화가 없으면 자기선속도 변하지 않는다. 잔류 보간값까지 제거해
@@ -220,7 +224,7 @@
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
   canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
-  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}
+  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;pushSample();}
   canvas.addEventListener('pointerup',stopDragging);
   canvas.addEventListener('pointercancel',stopDragging);
   el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
@@ -228,7 +232,7 @@
   el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
   function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.emf=0;}
   el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
-  el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}this.textContent=state.running?'일시정지':'이어서';});
+  el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;pushSample();}this.textContent=state.running?'일시정지':'이어서';});
   el('reset').addEventListener('click',()=>{reset();state.running=true;el('toggle').textContent='일시정지';});
   resize();reset();window.addEventListener('resize',()=>{resize();reset();});requestAnimationFrame(frame);
 })();
