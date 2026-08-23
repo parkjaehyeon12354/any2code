@@ -14,7 +14,7 @@ const formEl = document.getElementById('chat-form');
 
    전부 escapeHtml 을 통과한 뒤에만 태그를 붙인다. 순서가 뒤집히면 XSS 가 열린다. */
 
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g,
+const escapeAnswerHtml = (s) => String(s).replace(/[&<>"']/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* LaTeX 를 읽을 수 있는 유니코드로 바꾼다.
@@ -97,7 +97,7 @@ function renderAnswer(el, raw) {
     .replace(/(?<!\\)\$([^$\n]+?)\$/g, (m, b) => `\u0000I${blocks.push(latexToText(b)) - 1}\u0000`);
 
   // 2) 이스케이프 — 반드시 태그를 붙이기 전에
-  work = escapeHtml(work);
+  work = escapeAnswerHtml(work);
 
   // 3) 아주 작은 마크다운만 지원한다. 링크·이미지는 일부러 뺐다(피싱 방지).
   work = work
@@ -111,8 +111,8 @@ function renderAnswer(el, raw) {
 
   // 4) 자리표시자를 실제 수식 노드로 되돌린다.
   work = work
-    .replace(/\u0000B(\d+)\u0000/g, (m, i) => `<span class="math-block">${escapeHtml(blocks[+i])}</span>`)
-    .replace(/\u0000I(\d+)\u0000/g, (m, i) => `<span class="math">${escapeHtml(blocks[+i])}</span>`);
+    .replace(/\u0000B(\d+)\u0000/g, (m, i) => `<span class="math-block">${escapeAnswerHtml(blocks[+i])}</span>`)
+    .replace(/\u0000I(\d+)\u0000/g, (m, i) => `<span class="math">${escapeAnswerHtml(blocks[+i])}</span>`);
 
   // 5) 수식 구간 밖에 떠 있는 LaTeX 잔재 정리.
   //    모델이 구분자 없이 \theta 만 툭 던지는 경우가 있는데, 그대로 두면
