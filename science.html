@@ -18,7 +18,7 @@
     .science-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #d97706); }
     .science-intro h1 { font-family: var(--font-display); color: var(--ink); font-size: clamp(32px, 5vw, 48px); line-height: 1.25; letter-spacing: -.5px; margin: 0 0 14px; }
     .science-intro p { color: var(--body); font-size: 17px; line-height: 1.7; margin: 0; word-break: keep-all; }
-    .science-layout { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .science-layout { width: 100%; margin: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
     .science-tips, .science-chat { background: var(--surface, #fff); border: 1px solid var(--line, #e5e7eb); border-radius: 16px; box-shadow: 0 8px 30px rgba(19, 42, 35, .05); }
     .science-tips { padding: 22px; }
     .science-tips h2 { font-family: var(--font-display); color: var(--ink); font-size: 18px; margin: 0 0 8px; }
@@ -75,7 +75,15 @@
 <body>
   <header class="top-nav">
     <div class="nav-inner">
-      <a href="/" class="nav-brand">Ans2Quest</a>
+      <a href="/" class="nav-brand">
+        <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+          <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+          <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+        </svg>
+        Ans2Quest
+      </a>
       <nav class="nav-links" aria-label="주요 메뉴">
         <li><a href="/simulation/">시뮬레이션</a></li>
         <li><a href="/community">커뮤니티</a></li>

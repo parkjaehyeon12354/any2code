@@ -34,9 +34,16 @@
     .detail-filters { display: grid; gap: 2px; margin: 2px 0 3px 26px; }
     .detail-filters .filter-option { min-height: 32px; padding: 4px 6px; font-size: 12.5px; }
     .detail-filters .filter-option input { width: 14px; height: 14px; }
-    .sim-toolbar { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-md); margin-bottom: var(--sp-md); }
+    .sim-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); margin-bottom: var(--sp-md); }
+    .sim-toolbar-title { display: flex; align-items: baseline; gap: var(--sp-sm); flex-wrap: wrap; }
     .sim-toolbar h2 { color: var(--ink); font-size: 18px; }
     #result-count { color: var(--muted); font-size: 13px; }
+    .sim-search { position: relative; width: min(100%, 320px); }
+    .sim-search .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .sim-search::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 20px; pointer-events: none; }
+    .sim-search input { width: 100%; height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); color: var(--ink); background: var(--canvas); font: 14px var(--font-body); }
+    .sim-search input::placeholder { color: var(--muted); }
+    .sim-search input:focus { outline: 2px solid color-mix(in srgb, var(--primary) 25%, transparent); border-color: var(--primary); }
     .sim-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-md); }
     .simulation-card { background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; transition: border-color .15s, transform .15s; }
     .simulation-card:hover { border-color: var(--muted-soft); transform: translateY(-2px); }
@@ -58,7 +65,7 @@
     .sim-meta { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; word-break: keep-all; }
     .empty-state { grid-column: 1 / -1; padding: 58px 20px; border: 1px dashed var(--hairline); border-radius: var(--rounded-lg); color: var(--muted); font-size: 14px; text-align: center; }
     @media (max-width: 920px) { .sim-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 700px) { .sim-page { padding-top: var(--sp-xl); }.sim-layout { grid-template-columns: 1fr; }.filters { position: static; }.filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.sim-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .sim-page { padding-top: var(--sp-xl); }.sim-layout { grid-template-columns: 1fr; }.filters { position: static; }.filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.sim-toolbar { align-items: stretch; flex-direction: column; }.sim-search { width: 100%; }.sim-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -188,7 +195,13 @@
       </aside>
 
       <section aria-labelledby="simulation-title">
-        <div class="sim-toolbar"><h2 id="simulation-title">전체 시뮬레이션</h2><span id="result-count" aria-live="polite">21개 표시 중</span></div>
+        <div class="sim-toolbar">
+          <div class="sim-toolbar-title"><h2 id="simulation-title">전체 시뮬레이션</h2><span id="result-count" aria-live="polite">21개 표시 중</span></div>
+          <label class="sim-search">
+            <span class="sr-only">시뮬레이션 검색</span>
+            <input type="search" id="simulation-search" placeholder="예: 전자기 유도, 화학 반응" autocomplete="off">
+          </label>
+        </div>
         <div class="sim-grid" id="simulation-grid">
           <article class="simulation-card physics ready" data-topic="mechanics"><div class="sim-preview"></div><div class="sim-card-body"><h3><a class="sim-link" href="/simulation/pendulum.html">단진자</a></h3><p class="sim-meta">고전 역학 · 물리학</p></div></article><article class="simulation-card physics" data-topic="wave"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>빛과 파동</h3></div></article><article class="simulation-card physics" data-topic="astronomy"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>천체의 운동</h3></div></article><article class="simulation-card physics ready" data-topic="electromagnetism"><div class="sim-preview"></div><div class="sim-card-body"><h3><a class="sim-link" href="/simulation/electromagnetic-induction.html">전자기 유도</a></h3><p class="sim-meta">전기와 자기 · 물리학</p></div></article><article class="simulation-card physics" data-topic="thermal"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot physics"></span>물리학</p><h3>열과 통계</h3></div></article>
           <article class="simulation-card chemistry" data-topic="particle"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>입자의 운동</h3></div></article><article class="simulation-card chemistry" data-topic="reaction"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>화학 반응</h3></div></article><article class="simulation-card chemistry" data-topic="bond"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>화학 결합</h3></div></article><article class="simulation-card chemistry" data-topic="acidbase"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>산과 염기</h3></div></article><article class="simulation-card chemistry" data-topic="electrochemistry"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>전기화학</h3></div></article><article class="simulation-card chemistry" data-topic="radioactivity"><div class="sim-preview"></div><div class="sim-card-body"><p class="sim-subject"><span class="filter-dot chemistry"></span>화학</p><h3>방사능</h3></div></article>
@@ -209,18 +222,25 @@
     const cards = document.querySelectorAll('.simulation-card');
     const resultCount = document.getElementById('result-count');
     const emptyState = document.getElementById('empty-state');
+    const searchInput = document.getElementById('simulation-search');
 
     function updateSimulations() {
       const selected = [...detailFilters].filter(filter => filter.checked).map(filter => filter.value);
+      const query = searchInput.value.trim().toLocaleLowerCase('ko-KR').replace(/\s+/g, ' ');
       let visibleCount = 0;
       cards.forEach(card => {
-        const visible = selected.includes(card.dataset.topic);
+        const searchableText = `${card.textContent} ${card.dataset.topic || ''}`.toLocaleLowerCase('ko-KR').replace(/\s+/g, ' ');
+        const visible = selected.includes(card.dataset.topic) && (!query || searchableText.includes(query));
         card.hidden = !visible;
         if (visible) visibleCount += 1;
       });
       resultCount.textContent = `${visibleCount}개 표시 중`;
       emptyState.hidden = visibleCount !== 0;
+      emptyState.textContent = query
+        ? `“${searchInput.value.trim()}”에 해당하는 시뮬레이션이 없습니다.`
+        : '선택한 과목의 시뮬레이션이 없습니다.';
     }
+    searchInput.addEventListener('input', updateSimulations);
     subjectFilters.forEach(parent => parent.addEventListener('change', () => {
       detailFilters.forEach(detail => { if (detail.dataset.subject === parent.dataset.subject) detail.checked = parent.checked; });
       updateSimulations();
@@ -261,4 +281,3 @@ updateSimulations();
   </script>
 </body>
 </html>
-
