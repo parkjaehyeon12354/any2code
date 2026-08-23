@@ -33,6 +33,8 @@
 .stage-foot .btn { height:40px; padding:0 16px; font-size:13.5px; }
 .stage-tip { margin-left:auto; font-size:12.5px; color:var(--muted); }
 .panel { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--rounded-lg); margin-bottom:var(--sp-lg); overflow:hidden; }
+.side-panels { display:flex; flex-direction:column; }
+.measurement-panel { order:-1; }
 .panel-head { padding:var(--sp-md) var(--sp-lg); border-bottom:1px solid var(--hairline); }
 .panel-head h2 { font-size:14px; font-weight:600; color:var(--ink); }
 .panel-body { padding:var(--sp-lg); }
@@ -46,11 +48,10 @@
 .seg { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .seg button { height:38px; border:1px solid var(--hairline); border-radius:var(--rounded-md); color:var(--muted); background:var(--surface-soft); cursor:pointer; font:600 12.5px var(--font-body); }
 .seg button.active { color:var(--primary-active); border-color:var(--primary-active); background:color-mix(in srgb,var(--primary-active) 9%,var(--canvas)); }
-.read { font-size:13.5px; }
-.read>div { display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-sm); padding:9px 0; border-bottom:1px solid var(--hairline); }
-.read>div:last-child { border-bottom:none; padding-bottom:0; }
+.read { display:grid; gap:8px; font-size:13.5px; }
+.read>div { display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-sm); padding:10px 12px; border:1px solid var(--hairline); border-radius:var(--rounded-md); background:var(--surface-soft); }
 .read dt { color:var(--muted); }
-.read dd { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+.read dd { color:var(--ink); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
 .read .positive { color:#dc4c64; }
 .read .negative { color:#4386e6; }
 .read .zero { color:var(--muted); font-weight:500; }
@@ -90,7 +91,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="side-panels">
       <section class="panel">
         <div class="panel-head"><h2>조건</h2></div>
         <div class="panel-body">
@@ -117,7 +118,7 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel measurement-panel">
         <div class="panel-head"><h2>측정</h2></div>
         <div class="panel-body">
           <dl class="read">
@@ -126,7 +127,7 @@
             <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
             <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
           </dl>
-          <div class="legend"><span style="--key:#d7a04b">자기선속</span><span style="--key:#69c6ac">유도 기전력</span></div>
+          <div class="legend"><span style="--key:#d7a04b">노란색: 자기선속 Φ</span><span style="--key:#69c6ac">초록색: 유도 기전력 ε</span></div>
           <p class="note" id="note">자석이 움직이면 코일을 지나는 자기선속이 변합니다.</p>
         </div>
       </section>
@@ -141,7 +142,7 @@
   const el=id=>document.getElementById(id);
   const canvas=el('canvas'),ctx=canvas.getContext('2d');
   const params={strength:.6,speed:1,turns:100,pole:1};
-  const state={running:true,t:0,x:0,prevX:0,flux:0,prevFlux:0,emf:0,dragging:false};
+  const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,emf:0,dragging:false,lastMovedAt:0};
   const history={flux:[],emf:[]};
   let last=performance.now(),lastSample=0;
 
@@ -160,8 +161,15 @@
     state.t+=dt;
     if(!state.dragging){state.prevX=state.x;state.x=autoPosition();}
     state.prevFlux=state.flux;state.flux=magneticFlux(state.x);
-    const raw=-params.turns*(state.flux-state.prevFlux)/Math.max(dt,.001)*.0022;
-    state.emf=state.emf*.72+Math.max(-3.2,Math.min(3.2,raw))*.28;
+    const dx=state.x-state.prevX,deltaFlux=state.flux-state.prevFlux;
+    if(Math.abs(deltaFlux)>1e-7){
+      const raw=-params.turns*deltaFlux/Math.max(dt,.001)*.0022;
+      state.emf=state.emf*.72+Math.max(-3.2,Math.min(3.2,raw))*.28;
+      state.velocity=dx;state.lastMovedAt=performance.now();
+    }else if(performance.now()-state.lastMovedAt>80){
+      state.emf=0;state.velocity=0;
+    }
+    state.prevX=state.x;
   }
   function roundedRect(x,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
   function drawArrow(x1,y1,x2,color){ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y1);ctx.stroke();const s=x2>x1?1:-1;ctx.beginPath();ctx.moveTo(x2,y1);ctx.lineTo(x2-8*s,y1-5);ctx.lineTo(x2-8*s,y1+5);ctx.fill();}
@@ -184,35 +192,40 @@
     ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.arc(w*.87,floor,40,Math.PI,0);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.stroke();
     const needle=Math.max(-1,Math.min(1,state.emf/2.5));ctx.save();ctx.translate(w*.87,floor);ctx.rotate(needle*.85);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-31);ctx.stroke();ctx.restore();
     ctx.fillStyle='rgba(255,255,255,.65)';ctx.font='11px system-ui';ctx.fillText('검류계',w*.87,floor+18);
-    const moving=state.x-state.prevX;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
+    const moving=state.velocity;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
     drawGraph(w*.08,h*.08,w*.84,h*.22);
   }
   function drawGraph(x,y,w,h){
     ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();
+    ctx.font='600 11px system-ui';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillStyle='#d7a04b';ctx.fillText('● 자기선속 Φ — 코일을 통과하는 자기장의 양',x+10,y+8);
+    ctx.fillStyle='#69c6ac';ctx.fillText('● 유도 기전력 ε — 자기선속 변화로 생기는 전압',x+10,y+25);
     const line=(values,color,scale)=>{if(values.length<2)return;ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();values.forEach((v,i)=>{const px=x+i/(119)*w,py=y+h/2-v/scale*h*.42;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();};
     line(history.flux,'#d7a04b',1);line(history.emf,'#69c6ac',3.2);
   }
   function sample(now){if(now-lastSample<50)return;lastSample=now;history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
   function numbers(){
-    const velocity=state.x-state.prevX,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
+    const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
     el('r-motion').textContent=near;el('r-flux').textContent=Math.abs(state.flux).toFixed(2);
     const emf=state.emf;el('r-emf').textContent=(emf>=0?'+':'')+emf.toFixed(2)+' V';
     const current=Math.abs(emf)<.04?'—':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
     el('r-direction').className=Math.abs(emf)<.04?'zero':emf>0?'positive':'negative';
     el('note').textContent=Math.abs(emf)<.04?'자석이 멈추면 자기선속이 변하지 않아 유도 전류가 흐르지 않습니다.':near==='가까워지는 중'?'코일은 자기선속의 증가를 방해하는 방향으로 자기장을 만듭니다.':'코일은 줄어드는 자기선속을 유지하는 방향으로 자기장을 만듭니다.';
   }
-  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running&&!state.dragging)update(dt);else if(state.dragging)update(dt);draw();sample(now);numbers();requestAnimationFrame(frame);}
-  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.emf=0;history.flux=[];history.emf=[];}
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}draw();sample(now);numbers();requestAnimationFrame(frame);}
+  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.emf=0;state.lastMovedAt=0;history.flux=[];history.emf=[];}
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
   canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
-  canvas.addEventListener('pointerup',()=>{state.dragging=false;});
+  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}
+  canvas.addEventListener('pointerup',stopDragging);
+  canvas.addEventListener('pointercancel',stopDragging);
   el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
   el('speed').addEventListener('input',function(){params.speed=Number(this.value);el('speed-out').textContent=params.speed.toFixed(1)+'×';});
   el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
   function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.emf=0;}
   el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
-  el('toggle').addEventListener('click',function(){state.running=!state.running;this.textContent=state.running?'일시정지':'이어서';});
+  el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}this.textContent=state.running?'일시정지':'이어서';});
   el('reset').addEventListener('click',()=>{reset();state.running=true;el('toggle').textContent='일시정지';});
   resize();reset();window.addEventListener('resize',()=>{resize();reset();});requestAnimationFrame(frame);
 })();
