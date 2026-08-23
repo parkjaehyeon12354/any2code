@@ -125,6 +125,20 @@
   border-radius: var(--rounded-md);
 }
 .share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 12px 14px; color: var(--primary-active); font-weight: 700; cursor: pointer; }
+.proof { padding: 0 14px 14px; font-size: 13.5px; }
+.data-wrap { max-height: 420px; overflow: auto; }
+.data-table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.data-table th,.data-table td { padding: 9px 11px; border-bottom: 1px solid var(--hairline); text-align: right; white-space: nowrap; }
+.data-table th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: var(--surface-soft); font-weight: 650; }
+.data-table th:first-child,.data-table td:first-child { text-align: left; }
 
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr; }
@@ -215,6 +229,7 @@
         <div class="panel-body">
           <dl class="read">
             <div><dt>지금 각도</dt><dd id="r-theta">—</dd></div>
+            <div><dt>각속도</dt><dd id="r-omega">—</dd></div>
             <div><dt>측정 주기</dt><dd id="r-measured">—</dd></div>
             <div><dt>근사식 값</dt><dd id="r-ideal">—</dd></div>
             <div><dt>차이</dt><dd id="r-gap" class="gap">—</dd></div>
@@ -238,6 +253,20 @@
       </div>
     </div>
   </div>
+
+  <section class="analysis-panel" aria-labelledby="pendulum-formula-title">
+    <div class="analysis-head"><h2 id="pendulum-formula-title">단진자의 운동과 주기 공식</h2><p>시뮬레이션은 sin θ를 그대로 사용하는 비선형 운동방정식을 계산합니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">θ″ + bθ′ + (g/L)sinθ = 0, &nbsp;&nbsp; 작은 각도에서 T ≈ 2π√(L/g)</p>
+      <p>정확한 운동은 sinθ가 포함된 비선형 방정식으로 계산합니다. 교과서의 주기 공식은 |θ|가 충분히 작아 sinθ ≈ θ로 둘 수 있을 때의 근사값입니다.</p>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>추의 접선 방향 복원력은 −mg sinθ이고, 회전 운동식 mLθ″ = −mg sinθ에서 θ″ + (g/L)sinθ = 0을 얻습니다. 공기 저항을 각속도에 비례한다고 두면 bθ′ 항이 추가됩니다.</p><p>작은 각도에서 sinθ ≈ θ이므로 θ″ + (g/L)θ = 0인 단순 조화 운동이 됩니다. 각진동수는 ω₀ = √(g/L), 따라서 주기는 T = 2π/ω₀ = 2π√(L/g)입니다. 큰 각도에서는 sinθ ≈ θ가 성립하지 않아 실제 주기가 이 값보다 길어집니다.</p></div></details>
+    </div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="pendulum-table-title">
+    <div class="analysis-head"><h2 id="pendulum-table-title">시간별 측정값</h2><p>0.25초 간격으로 기록하며 최신 200개를 유지합니다.</p></div>
+    <div class="data-wrap"><table class="data-table"><thead><tr><th>시간 (s)</th><th>각도 (°)</th><th>각속도 (rad/s)</th><th>측정 주기 (s)</th><th>근사 주기 (s)</th></tr></thead><tbody id="pendulum-data"></tbody></table></div>
+  </section>
 </main>
 
 <script src="../session.js"></script>
@@ -279,6 +308,8 @@
   let lastCross = null;
   let periods = [];
   let prevTheta = 0;
+  let lastTableSample = -Infinity;
+  let tableRows = [];
 
   function reset() {
     state.theta = params.deg * Math.PI / 180;
@@ -287,6 +318,9 @@
     prevTheta = state.theta;
     lastCross = null;
     periods = [];
+    lastTableSample = -Infinity;
+    tableRows = [];
+    el('pendulum-data').innerHTML = '';
   }
 
   function step() {
@@ -387,7 +421,8 @@
 
   function paintNumbers() {
     const deg = state.theta * 180 / Math.PI;
-    el('r-theta').textContent = deg.toFixed(1) + '°';
+    el('r-theta').textContent = deg.toFixed(3) + '°';
+    el('r-omega').textContent = state.omega.toFixed(4) + ' rad/s';
 
     const m = measured();
     const ideal = idealPeriod();
@@ -413,6 +448,16 @@
         + 'T = 2π√(L/g) 가 sin θ ≈ θ 로 놓고 유도한 식이기 때문입니다.';
   }
 
+  function recordTable() {
+    if (state.t - lastTableSample < 0.25) return;
+    lastTableSample = state.t;
+    tableRows.push([state.t, state.theta * 180 / Math.PI, state.omega, measured(), idealPeriod()]);
+    if (tableRows.length > 200) tableRows.shift();
+    el('pendulum-data').innerHTML = tableRows.slice().reverse().map(row =>
+      `<tr><td>${row[0].toFixed(3)}</td><td>${row[1].toFixed(4)}</td><td>${row[2].toFixed(5)}</td><td>${row[3] === null ? '—' : row[3].toFixed(4)}</td><td>${row[4].toFixed(4)}</td></tr>`
+    ).join('');
+  }
+
   let prev = performance.now();
   let acc = 0;
 
@@ -428,6 +473,7 @@
 
     draw();
     if (now - lastRead > 100) { paintNumbers(); lastRead = now; }
+    recordTable();
     requestAnimationFrame(frame);
   }
 
