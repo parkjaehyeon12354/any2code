@@ -190,11 +190,23 @@ app.http('llmChat', {
 
     const user = session.current(request);
 
-    /* 이미 제재 중이면 여기서 끝. 다른 엔드포인트와 같은 규칙이다. */
-    if (user) {
-      const blocked = await sanction.block(user.sub);
-      if (blocked) return blocked;
+    /* 로그인 필수.
+
+       왜 anonymous 를 버렸는가 —
+       1) 무료 티어 한도를 한 사람이 다 쓰면 그날 사이트 전체가 막힌다. IP 당
+          제한은 우회가 쉽고, 그 카운터는 메모리라 인스턴스가 재활용되면 초기화된다.
+       2) 인젝션 영구 정지가 비로그인에는 무의미하다. 정지시킬 계정이 없어
+          차단만 하고 끝나므로 같은 사람이 계속 두드릴 수 있다.
+
+       ⚠ 이 검사는 인젝션 탐지보다 앞에 둔다. 뒤에 두면 비로그인 공격자에게
+       "차단됐다" 는 신호를 주게 되고, 그걸로 탐지 규칙을 역추적할 수 있다. */
+    if (!user) {
+      return { status: 401, jsonBody: { error: 'AI 도우미를 사용하려면 로그인이 필요합니다.' } };
     }
+
+    /* 이미 제재 중이면 여기서 끝. 다른 엔드포인트와 같은 규칙이다. */
+    const blocked = await sanction.block(user.sub);
+    if (blocked) return blocked;
 
     /* 프롬프트 인젝션 시도 — 요청을 차단하고, 로그인 사용자는 이용을 정지한다.
 
@@ -208,44 +220,37 @@ app.http('llmChat', {
     if (scan.attack) {
       context.warn('프롬프트 인젝션 차단:', JSON.stringify({
         tags: scan.tags,
-        sub: user ? user.sub : null,
+        sub: user.sub,
         preview: rawQuestion.slice(0, 120)
       }));
 
-      if (user) {
-        const at = new Date().toISOString();
-        const until = PERMANENT_UNTIL;
-        const reason = 'AI 도우미 프롬프트 조작 시도';
+      const at = new Date().toISOString();
+      const until = PERMANENT_UNTIL;
+      const reason = 'AI 도우미 프롬프트 조작 시도';
 
-        try {
-          await container().items.upsert({
-            id: user.sub, type: 'sanction', pk: user.sub,
-            userSub: user.sub, userName: user.name || null,
-            days: null,              // 기간제가 아니다. null 이 영구를 뜻한다
-            permanent: true,         // 화면 표기용. 집행은 until 만 본다
-            until, reason, by: 'system:llm-guard', at
-          });
-          // 이력은 따로 쌓는다. 제재 문서는 덮이지만 이력은 남아야 반복을 안다.
-          // 실패해도 제재 처리는 성공으로 끝낸다(sanction.js 의 규칙).
-          await sanction.log({ sub: user.sub, event: 'issued', until, reason, by: 'system:llm-guard' })
-            .catch((e) => context.error('제재 이력 기록 실패:', e.message));
-        } catch (e) {
-          context.error('제재 적용 실패:', e.message);
-        }
-
-        return {
-          status: 403,
-          jsonBody: {
-            error: 'AI 도우미의 지침을 바꾸려는 시도가 확인되어 계정이 영구 정지되었습니다. 해제를 원하면 설정 화면에서 소명을 제출해야 합니다.',
-            suspendedUntil: until,
-            permanent: true
-          }
-        };
+      try {
+        await container().items.upsert({
+          id: user.sub, type: 'sanction', pk: user.sub,
+          userSub: user.sub, userName: user.name || null,
+          days: null,              // 기간제가 아니다. null 이 영구를 뜻한다
+          permanent: true,         // 화면 표기용. 집행은 until 만 본다
+          until, reason, by: 'system:llm-guard', at
+        });
+        // 이력은 따로 쌓는다. 제재 문서는 덮이지만 이력은 남아야 반복을 안다.
+        // 실패해도 제재 처리는 성공으로 끝낸다(sanction.js 의 규칙).
+        await sanction.log({ sub: user.sub, event: 'issued', until, reason, by: 'system:llm-guard' })
+          .catch((e) => context.error('제재 이력 기록 실패:', e.message));
+      } catch (e) {
+        context.error('제재 적용 실패:', e.message);
       }
 
       return {
         status: 403,
-        jsonBody: { error: 'AI 도우미의 지침을 바꾸려는 요청은 처리하지 않습니다. 과학 학습과 관련된 질문을 해주세요.' }
+        jsonBody: {
+          error: 'AI 도우미의 지침을 바꾸려는 시도가 확인되어 계정이 영구 정지되었습니다. 해제를 원하면 설정 화면에서 소명을 제출해야 합니다.',
+          suspendedUntil: until,
+          permanent: true
+        }
       };
     }
 
@@ -253,8 +258,10 @@ app.http('llmChat', {
     const question = sanitizeQuestion(rawQuestion);
     if (!question) return { status: 400, jsonBody: { error: '질문을 입력해 주세요.' } };
 
-    const key = user ? `u:${user.sub}` : `anon:${request.headers.get('x-forwarded-for') || 'unknown'}`;
-    if (!chatAllowed(key)) return { status: 429, jsonBody: { error: '너무 자주 요청하고 있습니다. 잠시 후 다시 시도해 주세요.' } };
+    // 로그인 필수이므로 사용량은 계정 기준으로만 센다. IP 기준은 우회가 쉬웠다.
+    if (!chatAllowed(`u:${user.sub}`)) {
+      return { status: 429, jsonBody: { error: '너무 자주 요청하고 있습니다. 잠시 후 다시 시도해 주세요.' } };
+    }
 
     try {
       const answer = await callLLM(question, subject);

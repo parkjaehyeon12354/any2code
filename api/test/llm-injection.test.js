@@ -75,6 +75,29 @@ test('탐지 결과에 근거 범주가 담긴다', () => {
   assert.ok(r.tags.includes('override'));
 });
 
+test('로그인 없이는 호출할 수 없다', () => {
+  // 비로그인은 정지시킬 계정이 없어 영구 정지가 무의미하고, 무료 티어 한도를
+  // 한 사람이 다 쓰면 사이트 전체가 막힌다.
+  assert.ok(/if \(!user\) \{[\s\S]{0,200}status: 401/.test(SRC),
+    '비로그인 요청은 401 을 반환해야 한다');
+});
+
+test('로그인 검사가 인젝션 탐지보다 먼저 온다', () => {
+  // 순서가 뒤집히면 비로그인 공격자에게 "차단됐다"는 신호를 주게 되고,
+  // 그걸로 탐지 규칙을 역추적할 수 있다.
+  const authIdx = SRC.indexOf('status: 401');
+  const scanIdx = SRC.indexOf('detectInjection(rawQuestion)');
+  assert.ok(authIdx > 0 && scanIdx > 0, '두 경로가 모두 있어야 한다');
+  assert.ok(authIdx < scanIdx, '401 검사가 인젝션 탐지보다 앞에 와야 한다');
+});
+
+test('사용량은 계정 기준으로만 센다', () => {
+  // IP 기준은 우회가 쉬웠다. 로그인 필수가 됐으므로 IP 키는 남아 있으면 안 된다.
+  assert.ok(/chatAllowed\(`u:\$\{user\.sub\}`\)/.test(SRC),
+    '사용량 키가 계정 기준이어야 한다');
+  assert.ok(!/anon:/.test(SRC), 'IP 기반 익명 키가 남아 있으면 안 된다');
+});
+
 test('정지는 영구다 — 소명으로만 풀린다', () => {
   assert.ok(/PERMANENT_UNTIL\s*=\s*'9999-/.test(SRC), '영구 표기 상수가 있어야 한다');
   assert.ok(/permanent:\s*true/.test(SRC), '제재 문서에 permanent 표시가 있어야 한다');

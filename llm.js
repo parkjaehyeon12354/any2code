@@ -148,12 +148,28 @@ async function askQuestion() {
   try {
     const response = await fetch('/api/llm/chat', {
       method: 'POST',
+      credentials: 'same-origin',      // 로그인 필수 — 쿠키를 반드시 실어 보낸다
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, subject: subjEl.value })
     });
     const data = await response.json();
     if (data.answer) {
       renderAnswer(pending, data.answer);
+    } else if (response.status === 401) {
+      /* 비로그인. 그냥 "로그인이 필요합니다" 만 띄우면 어디로 가야 할지 모른다.
+         바로 누를 수 있는 링크를 준다. */
+      pending.textContent = '';
+      pending.append(data.error || 'AI 도우미를 사용하려면 로그인이 필요합니다.', ' ');
+      const a = document.createElement('a');
+      a.href = '/login';
+      a.textContent = '로그인하러 가기';
+      a.style.cssText = 'color:var(--primary);font-weight:600;text-decoration:underline';
+      pending.append(a);
+    } else if (response.status === 403 && data.permanent) {
+      /* 인젝션으로 영구 정지된 경우. 소명 경로를 알려준다 — 화면 배너에도 나오지만
+         방금 차단당한 순간에 바로 보이는 것이 낫다. */
+      pending.textContent = data.error || '계정이 정지되었습니다.';
+      if (typeof Session !== 'undefined' && Session.refresh) Session.refresh();
     } else {
       pending.textContent = data.error || '응답을 받지 못했어요. 잠시 후 다시 시도해 주세요.';
     }
