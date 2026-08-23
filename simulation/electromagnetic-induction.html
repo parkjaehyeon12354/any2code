@@ -123,12 +123,12 @@
         <div class="panel-body">
           <dl class="read">
             <div><dt>자석의 운동</dt><dd id="r-motion">가까워지는 중</dd></div>
-            <div><dt>자기선속</dt><dd id="r-flux">0.00</dd></div>
+            <div><dt>자기선속 변화율 dΦ/dt</dt><dd id="r-flux">0.00 /s</dd></div>
             <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
             <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
           </dl>
-          <div class="legend"><span style="--key:#d7a04b">노란색: 자기선속 Φ</span><span style="--key:#69c6ac">초록색: 유도 기전력 ε</span></div>
-          <p class="note" id="note">자석이 움직이면 코일을 지나는 자기선속이 변합니다.</p>
+          <div class="legend"><span style="--key:#d7a04b">노란색: 자기선속 변화율 dΦ/dt</span><span style="--key:#69c6ac">초록색: 유도 기전력 ε</span></div>
+          <p class="note" id="note">패러데이 법칙: ε = −N·dΦ/dt</p>
         </div>
       </section>
     </div>
@@ -142,8 +142,8 @@
   const el=id=>document.getElementById(id);
   const canvas=el('canvas'),ctx=canvas.getContext('2d');
   const params={strength:.6,speed:1,turns:100,pole:1};
-  const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,emf:0,dragging:false,lastMovedAt:0};
-  const history={flux:[],emf:[]};
+  const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,dragging:false,lastMovedAt:0};
+  const history={fluxRate:[],emf:[]};
   let last=performance.now(),lastSample=0;
 
   function resize(){
@@ -165,12 +165,14 @@
     if(!state.dragging){state.prevX=state.x;state.x=autoPosition();}
     state.prevFlux=state.flux;state.flux=magneticFlux(state.x);
     const dx=state.x-state.prevX,deltaFlux=state.flux-state.prevFlux;
+    state.fluxRate=deltaFlux/Math.max(dt,.001);
     if(Math.abs(deltaFlux)>1e-7){
-      const raw=-params.turns*deltaFlux/Math.max(dt,.001)*.0022;
+      const raw=-params.turns*state.fluxRate*.0022;
       state.emf=state.emf*.72+Math.max(-3.2,Math.min(3.2,raw))*.28;
       state.velocity=dx;state.lastMovedAt=performance.now();
-    }else if(performance.now()-state.lastMovedAt>80){
-      state.emf=0;state.velocity=0;
+    }else{
+      state.fluxRate=0;
+      if(performance.now()-state.lastMovedAt>80){state.emf=0;state.velocity=0;}
     }
     state.prevX=state.x;
   }
@@ -201,38 +203,38 @@
   function drawGraph(x,y,w,h){
     ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();
     ctx.font='600 11px system-ui';ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillStyle='#d7a04b';ctx.fillText(`● 자기선속 Φ  현재 ${Math.abs(state.flux).toFixed(2)} — 정지해도 남을 수 있음`,x+10,y+8);
+    ctx.fillStyle='#d7a04b';ctx.fillText(`● 자기선속 변화율 dΦ/dt  현재 ${state.fluxRate.toFixed(2)} /s`,x+10,y+8);
     ctx.fillStyle='#69c6ac';ctx.fillText(`● 유도 기전력 ε  현재 ${Math.abs(state.emf)<.04?'0.00':state.emf.toFixed(2)} V — 정지하면 0`,x+10,y+25);
     const line=(values,color,scale)=>{if(values.length<2)return;const last=Math.max(1,values.length-1);ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();values.forEach((v,i)=>{const px=x+i/last*w,py=y+h/2-v/scale*h*.42;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();const value=values[values.length-1],py=y+h/2-value/scale*h*.42;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x+w,py,3.5,0,Math.PI*2);ctx.fill();};
-    line(history.flux,'#d7a04b',1);line(history.emf,'#69c6ac',3.2);
+    line(history.fluxRate,'#d7a04b',3.2);line(history.emf,'#69c6ac',3.2);
   }
-  function pushSample(){history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
+  function pushSample(){history.fluxRate.push(state.fluxRate);history.emf.push(state.emf);if(history.fluxRate.length>120){history.fluxRate.shift();history.emf.shift();}}
   function sample(now){if(now-lastSample<50)return;lastSample=now;pushSample();}
   function numbers(){
     const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
     // 위치 변화가 없으면 자기선속도 변하지 않는다. 잔류 보간값까지 제거해
     // 솔레노이드 바로 앞에서 멈춘 경우에도 전류가 흐르는 것처럼 보이지 않게 한다.
-    if(near==='멈춤')state.emf=0;
-    el('r-motion').textContent=near;el('r-flux').textContent=Math.abs(state.flux).toFixed(2);
+    if(near==='멈춤'){state.fluxRate=0;state.emf=0;}
+    el('r-motion').textContent=near;el('r-flux').textContent=(state.fluxRate>0?'+':'')+state.fluxRate.toFixed(2)+' /s';
     const emf=state.emf;el('r-emf').textContent=Math.abs(emf)<.04?'0.00 V':(emf>0?'+':'')+emf.toFixed(2)+' V';
     const current=Math.abs(emf)<.04?'흐르지 않음':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
     el('r-direction').className=Math.abs(emf)<.04?'zero':emf>0?'positive':'negative';
-    el('note').textContent=Math.abs(emf)<.04?'자석이 멈추면 자기선속이 변하지 않아 유도 전류가 흐르지 않습니다.':near==='가까워지는 중'?'코일은 자기선속의 증가를 방해하는 방향으로 자기장을 만듭니다.':'코일은 줄어드는 자기선속을 유지하는 방향으로 자기장을 만듭니다.';
+    el('note').textContent=Math.abs(emf)<.04?'dΦ/dt = 0이므로 유도 기전력과 전류가 0입니다.':state.fluxRate>0?'자기선속이 증가하여 이를 방해하는 방향으로 유도 전류가 흐릅니다.':'자기선속이 감소하여 변화를 막는 반대 방향으로 유도 전류가 흐릅니다.';
   }
-  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}numbers();draw();sample(now);requestAnimationFrame(frame);}
-  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.emf=0;state.lastMovedAt=0;history.flux=[];history.emf=[];}
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);requestAnimationFrame(frame);}
+  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.fluxRate=[];history.emf=[];}
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
   canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
-  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;pushSample();}
+  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;pushSample();}
   canvas.addEventListener('pointerup',stopDragging);
   canvas.addEventListener('pointercancel',stopDragging);
   el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
   el('speed').addEventListener('input',function(){params.speed=Number(this.value);el('speed-out').textContent=params.speed.toFixed(1)+'×';});
   el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
-  function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.emf=0;}
+  function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.fluxRate=0;state.emf=0;}
   el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
-  el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;pushSample();}this.textContent=state.running?'일시정지':'이어서';});
+  el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;pushSample();}this.textContent=state.running?'일시정지':'이어서';});
   el('reset').addEventListener('click',()=>{reset();state.running=true;el('toggle').textContent='일시정지';});
   resize();reset();window.addEventListener('resize',()=>{resize();reset();});requestAnimationFrame(frame);
 })();
