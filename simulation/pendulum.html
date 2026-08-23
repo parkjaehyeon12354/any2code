@@ -20,7 +20,7 @@
      가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
   padding-left: var(--sp-xxl);
   padding-right: var(--sp-xxl);
-  max-width: 1500px;
+  max-width: 1600px;
 }
 
 .crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
@@ -38,10 +38,10 @@
 .head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
 
 /* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
-.layout { display: grid; grid-template-columns: minmax(540px, 1fr) minmax(560px, 640px); gap: var(--sp-lg); align-items: start; }
-.side-panels { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--sp-md); align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: var(--sp-md); align-items: start; }
 .side-panels .panel { margin-bottom: 0; }
-.side-panels .panel:last-child { grid-column: 1 / -1; }
+.side-panels .panel:last-child { grid-column: auto; }
 
 /* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
    눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
