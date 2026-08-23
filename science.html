@@ -61,6 +61,27 @@
     .suspended p { margin-top: 3px; font-size: 13px; line-height: 1.6; color: var(--body); word-break: keep-all; }
     .suspended .btn { flex-shrink: 0; }
     .ap-note { margin-top: var(--sp-sm); font-size: 12.5px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+
+    /* 로그인 안내 모달 — 비로그인으로 질문하면 뜬다.
+       /login 으로 페이지를 넘겨버리면 쓰던 질문이 날아가고 돌아오기도 번거롭다.
+       그 자리에서 로그인하고 이어서 물어볼 수 있게 한다.
+       버튼 규격은 login.html 을 그대로 가져왔다 — 각 사 브랜드 규격이라
+       색이나 문구를 임의로 바꾸면 심사에서 반려될 수 있다. */
+    .login-lead { margin: 0 0 16px; color: var(--body); font-size: 14px; line-height: 1.7; word-break: keep-all; }
+    .providers { display: flex; flex-direction: column; gap: 8px; }
+    .btn-oauth {
+      width: 100%; height: 48px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      border: none; border-radius: var(--rounded-lg);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-oauth:hover { filter: brightness(.96); }
+    .btn-oauth[disabled] { opacity: .6; cursor: progress; }
+    .btn-oauth svg { width: 18px; height: 18px; flex-shrink: 0; }
+    /* 각 사의 브랜드 규격. 색을 임의로 바꾸면 심사에서 반려될 수 있다. */
+    .oauth-kakao  { background: #FEE500; color: rgba(0, 0, 0, .85); }
+    .oauth-google { background: #FFFFFF; color: #1f1f1f; border: 1px solid #747775; }
     .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--line, #e5e7eb); }
     .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: var(--canvas); font: inherit; }
     .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
@@ -175,6 +196,41 @@
     </form>
   </dialog>
 
+  <!-- 로그인 안내 — 비로그인으로 질문하면 뜬다. 카카오·구글만 노출한다. -->
+  <dialog class="modal" id="login-modal" aria-labelledby="login-title">
+    <div class="modal-head">
+      <h3 id="login-title">로그인이 필요해요</h3>
+      <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="login-lead">
+        AI 과학 도우미는 로그인 후 이용할 수 있어요.<br>
+        로그인하면 방금 쓴 질문을 그대로 이어서 물어볼 수 있어요.
+      </p>
+      <div class="providers">
+        <button type="button" class="btn-oauth oauth-kakao" data-provider="kakao">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#000000" d="M12 3C6.99 3 3 6.24 3 10.2c0 2.52 1.68 4.74 4.2 6.02-.18.66-.66 2.4-.75 2.78-.12.48.18.48.36.36.15-.09 2.34-1.59 3.3-2.25.6.09 1.23.15 1.89.15 5.01 0 9-3.24 9-7.06S17.01 3 12 3z"/>
+          </svg>
+          카카오 로그인
+        </button>
+
+        <!-- 구글: G 로고는 컬러 그라데이션 원본만 사용 가능하고 크기·색 변경이 금지된다.
+             모노크롬 대체나 로고 단독 표기도 불가라 문구를 반드시 함께 둔다. -->
+        <button type="button" class="btn-oauth oauth-google" data-provider="google">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Google로 로그인
+        </button>
+      </div>
+      <p class="ap-note" id="login-note" hidden></p>
+    </div>
+  </dialog>
+
   <script src="/session.js"></script>
   <script src="/nav-user.js"></script>
   <script src="/llm.js"></script>
@@ -262,6 +318,60 @@
        (그렇게 썼다가 제재 배너가 통째로 안 떴다. community.html 처럼 직접 참조한다.) */
     showSuspension(Session.load());            // 캐시로 즉시
     Session.refresh().then(showSuspension);    // 서버 확인 후 다시
+
+    /* ── 로그인 안내 ──
+       비로그인으로 질문하면 /login 으로 넘기지 않고 이 자리에서 띄운다.
+       페이지를 옮기면 쓰던 질문이 날아가고, 로그인 후 다시 찾아와야 한다.
+
+       llm.js 가 401 을 받으면 window.showLoginPrompt() 를 부른다. 서로 다른
+       파일이라 전역 함수 하나로 연결한다 — llm.js 는 이 모달의 존재를 몰라도 되고,
+       모달이 없는 페이지에서는 그냥 호출이 없다. */
+    const loginModal = el('login-modal');
+    const loginNote = el('login-note');
+    const PENDING_KEY = 'ans2quest:pendingQuestion';
+
+    window.showLoginPrompt = function (question) {
+      // 로그인 후 돌아왔을 때 이어서 물어볼 수 있게 질문을 남긴다
+      if (question) {
+        try { sessionStorage.setItem(PENDING_KEY, question); } catch { /* 저장 실패는 치명적이지 않다 */ }
+      }
+      loginNote.hidden = true;
+      loginModal.showModal();
+    };
+
+    loginModal.addEventListener('click', function (e) {
+      if (e.target.closest('[data-close]') || e.target === loginModal) loginModal.close();
+    });
+
+    loginModal.querySelectorAll('.btn-oauth[data-provider]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const name = btn.dataset.provider;
+        btn.disabled = true;
+        Session.startLogin(name);
+
+        // 자격증명이 없거나 서버가 응답하지 않으면 이동이 일어나지 않는다.
+        // 버튼이 잠긴 채로 남지 않게 되살린다 (login.html 과 같은 처리).
+        setTimeout(function () {
+          if (!btn.disabled) return;
+          btn.disabled = false;
+          loginNote.textContent = '로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+          loginNote.hidden = false;
+        }, 4000);
+      });
+    });
+
+    // 로그인하고 돌아왔다면 쓰던 질문을 입력칸에 되살린다
+    try {
+      const pending = sessionStorage.getItem(PENDING_KEY);
+      if (pending) {
+        sessionStorage.removeItem(PENDING_KEY);
+        const q = el('q');
+        if (q && !q.value) {
+          q.value = pending;
+          q.focus();
+        }
+      }
+    } catch { /* sessionStorage 를 못 쓰는 환경이면 조용히 넘어간다 */ }
   })();
   </script>
 </body>

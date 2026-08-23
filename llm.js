@@ -139,7 +139,7 @@ async function askQuestion() {
 
   const welcome = messagesEl.querySelector('.welcome');
   if (welcome) welcome.remove();
-  append('user', question);
+  const userMsg = append('user', question);
   qEl.value = '';
   askBtn.disabled = true;
   askBtn.textContent = '답변 중';
@@ -156,15 +156,23 @@ async function askQuestion() {
     if (data.answer) {
       renderAnswer(pending, data.answer);
     } else if (response.status === 401) {
-      /* 비로그인. 그냥 "로그인이 필요합니다" 만 띄우면 어디로 가야 할지 모른다.
-         바로 누를 수 있는 링크를 준다. */
-      pending.textContent = '';
-      pending.append(data.error || 'AI 도우미를 사용하려면 로그인이 필요합니다.', ' ');
-      const a = document.createElement('a');
-      a.href = '/login';
-      a.textContent = '로그인하러 가기';
-      a.style.cssText = 'color:var(--primary);font-weight:600;text-decoration:underline';
-      pending.append(a);
+      /* 비로그인. /login 으로 페이지를 넘기지 않고 그 자리에서 모달을 띄운다 —
+         페이지를 옮기면 쓰던 질문이 날아가고 다시 찾아와야 한다.
+
+         보낸 것처럼 보이던 말풍선 두 개(내 질문 + "답변을 준비하고 있어요")를
+         지우고 질문을 입력칸으로 되돌린다. 남겨두면 질문은 올라갔는데 답만
+         없는 모양이 되어, 로그인 후 같은 질문을 또 치게 된다.
+
+         모달은 science.html 이 갖고 있고 전역 함수 하나로 연결한다.
+         모달이 없는 페이지에서도 llm.js 가 깨지지 않도록 존재를 확인한다. */
+      pending.remove();
+      userMsg.remove();
+      qEl.value = question;
+      if (typeof window.showLoginPrompt === 'function') {
+        window.showLoginPrompt(question);
+      } else {
+        append('bot', data.error || 'AI 도우미를 사용하려면 로그인이 필요합니다.');
+      }
     } else if (response.status === 403 && data.permanent) {
       /* 인젝션으로 영구 정지된 경우. 소명 경로를 알려준다 — 화면 배너에도 나오지만
          방금 차단당한 순간에 바로 보이는 것이 낫다. */
