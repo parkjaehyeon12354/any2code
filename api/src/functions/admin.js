@@ -3,6 +3,7 @@ const session = require('../lib/session');
 const { lockdown, active: lockdownActive } = require('../lib/lockdown');
 const { container, query, dbFail } = require('../lib/db');
 const settings = require('../lib/settings');
+const credit = require('../lib/credit');
 
 /* 관리자 전용 엔드포인트.
 
@@ -140,6 +141,106 @@ const settingsBody = (editable) => ({
   env: envView(),
   limits: { wordsMax: settings.WORDS_MAX },
   defaults: settings.DEFAULTS
+});
+
+/* ── AI 크레딧 ──
+
+   크레딧은 3시간마다 자동으로 채워지므로 평소에는 손댈 일이 없다. 이 화면은
+   "지금 당장 더 필요한" 경우를 위한 것이다 — 시연 중 소진, 소명이 받아들여진 경우 등.
+
+   ⚠ 여기서 준 크레딧은 다음 초기화(최대 3시간)에 사라진다. granted 가 구간마다
+   FREE_CREDITS 로 돌아가기 때문이다. 화면에도 그렇게 안내한다. */
+app.http('adminCredits', {
+  route: 'moderation/credits',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
+    try {
+      /* 사용자 목록을 기준으로 잡는다. credit 문서는 한 번이라도 쓴 사람만
+         갖고 있어서, 그것만 보면 아직 안 쓴 사람이 목록에서 빠진다. */
+      const users = await query({
+        query: "SELECT c.userSub, c.oauthName, c.displayName, c.email, c.provider FROM c WHERE c.type = 'user'"
+      });
+      const credits = await query({
+        query: "SELECT c.pk, c.granted, c.used, c.period, c.updatedAt FROM c WHERE c.type = 'credit'"
+      });
+
+      const byId = {};
+      for (const c of credits) byId[c.pk] = c;
+
+      const now = Date.now();
+      const period = credit.currentPeriod(now);
+
+      const rows = users.map((u) => {
+        const c = byId[u.userSub];
+        // 구간이 지난 문서는 이미 초기화된 것으로 본다 — balance() 와 같은 규칙
+        const fresh = c && c.period === period;
+        const granted = fresh ? c.granted : credit.FREE_CREDITS;
+        const used = fresh ? c.used : 0;
+        return {
+          sub: u.userSub,
+          name: u.displayName || u.oauthName || '(이름 없음)',
+          email: u.email || null,
+          provider: u.provider || null,
+          granted,
+          used,
+          remaining: Math.max(0, granted - used),
+          lastUsedAt: c ? c.updatedAt : null
+        };
+      });
+
+      // 적게 남은 사람이 위로 — 도움이 필요한 사람이 먼저 보여야 한다
+      rows.sort((a, b) => a.remaining - b.remaining || b.used - a.used);
+
+      return {
+        jsonBody: {
+          users: rows,
+          resetInMs: credit.msUntilReset(now),
+          freeCredits: credit.FREE_CREDITS,
+          resetHours: credit.RESET_HOURS
+        }
+      };
+    } catch (e) {
+      context.error('크레딧 목록 실패:', e.message);
+      return dbFail(e);
+    }
+  }
+});
+
+app.http('adminCreditGrant', {
+  route: 'moderation/credits/grant',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const { error, user: admin } = requireAdmin(request);
+    if (error) return error;
+
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    const sub = body && typeof body.sub === 'string' ? body.sub.trim() : '';
+    const amount = body ? Number(body.amount) : NaN;
+
+    if (!sub) return { status: 400, jsonBody: { error: '대상을 선택해 주세요.' } };
+    /* 상한을 둔다. 오타 하나로 백만 크레딧을 주는 사고를 막는다 —
+       3시간마다 어차피 초기화되므로 큰 값이 필요할 이유도 없다. */
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 2000) {
+      return { status: 400, jsonBody: { error: '1 ~ 2000 사이의 값을 입력해 주세요.' } };
+    }
+
+    try {
+      const after = await credit.grant(sub, Math.floor(amount));
+      context.log(`크레딧 지급: ${admin.sub} → ${sub} (+${Math.floor(amount)})`);
+      return { jsonBody: { ok: true, credit: after } };
+    } catch (e) {
+      context.error('크레딧 지급 실패:', e.message);
+      return dbFail(e);
+    }
+  }
 });
 
 app.http('adminSettings', {

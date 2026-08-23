@@ -433,6 +433,7 @@ mark {
     <a href="#reports" data-nav="reports">신고</a>
     <a href="#appeals" data-nav="appeals">소명</a>
     <a href="#held" data-nav="held">보류 게시물</a>
+    <a href="#credits" data-nav="credits">AI 크레딧</a>
     <a href="#settings" data-nav="settings">설정</a>
   </nav>
 
@@ -539,6 +540,37 @@ mark {
           <table class="table">
             <thead><tr><th scope="col">작성자</th><th scope="col">내용</th><th scope="col">감지어</th><th scope="col">작성일</th><th scope="col">상태</th><th scope="col"></th></tr></thead>
             <tbody id="held-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── AI 크레딧 ── -->
+    <section id="credits">
+      <div class="page-head">
+        <h1>AI 크레딧</h1>
+        <p>AI 과학 도우미 사용량입니다. 3시간마다 자동으로 채워집니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>여기서 준 크레딧은 다음 초기화 때 사라집니다.</strong>
+        한국 시간 00시 기준 3시간마다(00·03·06·09·12·15·18·21시) 모두
+        <span id="cr-free">200</span> 크레딧으로 돌아갑니다. 시연 중 소진처럼
+        지금 당장 필요한 경우에만 쓰세요.</span>
+      </p>
+
+      <pre class="mod-result" id="cr-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>사용자 <span class="cell-muted" id="cr-total"></span></h3>
+          <span class="cell-muted" id="cr-reset"></span>
+        </div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">이름</th><th scope="col">로그인</th><th scope="col">남음</th><th scope="col">사용</th><th scope="col">마지막 사용</th><th scope="col"></th></tr></thead>
+            <tbody id="cr-body"></tbody>
           </table>
         </div>
       </div>
@@ -1465,6 +1497,111 @@ Session.refresh().then(function (user) {
   });
 
   loadSettings();
+
+  /* ── AI 크레딧 ──
+     3시간마다 자동으로 채워지므로 평소엔 볼 일이 없다. 시연 중 소진처럼
+     지금 당장 필요한 경우를 위한 화면이다. */
+  const crBody = document.getElementById('cr-body');
+  const crTotal = document.getElementById('cr-total');
+  const crReset = document.getElementById('cr-reset');
+  const crResult = document.getElementById('cr-result');
+  const crFree = document.getElementById('cr-free');
+  let CREDITS = [];
+
+  const crSay = (msg) => {
+    crResult.textContent = msg;
+    crResult.hidden = false;
+  };
+
+  const fmtWhen = (iso) => {
+    if (!iso) return '—';
+    // 한국 시간으로 보여준다. 서버는 UTC 로 저장한다.
+    const d = new Date(new Date(iso).getTime() + 9 * 3600 * 1000);
+    return d.toISOString().slice(5, 16).replace('T', ' ');
+  };
+
+  function renderCredits() {
+    if (!CREDITS.length) {
+      crBody.innerHTML = '<tr><td colspan="6" class="empty">사용자가 없습니다.</td></tr>';
+      return;
+    }
+    crBody.innerHTML = CREDITS.map((u) => {
+      // 적게 남은 사람을 눈에 띄게 — 서버가 이미 그 순서로 준다
+      const cls = u.remaining <= 0 ? ' style="color:var(--error)"'
+        : u.remaining <= 25 ? ' style="color:var(--warn-fg,#8a5c08)"' : '';
+      return '<tr>'
+        + '<td>' + esc(u.name) + (u.email ? '<div class="cell-sub">' + esc(u.email) + '</div>' : '') + '</td>'
+        + '<td class="cell-muted">' + esc(u.provider || '—') + '</td>'
+        + '<td' + cls + '><strong>' + u.remaining + '</strong> / ' + u.granted + '</td>'
+        + '<td class="cell-muted">' + u.used + '</td>'
+        + '<td class="cell-muted">' + fmtWhen(u.lastUsedAt) + '</td>'
+        + '<td class="row-action"><button type="button" data-grant="' + esc(u.sub) + '">지급</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  async function loadCredits() {
+    try {
+      const res = await fetch('/api/moderation/credits', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      const data = await res.json();
+      CREDITS = data.users || [];
+      crFree.textContent = data.freeCredits;
+      crTotal.textContent = CREDITS.length + '명';
+
+      const m = Math.ceil((data.resetInMs || 0) / 60000);
+      crReset.textContent = m >= 60
+        ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분 뒤 초기화'
+        : m + '분 뒤 초기화';
+      crResult.hidden = true;
+    } catch (e) {
+      CREDITS = [];
+      crSay('크레딧 목록을 불러오지 못했습니다: ' + e.message);
+    } finally {
+      renderCredits();
+    }
+  }
+
+  crBody.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('[data-grant]');
+    if (!btn) return;
+    const sub = btn.dataset.grant;
+    const target = CREDITS.find((u) => u.sub === sub);
+
+    const input = prompt(
+      '얼마나 지급할까요? (1 ~ 2000)\n\n'
+      + (target ? target.name + ' — 현재 ' + target.remaining + ' 남음\n\n' : '')
+      + '※ 다음 초기화 때 사라집니다.',
+      '200'
+    );
+    if (input === null) return;
+
+    const amount = Number(input);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 2000) {
+      crSay('1 ~ 2000 사이의 값을 입력해 주세요.');
+      return;
+    }
+
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/moderation/credits/grant', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sub, amount: Math.floor(amount) })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.status);
+      crSay((target ? target.name : '사용자') + ' 에게 ' + Math.floor(amount)
+        + ' 크레딧을 지급했습니다. 현재 ' + data.credit.remaining + ' 남음.');
+      await loadCredits();
+    } catch (e) {
+      crSay('지급하지 못했습니다: ' + e.message);
+      btn.disabled = false;
+    }
+  });
+
+  loadCredits();
 
   // ── 섹션 전환 ──
   // location.hash 를 쓰면 뒤로가기와 새로고침이 공짜로 동작한다.

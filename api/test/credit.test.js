@@ -190,3 +190,42 @@ test('구간이 바뀌면 사용량을 0으로 본다', () => {
   assert.ok(/doc\.period !== period/.test(src),
     'consume 이 구간을 비교해야 한다');
 });
+
+/* ── 관리자 크레딧 지급 ── */
+
+const ADMIN_SRC = require('fs').readFileSync(
+  require('path').join(__dirname, '../src/functions/admin.js'), 'utf8');
+
+test("관리자 크레딧 경로는 'admin/' 을 쓰지 않는다", () => {
+  /* Azure Functions 런타임이 'admin/' 접두사를 자기 관리 API 용으로 예약해서,
+     쓰면 등록이 조용히 거부된다 — 파일은 로드되는데 라우트만 사라져 404 가 나고
+     로그에도 안 남는다. 그래서 'moderation/' 을 쓴다. */
+  assert.ok(/route: 'moderation\/credits'/.test(ADMIN_SRC));
+  assert.ok(/route: 'moderation\/credits\/grant'/.test(ADMIN_SRC));
+  assert.ok(!/route: 'admin\//.test(ADMIN_SRC), "'admin/' 접두사는 라우트가 사라진다");
+});
+
+test('크레딧 API 는 관리자만 쓸 수 있다', () => {
+  // admin.html 은 누구나 열 수 있다. 데이터를 안 내주는 것이 유일한 방어선이다.
+  const credits = ADMIN_SRC.slice(ADMIN_SRC.indexOf("route: 'moderation/credits'"));
+  const grant = ADMIN_SRC.slice(ADMIN_SRC.indexOf("route: 'moderation/credits/grant'"));
+  assert.ok(/requireAdmin\(request\)/.test(credits.slice(0, 700)),
+    '목록 조회가 requireAdmin 을 거쳐야 한다');
+  assert.ok(/requireAdmin\(request\)/.test(grant.slice(0, 700)),
+    '지급이 requireAdmin 을 거쳐야 한다');
+});
+
+test('지급 금액에 상한이 있다', () => {
+  // 오타 하나로 백만 크레딧을 주는 사고를 막는다.
+  assert.ok(/amount > 2000/.test(ADMIN_SRC), '상한 검사가 있어야 한다');
+  assert.ok(/amount <= 0/.test(ADMIN_SRC), '0 이하를 막아야 한다');
+  assert.ok(/Number\.isFinite\(amount\)/.test(ADMIN_SRC), 'NaN 을 막아야 한다');
+});
+
+test('목록은 사용자 기준이다 — 아직 안 쓴 사람도 나와야 한다', () => {
+  /* credit 문서는 한 번이라도 쓴 사람만 갖고 있다. 그것만 보면 정작 크레딧이
+     필요한 신규 사용자가 목록에서 빠진다. */
+  const seg = ADMIN_SRC.slice(ADMIN_SRC.indexOf("route: 'moderation/credits'"));
+  assert.ok(/c\.type = 'user'/.test(seg.slice(0, 1200)),
+    'user 문서를 기준으로 조회해야 한다');
+});
