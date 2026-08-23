@@ -206,13 +206,16 @@
   function sample(now){if(now-lastSample<50)return;lastSample=now;history.flux.push(state.flux);history.emf.push(state.emf);if(history.flux.length>120){history.flux.shift();history.emf.shift();}}
   function numbers(){
     const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
+    // 위치 변화가 없으면 자기선속도 변하지 않는다. 잔류 보간값까지 제거해
+    // 솔레노이드 바로 앞에서 멈춘 경우에도 전류가 흐르는 것처럼 보이지 않게 한다.
+    if(near==='멈춤')state.emf=0;
     el('r-motion').textContent=near;el('r-flux').textContent=Math.abs(state.flux).toFixed(2);
-    const emf=state.emf;el('r-emf').textContent=(emf>=0?'+':'')+emf.toFixed(2)+' V';
-    const current=Math.abs(emf)<.04?'—':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
+    const emf=state.emf;el('r-emf').textContent=Math.abs(emf)<.04?'0.00 V':(emf>0?'+':'')+emf.toFixed(2)+' V';
+    const current=Math.abs(emf)<.04?'흐르지 않음':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
     el('r-direction').className=Math.abs(emf)<.04?'zero':emf>0?'positive':'negative';
     el('note').textContent=Math.abs(emf)<.04?'자석이 멈추면 자기선속이 변하지 않아 유도 전류가 흐르지 않습니다.':near==='가까워지는 중'?'코일은 자기선속의 증가를 방해하는 방향으로 자기장을 만듭니다.':'코일은 줄어드는 자기선속을 유지하는 방향으로 자기장을 만듭니다.';
   }
-  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}draw();sample(now);numbers();requestAnimationFrame(frame);}
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.emf=0;}numbers();draw();sample(now);requestAnimationFrame(frame);}
   function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.emf=0;state.lastMovedAt=0;history.flux=[];history.emf=[];}
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
