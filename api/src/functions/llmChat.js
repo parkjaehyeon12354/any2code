@@ -2,6 +2,7 @@ const { app } = require('@azure/functions');
 const OpenAI = require('openai');
 const session = require('../lib/session');
 const sanction = require('../lib/sanction');
+const credit = require('../lib/credit');
 const { container } = require('../lib/db');
 const { lockdown } = require('../lib/lockdown');
 
@@ -166,7 +167,9 @@ async function callLLM(prompt, subject) {
     throw new Error('AI가 빈 답변을 반환했습니다.');
   }
 
-  return answer;
+  // 크레딧 차감에 쓸 실제 사용량. 응답에 usage 가 없으면 0 을 주고,
+  // credit.toCredits() 가 최소 1 크레딧을 보장한다.
+  return { answer, tokens: response.usage?.total_tokens || 0 };
 }
 
 app.http('llmChat', {
@@ -263,9 +266,49 @@ app.http('llmChat', {
       return { status: 429, jsonBody: { error: '너무 자주 요청하고 있습니다. 잠시 후 다시 시도해 주세요.' } };
     }
 
+    /* 크레딧 확인.
+
+       ⚠ "이번 요청에 얼마나 들지" 는 답변을 받아봐야 안다. 그래서 미리 견적을 내
+       막지 않고, 잔액이 남아 있는지만 본다. 결과적으로 마지막 한 번은 잔액을
+       초과할 수 있는데, 답변을 받다가 잘리는 것보다 낫다고 판단했다. */
+    let bal;
     try {
-      const answer = await callLLM(question, subject);
-      return { jsonBody: { answer } };
+      bal = await credit.balance(user.sub);
+    } catch (e) {
+      // 잔액을 못 읽었다고 학습을 막지는 않는다. 로그만 남기고 통과시킨다.
+      context.error('크레딧 조회 실패:', e.message);
+      bal = null;
+    }
+    if (bal && bal.remaining <= 0) {
+      return {
+        status: 402,
+        jsonBody: {
+          error: 'AI 도우미 크레딧을 모두 사용했습니다.',
+          credit: { remaining: 0, granted: bal.granted, used: bal.used }
+        }
+      };
+    }
+
+    try {
+      const { answer, tokens } = await callLLM(question, subject);
+
+      /* 실제 사용량만큼 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
+         여기서 예외를 던지면 답변을 받은 사용자가 오류 화면을 보게 된다. */
+      let after = null;
+      try {
+        after = await credit.consume(user.sub, tokens, user.name);
+      } catch (e) {
+        context.error('크레딧 차감 실패:', e.message);
+      }
+
+      return {
+        jsonBody: {
+          answer,
+          credit: after
+            ? { spent: after.cost, remaining: after.remaining, granted: after.granted }
+            : null
+        }
+      };
     } catch (e) {
       context.error('LLM 요청 실패:', e.message);
       const msg = e.status && e.status >= 500 ? '외부 서비스 오류입니다. 잠시 후 다시 시도해 주세요.' : e.message;

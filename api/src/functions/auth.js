@@ -4,6 +4,7 @@ const { lockdown } = require('../lib/lockdown');
 const { PROVIDERS, credentials, exchangeCode, fetchProfile } = require('../lib/providers');
 const sanction = require('../lib/sanction');
 const profile = require('../lib/profile');
+const credit = require('../lib/credit');
 
 /** 콜백 주소.
 
@@ -137,6 +138,10 @@ app.http('me', {
     let name = user.name;
     try { name = await profile.displayName(user); } catch { name = user.name; }
 
+    // AI 크레딧 잔액. 실패해도 null 로 두고 로그인은 정상 처리한다.
+    let creditBalance = null;
+    try { creditBalance = await credit.balance(user.sub); } catch { creditBalance = null; }
+
     return {
       jsonBody: {
         authenticated: true,
@@ -145,6 +150,8 @@ app.http('me', {
         // 영구 제재는 화면이 해제일 대신 '영구'로 표기해야 한다.
         // 이 값이 없으면 제재 배너가 9999-12-31 을 그대로 보여준다.
         suspendedPermanent: suspended ? !!suspended.permanent : false,
+        // AI 도우미 크레딧 잔액. 조회에 실패해도 로그인 자체는 막지 않는다.
+        credit: creditBalance,
         name,
         email: user.email,
         picture: user.picture,

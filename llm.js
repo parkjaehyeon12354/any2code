@@ -155,6 +155,13 @@ async function askQuestion() {
     const data = await response.json();
     if (data.answer) {
       renderAnswer(pending, data.answer);
+      // 이번 대화에 쓴 크레딧과 남은 양을 화면에 반영한다
+      if (data.credit && typeof updateCredit === 'function') updateCredit(data.credit);
+    } else if (response.status === 402) {
+      /* 크레딧 소진. 이건 오류가 아니라 정상적인 한도 도달이라, 빨간 오류처럼
+         보이지 않게 안내 문구로 남긴다. */
+      pending.textContent = data.error || 'AI 도우미 크레딧을 모두 사용했습니다.';
+      if (data.credit && typeof updateCredit === 'function') updateCredit(data.credit);
     } else if (response.status === 401) {
       /* 비로그인. /login 으로 페이지를 넘기지 않고 그 자리에서 모달을 띄운다 —
          페이지를 옮기면 쓰던 질문이 날아가고 다시 찾아와야 한다.

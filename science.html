@@ -75,6 +75,18 @@
     .science-chat { overflow: hidden; }
     .chat-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--hairline); }
     .chat-head strong { color: var(--ink); font-size: 16px; }
+    .chat-head-right { display: flex; align-items: center; gap: 10px; }
+    /* 크레딧 배지 — 남은 양을 늘 보이게 둔다. 다 쓰고 나서야 알면 늦다.
+       색은 토큰만 쓴다(하드코딩 금지). 적을 때는 경고색으로 바뀐다. */
+    .credit-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 10px; border-radius: 999px;
+      background: var(--surface-soft); color: var(--muted);
+      font-size: 12.5px; font-weight: 600; white-space: nowrap;
+    }
+    .credit-badge.low { color: var(--warn-fg, #8a5c08); background: rgba(217,119,6,.14); }
+    .credit-badge.empty { color: #9c3030; background: rgba(189,59,59,.1); }
+    .credit-badge #credit-remaining { font-variant-numeric: tabular-nums; }
     .subject-select { appearance: none; border: 1px solid var(--hairline); border-radius: 8px; padding: 8px 30px 8px 10px; color: var(--body); background: var(--canvas); font: inherit; font-size: 13px; cursor: pointer; }
     .messages { height: 370px; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
     .welcome { margin: auto 0; padding: 10px 4px; }
@@ -192,13 +204,18 @@
         <div class="science-chat">
           <div class="chat-head">
             <strong>AI 과학 도우미</strong>
-            <select id="subject" class="subject-select" aria-label="과목 선택">
+            <div class="chat-head-right">
+              <span class="credit-badge" id="credit-badge" hidden>
+                <span id="credit-remaining">—</span> 크레딧
+              </span>
+              <select id="subject" class="subject-select" aria-label="과목 선택">
               <option value="">전체 과학</option>
               <option value="physics">물리학</option>
               <option value="chem">화학</option>
               <option value="bio">생명과학</option>
-              <option value="earth">지구과학</option>
-            </select>
+                <option value="earth">지구과학</option>
+              </select>
+            </div>
           </div>
           <div class="messages" id="messages" aria-live="polite">
             <div class="welcome">
@@ -358,6 +375,36 @@
         submit.textContent = '접수';
       }
     });
+
+    /* ── AI 크레딧 배지 ──
+       llm.js 가 답변을 받은 뒤 window.updateCredit() 을 부른다. 파일이 달라서
+       전역 함수 하나로 연결한다 — llm.js 는 배지의 존재를 몰라도 된다. */
+    var creditBadge = el('credit-badge');
+    var creditNum = el('credit-remaining');
+
+    window.updateCredit = function (c) {
+      if (!c || typeof c.remaining !== 'number') return;
+      creditNum.textContent = c.remaining;
+      creditBadge.hidden = false;
+      // 남은 양에 따라 색을 바꾼다. 25 는 평균 한 번 분량(23크레딧)에 가깝다 —
+      // "다음 질문이 마지막" 이라는 신호다.
+      creditBadge.classList.toggle('empty', c.remaining <= 0);
+      creditBadge.classList.toggle('low', c.remaining > 0 && c.remaining <= 25);
+      creditBadge.title = c.granted
+        ? '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음'
+        : '';
+    };
+
+    /* 로그인 상태면 처음부터 잔액을 보여준다. 쓰기 시작한 뒤에야 알면 늦다. */
+    function showCredit(user) {
+      if (!user || !user.authenticated || !user.credit) {
+        creditBadge.hidden = true;
+        return;
+      }
+      window.updateCredit(user.credit);
+    }
+    showCredit(Session.load());
+    Session.refresh().then(showCredit);
 
     /* session.js 는 `const Session = (function(){...})()` 로 선언한다.
        const 는 window 에 붙지 않으므로 window.Session 으로 확인하면 항상 undefined 다.
