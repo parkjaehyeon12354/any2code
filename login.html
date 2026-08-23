@@ -229,7 +229,10 @@
     btn.addEventListener('click', function () {
       const name = btn.dataset.provider;
       btn.disabled = true;
-      Session.startLogin(name);
+      /* 로그인 페이지 자신으로 돌아오면 곤란하다. ?to= 로 받은 곳이 있으면
+         그리로, 없으면 메인으로 보낸다. */
+      var back = new URLSearchParams(location.search).get('to') || '/';
+      Session.startLogin(name, back);
 
       // 서버가 아직 배포되지 않았거나 자격증명이 없으면 이동이 안 된다.
       // 버튼이 영영 잠긴 채로 남지 않도록 되살린다.

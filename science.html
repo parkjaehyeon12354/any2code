@@ -13,31 +13,77 @@
   <script src="/theme.js"></script>
   <style>
     .science-page { min-height: calc(100vh - 56px); padding: 68px 0 96px; background: var(--canvas); }
+
+    /* ── 채팅 말풍선 색 ──
+       라이트에서는 지금까지와 같다 — 내 말풍선은 --primary(Discovery Teal),
+       흰 글자 기준 5.25:1 로 디자인 시스템이 보장하는 조합이다.
+
+       다크에서는 --primary 가 흰색(#f2f2f2)이라 그대로 쓰면 말풍선 전체가 흰 판이
+       되어 눈이 부신다. 채운 버튼처럼 작은 면적이면 괜찮지만, 대화가 쌓이는
+       화면에서는 밝은 면이 계속 늘어난다.
+
+       그래서 다크에서만 어두운 면으로 바꾼다. 토큰 자체는 손대지 않고 이 화면
+       전용 변수만 덮어쓴다 — --primary 를 고치면 사이트 전체 버튼이 같이 바뀐다.
+       값은 기존 다크 팔레트에서 가져왔다(색 하드코딩 금지 규칙).
+         내 말풍선 : --hairline(#2e2e2e) + --ink(#f2f2f2)      → 13.4:1
+         AI 말풍선 : --surface-dark(#080808) + --body(#d0d0d0) → 13.0:1
+
+       ⚠ --surface-dark-elevated 를 쓰면 안 된다. 다크에서 그 값(#1b1b1b)이
+       카드 배경(--surface-soft)과 똑같아서 내 말풍선이 배경에 묻힌다.
+       실제로 그렇게 했다가 말풍선이 안 보였다. 한 단계 밝은 --hairline 을 쓴다.
+
+       둘 다 AA(4.5:1)를 크게 넘는다. 좌우 정렬과 테두리가 화자 구분을 맡는다. */
+    :root[data-theme="dark"] .science-page {
+      --chat-user-bg: var(--hairline);
+      --chat-user-fg: var(--ink);
+      --chat-bot-bg: var(--surface-dark);
+      --chat-send-bg: var(--hairline);
+      --chat-send-fg: var(--ink);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .science-page {
+        --chat-user-bg: var(--hairline);
+        --chat-user-fg: var(--ink);
+        --chat-bot-bg: var(--surface-dark);
+        --chat-send-bg: var(--hairline);
+        --chat-send-fg: var(--ink);
+      }
+    }
+    /* hover 도 --primary-active(다크에서 순백 #ffffff)를 피한다 */
+    :root[data-theme="dark"] .chat-form button:hover { background: var(--muted-soft); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .chat-form button:hover { background: var(--muted-soft); }
+    }
+    /* 환영 아이콘 배경은 라이트 팔레트 기준 rgba 라 다크에서 탁하다 */
+    :root[data-theme="dark"] .welcome-mark { color: var(--ink); background: var(--hairline); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .welcome-mark { color: var(--ink); background: var(--hairline); }
+    }
     .science-intro { text-align: center; max-width: 690px; margin: 0 auto 36px; }
     .science-kicker { display: inline-flex; gap: 8px; align-items: center; color: var(--primary); font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 14px; }
     .science-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #d97706); }
     .science-intro h1 { font-family: var(--font-display); color: var(--ink); font-size: clamp(32px, 5vw, 48px); line-height: 1.25; letter-spacing: -.5px; margin: 0 0 14px; }
     .science-intro p { color: var(--body); font-size: 17px; line-height: 1.7; margin: 0; word-break: keep-all; }
     .science-layout { width: 100%; margin: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
-    .science-tips, .science-chat { background: var(--surface, #fff); border: 1px solid var(--line, #e5e7eb); border-radius: 16px; box-shadow: 0 8px 30px rgba(19, 42, 35, .05); }
+    .science-tips, .science-chat { background: var(--surface-soft); border: 1px solid var(--hairline); border-radius: 16px; box-shadow: 0 8px 30px rgba(19, 42, 35, .05); }
     .science-tips { padding: 22px; }
     .science-tips h2 { font-family: var(--font-display); color: var(--ink); font-size: 18px; margin: 0 0 8px; }
-    .science-tips > p { color: var(--muted, #64748b); font-size: 13px; line-height: 1.55; margin: 0 0 16px; }
+    .science-tips > p { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 16px; }
     .tip-list { display: grid; gap: 9px; }
     .tip { width: 100%; text-align: left; padding: 10px 11px; color: var(--body); background: var(--canvas); border: 1px solid transparent; border-radius: 9px; font: inherit; font-size: 13px; line-height: 1.45; cursor: pointer; }
     .tip:hover { border-color: var(--primary); color: var(--primary); }
     .science-chat { overflow: hidden; }
-    .chat-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--line, #e5e7eb); }
+    .chat-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--hairline); }
     .chat-head strong { color: var(--ink); font-size: 16px; }
-    .subject-select { appearance: none; border: 1px solid var(--line, #d6ddd9); border-radius: 8px; padding: 8px 30px 8px 10px; color: var(--body); background: var(--canvas); font: inherit; font-size: 13px; cursor: pointer; }
+    .subject-select { appearance: none; border: 1px solid var(--hairline); border-radius: 8px; padding: 8px 30px 8px 10px; color: var(--body); background: var(--canvas); font: inherit; font-size: 13px; cursor: pointer; }
     .messages { height: 370px; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
     .welcome { margin: auto 0; padding: 10px 4px; }
     .welcome-mark { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 13px; color: var(--primary); background: rgba(22,122,99,.1); border-radius: 12px; font-size: 21px; }
     .welcome h2 { font-family: var(--font-display); color: var(--ink); font-size: 24px; margin: 0 0 7px; }
     .welcome p { max-width: 430px; color: var(--body); line-height: 1.65; margin: 0; }
-    .msg { max-width: 84%; padding: 12px 14px; border-radius: 13px; color: var(--body); line-height: 1.65; white-space: pre-wrap; word-break: break-word; background: var(--canvas); }
-    .msg.user { align-self: flex-end; color: var(--on-primary, #fff); background: var(--primary); border-bottom-right-radius: 3px; }
-    .msg.bot { align-self: flex-start; border-bottom-left-radius: 3px; }
+    .msg { max-width: 84%; padding: 12px 14px; border-radius: 13px; color: var(--body); line-height: 1.65; white-space: pre-wrap; word-break: break-word; background: var(--chat-bot-bg, var(--canvas)); }
+    .msg.user { align-self: flex-end; color: var(--chat-user-fg, var(--on-primary, #fff)); background: var(--chat-user-bg, var(--primary)); border-bottom-right-radius: 3px; }
+    .msg.bot { align-self: flex-start; border: 1px solid var(--hairline); border-bottom-left-radius: 3px; }
     /* 답변 안의 마크다운/수식 — llm.js 의 renderAnswer 가 붙이는 태그들 */
     .msg.bot b { color: var(--ink); font-weight: 700; }
     .msg.bot code { padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
@@ -82,13 +128,13 @@
     /* 각 사의 브랜드 규격. 색을 임의로 바꾸면 심사에서 반려될 수 있다. */
     .oauth-kakao  { background: #FEE500; color: rgba(0, 0, 0, .85); }
     .oauth-google { background: #FFFFFF; color: #1f1f1f; border: 1px solid #747775; }
-    .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--line, #e5e7eb); }
-    .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--line, #d6ddd9); border-radius: 9px; background: var(--canvas); font: inherit; }
+    .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--hairline); }
+    .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--hairline); border-radius: 9px; background: var(--canvas); font: inherit; }
     .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
-    .chat-form button { flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 9px; color: var(--on-primary, #fff); background: var(--primary); font: inherit; font-weight: 700; cursor: pointer; }
+    .chat-form button { flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 9px; color: var(--chat-send-fg, var(--on-primary, #fff)); background: var(--chat-send-bg, var(--primary)); font: inherit; font-weight: 700; cursor: pointer; }
     .chat-form button:hover { background: var(--primary-active); }
     .chat-form button:disabled { opacity: .55; cursor: wait; }
-    .chat-note { color: var(--muted, #64748b); font-size: 12px; line-height: 1.5; padding: 0 20px 16px; margin: 0; }
+    .chat-note { color: var(--muted); font-size: 12px; line-height: 1.5; padding: 0 20px 16px; margin: 0; }
     @media (max-width: 720px) { .science-page { padding: 42px 0 64px; } .science-layout { grid-template-columns: 1fr; } .science-tips { order: 2; } .tip-list { grid-template-columns: repeat(2, 1fr); } .messages { height: 330px; } }
     @media (max-width: 440px) { .chat-head { align-items: flex-start; flex-direction: column; } .tip-list { grid-template-columns: 1fr; } .chat-form { padding: 12px; } .chat-form button { padding: 0 13px; } }
   </style>

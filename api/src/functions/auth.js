@@ -39,7 +39,11 @@ app.http('authStart', {
       return { status: 503, body: e.message };
     }
 
-    const { state, cookie } = session.issueState(provider);
+    /* 로그인을 시작한 화면으로 돌아가기 위한 경로.
+       ?to=/science 처럼 받아 state 토큰 안에 실어 보낸다. 검증은 session 쪽에서 한다
+       — 그냥 쓰면 오픈 리다이렉트가 된다. */
+    const to = new URL(request.url).searchParams.get('to');
+    const { state, cookie } = session.issueState(provider, to);
     const url = new URL(PROVIDERS[provider].authorizeUrl);
     url.searchParams.set('client_id', creds.id);
     url.searchParams.set('redirect_uri', redirectUri(request, provider));
@@ -98,10 +102,11 @@ app.http('authCallback', {
         context.error('사용자 문서 갱신 실패:', e.message);
       }
 
-      // 세션 발급과 state 쿠키 폐기를 한 응답에 함께 싣는다
+      // 세션 발급과 state 쿠키 폐기를 한 응답에 함께 싣는다.
+      // 돌아갈 곳은 state 토큰 안에 넣어둔 경로 — 없으면 '/'.
       return {
         status: 302,
-        headers: { Location: '/' },
+        headers: { Location: session.stateTarget(q.get('state')) },
         cookies: [session.issue(user), session.clearState()]
       };
     } catch (e) {

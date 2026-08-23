@@ -77,8 +77,26 @@
     paint();
   }
 
+  /* 버튼을 되도록 빨리 붙인다.
+
+     색 자체는 위 apply() 가 <head> 에서 즉시 입힌다. 하지만 버튼은 .nav-inner 가
+     파싱된 뒤에야 붙일 수 있는데, DOMContentLoaded 를 기다리면 그게 400ms 쯤 걸린다.
+     그 동안 헤더에 토글이 없어서 "다크 모드가 늦게 켜진다"는 느낌을 준다.
+
+     그래서 .nav-inner 가 나타나는 즉시 붙인다. 문서가 아직 파싱 중이면
+     requestAnimationFrame 으로 짧게 재시도하고, 끝나면 DOMContentLoaded 로 마무리한다. */
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount);
+    var tries = 0;
+    var poll = function () {
+      if (document.getElementById('theme-toggle')) return;
+      mount();
+      if (document.getElementById('theme-toggle')) return;
+      if (++tries < 240 && document.readyState === 'loading') {
+        requestAnimationFrame(poll);
+      }
+    };
+    requestAnimationFrame(poll);
+    document.addEventListener('DOMContentLoaded', mount);   // 안전망
   } else {
     mount();
   }

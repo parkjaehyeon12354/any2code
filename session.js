@@ -85,9 +85,13 @@ const Session = (function () {
       sessionStorage.removeItem(KEY);
     },
 
-    /** 로그인 시작 — 서버가 state 를 발급하고 제공자로 보낸다 */
-    startLogin(provider) {
-      window.location.href = '/api/auth/' + encodeURIComponent(provider) + '/start';
+    /** 로그인 시작 — 서버가 state 를 발급하고 제공자로 보낸다.
+        지금 보던 화면을 함께 넘겨, 로그인 후 그 자리로 돌아오게 한다.
+        (예전에는 무조건 '/' 로 보내서, /science 에서 로그인하면 메인으로 튕겼다) */
+    startLogin(provider, to) {
+      var back = to || (window.location.pathname + window.location.search);
+      window.location.href = '/api/auth/' + encodeURIComponent(provider) + '/start'
+        + '?to=' + encodeURIComponent(back);
     }
   };
 })();

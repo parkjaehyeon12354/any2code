@@ -83,11 +83,38 @@ const current = (request) => verify(readCookie(request, COOKIE));
 /* ── OAuth state (CSRF 방지) ──
    기존 프론트엔드는 sessionStorage 에 state 를 뒀는데, 그건 서버가 검증할 수
    없다. 서버가 발급하고 서버가 대조해야 의미가 있다. */
-function issueState(provider) {
+/* 로그인 시작 시 발급하는 state.
+   `to` 는 로그인을 마친 뒤 돌아갈 경로다. 서명된 토큰 안에 넣으므로 위조할 수 없다 —
+   쿼리스트링으로 그냥 받아 쓰면 오픈 리다이렉트가 된다.
+
+   ⚠ 저장 전에 반드시 safePath() 를 통과시킨다. 서명은 '우리가 발급했다'만 보장하지
+   '안전한 값이다'를 보장하지 않는다. */
+function issueState(provider, to) {
   const nonce = crypto.randomBytes(16).toString('hex');
   const exp = Math.floor(Date.now() / 1000) + 600;   // 10분이면 충분
-  const token = sign({ nonce, provider, exp });
+  const token = sign({ nonce, provider, exp, to: safePath(to) });
   return { state: token, cookie: cookie(STATE_COOKIE, token, 600) };
+}
+
+/* 돌아갈 경로로 쓸 수 있는 값만 통과시킨다.
+
+   막아야 하는 것:
+   - 'https://evil.com'      → 외부 도메인으로 튕겨보내는 오픈 리다이렉트
+   - '//evil.com'            → 스킴 생략 형태. 브라우저는 절대 URL 로 읽는다
+   - '/\\evil.com'           → 역슬래시를 슬래시로 정규화하는 브라우저가 있다
+   허용: '/science', '/community?sort=hot' 처럼 같은 사이트 안의 경로만. */
+function safePath(to) {
+  if (typeof to !== 'string' || !to) return null;
+  if (to[0] !== '/') return null;                 // 절대 URL·상대 경로 모두 거부
+  if (to[1] === '/' || to[1] === '\\') return null;
+  if (/[\r\n]/.test(to)) return null;             // 헤더 인젝션
+  return to.slice(0, 200);
+}
+
+/** 콜백에서 state 안에 담아둔 돌아갈 경로를 꺼낸다. 없거나 이상하면 '/'. */
+function stateTarget(stateFromQuery) {
+  const data = verify(stateFromQuery);
+  return (data && safePath(data.to)) || '/';
 }
 
 /** 콜백에서 온 state 가 우리가 발급한 것인지, 같은 제공자인지 확인 */
@@ -120,6 +147,6 @@ function requireAdmin(request) {
 }
 
 module.exports = {
-  issue, clear, current, issueState, checkState, clearState,
+  issue, clear, current, issueState, checkState, clearState, stateTarget,
   isAdmin, requireAdmin, COOKIE, MAX_AGE
 };
