@@ -10,7 +10,13 @@ const PROVIDERS = {
     authorizeUrl: 'https://kauth.kakao.com/oauth/authorize',
     tokenUrl: 'https://kauth.kakao.com/oauth/token',
     userUrl: 'https://kapi.kakao.com/v2/user/me',
-    scope: 'account_email profile_nickname',
+    /* scope 에서 account_email 을 뺐다.
+       이메일은 비즈 앱으로 전환해야 권한이 생기는데(사업자 정보 또는 개인 개발자
+       본인인증 필요), 권한 없는 항목을 scope 에 넣으면 카카오가 인가 요청 자체를
+       거부한다 — 로그인 버튼이 아예 동작하지 않는다.
+       profile 함수는 이미 email 이 없는 경우를 처리한다(null).
+       비즈 앱 전환 후에는 'account_email profile_nickname' 으로 되돌리면 된다. */
+    scope: 'profile_nickname',
     env: { id: 'KAKAO_CLIENT_ID', secret: 'KAKAO_CLIENT_SECRET' },
     // 카카오는 이메일이 선택 동의라 없을 수 있다 — 그 경우 email 은 null
     profile: (u) => ({
