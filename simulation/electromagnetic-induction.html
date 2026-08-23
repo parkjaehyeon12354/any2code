@@ -19,6 +19,7 @@
      가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
   padding-left: var(--sp-xxl);
   padding-right: var(--sp-xxl);
+  max-width:1500px;
 }
 .crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
 .crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
@@ -26,15 +27,15 @@
 .head { margin-bottom: var(--sp-xl); }
 .head h1 { font-family: var(--font-display); font-size: clamp(28px,3.4vw,38px); font-weight:700; color:var(--ink); margin-bottom:6px; }
 .head p { font-size:15px; color:var(--muted); word-break:keep-all; max-width:65ch; }
-.layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:var(--sp-lg); align-items:start; }
+.layout { display:grid; grid-template-columns:minmax(540px,1fr) minmax(600px,680px); gap:var(--sp-lg); align-items:start; }
 .stage { position:relative; background:var(--stage-bg); border:1px solid var(--hairline); border-radius:var(--rounded-lg); overflow:hidden; }
 #canvas { display:block; width:100%; height:auto; touch-action:none; }
 .stage-foot { display:flex; align-items:center; gap:var(--sp-sm); flex-wrap:wrap; padding:var(--sp-md); border-top:1px solid var(--hairline); background:var(--surface-soft); }
 .stage-foot .btn { height:40px; padding:0 16px; font-size:13.5px; }
 .stage-tip { margin-left:auto; font-size:12.5px; color:var(--muted); }
 .panel { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--rounded-lg); margin-bottom:var(--sp-lg); overflow:hidden; }
-.side-panels { display:flex; flex-direction:column; }
-.measurement-panel { order:-1; }
+.side-panels { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:var(--sp-md); align-items:start; }
+.side-panels .panel { margin-bottom:0; }
 .panel-head { padding:var(--sp-md) var(--sp-lg); border-bottom:1px solid var(--hairline); }
 .panel-head h2 { font-size:14px; font-weight:600; color:var(--ink); }
 .panel-body { padding:var(--sp-lg); }
@@ -62,19 +63,21 @@
 .analysis-head h2 { color:var(--ink); font-size:16px; }
 .analysis-head p { margin-top:4px; color:var(--muted); font-size:12.5px; }
 .graph-wrap { padding:var(--sp-md); background:var(--stage-bg); }
-#graph-canvas { display:block; width:100%; height:260px; }
+#graph-canvas { display:block; width:100%; height:400px; }
 .formula-box { padding:var(--sp-lg); color:var(--body); line-height:1.7; }
-.formula-main { padding:14px 16px; border-left:3px solid var(--primary); border-radius:0 var(--rounded-md) var(--rounded-md) 0; background:var(--surface-soft); color:var(--ink); font:600 16px "Cambria Math", Georgia, serif; }
 .formula-box details { margin-top:var(--sp-md); border:1px solid var(--hairline); border-radius:var(--rounded-md); }
-.formula-box summary { padding:12px 14px; color:var(--primary-active); font-weight:700; cursor:pointer; }
-.proof { padding:0 14px 14px; font-size:13.5px; }
+.formula-box summary { padding:13px 15px; color:var(--primary-active); font-size:15px; font-weight:700; cursor:pointer; }
+.proof { padding:0 16px 17px; font-size:15.5px; line-height:1.85; }
 .concept-list { display:grid; gap:10px; margin-top:var(--sp-md); }
 .concept { padding:13px 15px; border:1px solid var(--hairline); border-radius:var(--rounded-md); background:var(--surface-soft); }
 .concept strong { display:block; margin-bottom:3px; color:var(--ink); }
 .concept p { margin:0; font-size:13.5px; }
-@media(max-width:860px){.layout{grid-template-columns:1fr}.stage-tip{width:100%;margin-left:0}
+.concept details { margin-top:10px; background:var(--canvas); }
+.concept .proof { color:var(--body); }
+@media(max-width:1200px){.layout{grid-template-columns:1fr}.side-panels{grid-template-columns:1fr 1fr}.stage-tip{width:100%;margin-left:0}
   /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
   .sim{padding-left:var(--sp-lg);padding-right:var(--sp-lg)}}
+@media(max-width:700px){.side-panels{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -153,14 +156,13 @@
     <div class="analysis-head"><h2 id="induction-graph-title">시간에 따른 자기선속 변화율과 유도 기전력</h2><p>오른쪽 끝 점이 현재 값입니다. 노란선은 dΦ/dt, 초록선은 ε를 나타냅니다.</p></div>
     <div class="graph-wrap"><canvas id="graph-canvas" aria-label="시간에 따른 자기선속 변화율과 유도 기전력 그래프"></canvas></div>
     <div class="formula-box">
-      <p class="formula-main">Φ = BA cosθ &nbsp; | &nbsp; dΦ/dt = (dΦ/dx)v &nbsp; | &nbsp; ε = −N·dΦ/dt &nbsp; | &nbsp; I = ε/R</p>
       <div class="concept-list">
         <div class="concept"><strong>전자기 유도</strong><p>코일과 자석의 상대적인 운동으로 코일을 통과하는 자기선속이 변할 때 코일에 유도 기전력이 생기고, 닫힌 회로에는 유도 전류가 흐르는 현상입니다.</p></div>
-        <div class="concept"><strong>자기선속 공식: Φ = BA cosθ</strong><p>B는 자기장 세기(T), A는 코일의 단면적(m²), θ는 자기장과 면의 수직 방향이 이루는 각입니다. 자기선속 Φ의 단위는 Wb(웨버)입니다. 자기장이 면에 수직이면 θ = 0°이므로 Φ = BA입니다.</p></div>
-        <div class="concept"><strong>자기선속 변화율: dΦ/dt</strong><p>단위 시간 동안 자기선속이 얼마나 빠르게 변하는지를 뜻합니다. 그래프의 노란선이 이 값입니다. 자석이 멈추면 위치가 일정해져 dΦ/dt = 0이 됩니다.</p></div>
-        <div class="concept"><strong>패러데이 전자기 유도 법칙: ε = −N·dΦ/dt</strong><p>유도 기전력 ε는 자기선속의 시간 변화율과 코일 감은 수 N에 비례합니다. 자석을 빠르게 움직이거나 코일을 많이 감을수록 유도 기전력의 크기가 커집니다.</p></div>
+        <div class="concept"><strong>자기선속 공식: Φ = BA cosθ</strong><p>B는 자기장 세기(T), A는 코일의 단면적(m²), θ는 자기장과 면의 수직 방향이 이루는 각입니다. 자기선속 Φ의 단위는 Wb(웨버)입니다. 자기장이 면에 수직이면 θ = 0°이므로 Φ = BA입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>면적이 아주 작은 조각 dA를 지나는 자기선속은 dΦ = B·dA입니다. 벡터의 내적을 사용하면 dΦ = B cosθ dA가 됩니다.</p><p>균일한 자기장이 평평한 면 전체를 지날 때 적분하면 Φ = ∫B cosθ dA = B cosθ∫dA = BA cosθ입니다.</p><p>자기장이 면에 수직하면 cos0° = 1이므로 Φ = BA입니다. 이 식을 B에 관해 정리하면 <strong>B = Φ/A</strong>가 되며, 단위는 Wb/m² = T(테슬라)입니다.</p><p>자기장이 일정하지 않거나 면이 휘어 있으면 일반식 Φ = ∫<sub>S</sub>B·dA를 사용합니다.</p></div></details></div>
+        <div class="concept"><strong>자기선속 변화율: dΦ/dt = (dΦ/dx)v</strong><p>단위 시간 동안 자기선속이 얼마나 빠르게 변하는지를 뜻합니다. 그래프의 첫 번째 좌표계가 이 값입니다. 자석이 멈추면 위치가 일정해져 dΦ/dt = 0이 됩니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>자기선속이 자석 위치 x에 따라 Φ(x)로 변한다고 두면, 시간에 따른 변화는 합성함수 Φ(x(t))입니다.</p><p>연쇄법칙을 적용하면 dΦ/dt = (dΦ/dx)(dx/dt)입니다. 여기서 dx/dt = v이므로 dΦ/dt = (dΦ/dx)v가 됩니다.</p><p>따라서 같은 위치에서도 자석의 속력 v가 클수록 자기선속 변화율의 크기가 커집니다.</p></div></details></div>
+        <div class="concept"><strong>패러데이 전자기 유도 법칙: ε = −N·dΦ/dt</strong><p>유도 기전력 ε는 자기선속의 시간 변화율과 코일 감은 수 N에 비례합니다. 자석을 빠르게 움직이거나 코일을 많이 감을수록 유도 기전력의 크기가 커집니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>한 번 감은 폐회로에서 패러데이 법칙은 ∮E·dl = −dΦ/dt입니다. 폐회로를 따라 전기장을 적분한 값이 유도 기전력 ε입니다.</p><p>같은 자기선속을 지나는 코일이 N회 감겨 있으면 각 고리에 생기는 기전력이 더해져 ε = −N·dΦ/dt가 됩니다.</p><p>유한한 시간 간격 Δt로 측정할 때는 평균 유도 기전력을 ε ≈ −NΔΦ/Δt로 계산합니다.</p></div></details></div>
         <div class="concept"><strong>렌츠 법칙과 마이너스 부호</strong><p>− 부호는 유도 전류가 원래 자기선속의 변화를 방해하는 방향으로 흐른다는 뜻입니다. 자석이 코일 중심을 지나면 dΦ/dt의 부호가 바뀌어 유도 기전력과 전류 방향도 반전됩니다.</p></div>
-        <div class="concept"><strong>유도 전류 공식: I = ε/R</strong><p>회로의 저항이 R일 때 유도 전류 I는 유도 기전력에 비례하고 저항에 반비례합니다. 현재 시뮬레이션은 전압과 방향을 중심으로 보여주며, Φ와 dΦ/dt는 상대값입니다.</p></div>
+        <div class="concept"><strong>유도 전류 공식: I = ε/R</strong><p>회로의 저항이 R일 때 유도 전류 I는 유도 기전력에 비례하고 저항에 반비례합니다. 현재 시뮬레이션은 전압과 방향을 중심으로 보여주며, Φ와 dΦ/dt는 상대값입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>코일과 연결 도선의 전체 저항을 R이라고 하면 옴의 법칙은 ε = IR입니다.</p><p>양변을 R로 나누면 I = ε/R을 얻습니다. 여기에 패러데이 법칙을 대입하면 I = −(N/R)dΦ/dt입니다.</p><p>따라서 같은 변화율에서는 감은 수 N이 클수록 전류가 커지고, 저항 R이 클수록 전류가 작아집니다.</p></div></details></div>
       </div>
       <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>코일을 지나는 자기선속은 Φ = ∫B·dA입니다. 자석이 움직이면 B가 위치 x에 따라 달라지므로 연쇄법칙으로 dΦ/dt = (dΦ/dx)(dx/dt) = (dΦ/dx)v가 됩니다.</p><p>패러데이 법칙에 따라 N회 감은 코일의 유도 기전력은 ε = −N·dΦ/dt입니다. 마이너스 부호는 렌츠 법칙을 뜻하며, 유도 전류가 자기선속의 변화를 방해하는 방향으로 흐른다는 의미입니다. 코일 중심을 지난 뒤에는 dΦ/dx의 부호가 바뀌므로 ε와 전류 방향도 반전됩니다.</p></div></details>
     </div>
@@ -175,14 +177,14 @@
   const canvas=el('canvas'),ctx=canvas.getContext('2d'),graphCanvas=el('graph-canvas'),graphCtx=graphCanvas.getContext('2d');
   const params={strength:.6,speed:1,turns:100,pole:1};
   const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,dragging:false,lastMovedAt:0};
-  const history={fluxRate:[],emf:[]};
+  const history={time:[],fluxRate:[],emf:[]};
   let last=performance.now(),lastSample=0;
 
   function resize(){
     const w=canvas.clientWidth,h=Math.round(w*.62),dpr=window.devicePixelRatio||1;
     canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.height=h+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    const gw=graphCanvas.clientWidth,gh=260;
+    const gw=graphCanvas.clientWidth,gh=400;
     graphCanvas.width=Math.round(gw*dpr);graphCanvas.height=Math.round(gh*dpr);graphCanvas.style.height=gh+'px';
     graphCtx.setTransform(dpr,0,0,dpr,0,0);
   }
@@ -235,16 +237,24 @@
     const moving=state.velocity;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
   }
   function drawGraph(){
-    const g=graphCtx,cw=graphCanvas.clientWidth,ch=graphCanvas.height/(window.devicePixelRatio||1),x=46,y=18,w=cw-66,h=ch-42;
-    g.clearRect(0,0,cw,ch);g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,y,w,h);g.strokeStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x,y+h/2);g.lineTo(x+w,y+h/2);g.stroke();
-    g.font='600 12px system-ui';g.textAlign='left';g.textBaseline='top';
-    g.fillStyle='#d7a04b';g.fillText(`● dΦ/dt ${state.fluxRate.toFixed(3)} /s`,x+10,y+8);
-    g.fillStyle='#69c6ac';g.fillText(`● ε ${Math.abs(state.emf)<.0005?'0.000':state.emf.toFixed(3)} V`,x+10,y+27);
-    g.fillStyle='rgba(255,255,255,.55)';g.textAlign='right';g.fillText('과거 ← 시간(최근 6초) → 현재',x+w,y+h+8);g.textAlign='left';
-    const line=(values,color,scale)=>{if(values.length<2)return;const end=Math.max(1,values.length-1);g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+i/end*w,py=y+h/2-v/scale*h*.42;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const value=values[values.length-1],py=y+h/2-value/scale*h*.42;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();};
-    line(history.fluxRate,'#d7a04b',3.2);line(history.emf,'#69c6ac',3.2);
+    const g=graphCtx,cw=graphCanvas.clientWidth,ch=graphCanvas.height/(window.devicePixelRatio||1),x=72,w=cw-96,plotH=125;
+    g.clearRect(0,0,cw,ch);g.font='12px system-ui';g.textBaseline='middle';
+    const minT=Math.max(0,state.t-6),maxT=Math.max(minT+.001,state.t);
+    const scaleFor=(values,min)=>Math.max(min,Math.ceil(Math.max(...values.map(Math.abs),0)*10)/10);
+    const chart=(values,top,color,title,unit,minScale)=>{
+      const scale=scaleFor(values,minScale);g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,top,w,plotH);
+      g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=1;
+      for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle='rgba(255,255,255,.7)';g.textAlign='right';g.fillText(value.toFixed(2),x-9,py);}
+      for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
+      g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();
+      g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(4):'0.0000'} ${unit}`,x,top-14);g.font='12px system-ui';
+      if(values.length>1){g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(history.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const value=values[values.length-1],py=top+plotH/2-value/scale*plotH*.48;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();}
+    };
+    chart(history.fluxRate,34,'#d7a04b','자기선속 변화율 dΦ/dt','/s',.1);
+    chart(history.emf,225,'#69c6ac','유도 기전력 ε','V',.1);
+    g.fillStyle='rgba(255,255,255,.8)';g.textAlign='center';g.fillText('시간 t (s)',x+w/2,386);
   }
-  function pushSample(){history.fluxRate.push(state.fluxRate);history.emf.push(state.emf);if(history.fluxRate.length>120){history.fluxRate.shift();history.emf.shift();}}
+  function pushSample(){history.time.push(state.t);history.fluxRate.push(state.fluxRate);history.emf.push(state.emf);if(history.fluxRate.length>120){history.time.shift();history.fluxRate.shift();history.emf.shift();}}
   function sample(now){if(now-lastSample<50)return;lastSample=now;pushSample();}
   function numbers(){
     const velocity=state.velocity,near=velocity>0.03?'가까워지는 중':velocity<-.03?'멀어지는 중':'멈춤';
@@ -258,7 +268,7 @@
     el('note').textContent=Math.abs(emf)<.0005?'dΦ/dt = 0이므로 유도 기전력과 전류가 0입니다.':state.fluxRate>0?'자기선속이 증가하여 이를 방해하는 방향으로 유도 전류가 흐릅니다.':'자기선속이 감소하여 변화를 막는 반대 방향으로 유도 전류가 흐릅니다.';
   }
   function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);drawGraph();requestAnimationFrame(frame);}
-  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.fluxRate=[];history.emf=[];}
+  function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.time=[];history.fluxRate=[];history.emf=[];}
   function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
   canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
   canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});

@@ -20,6 +20,7 @@
      가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
   padding-left: var(--sp-xxl);
   padding-right: var(--sp-xxl);
+  max-width: 1500px;
 }
 
 .crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
@@ -37,7 +38,10 @@
 .head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
 
 /* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-lg); align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(540px, 1fr) minmax(560px, 640px); gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--sp-md); align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: 1 / -1; }
 
 /* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
    눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
@@ -132,16 +136,18 @@
 .formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
 .formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
 .formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
-.formula-box summary { padding: 12px 14px; color: var(--primary-active); font-weight: 700; cursor: pointer; }
-.proof { padding: 0 14px 14px; font-size: 13.5px; }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
 .graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
-#pendulum-graph { display: block; width: 100%; height: 260px; }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
 
-@media (max-width: 860px) {
+@media (max-width: 1200px) {
   .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
   /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
 </style>
 </head>
 <body>
@@ -178,7 +184,7 @@
   </div>
 
   <div class="layout">
-    <div>
+    <div class="side-panels">
       <div class="stage">
         <canvas id="canvas" aria-label="단진자 운동"></canvas>
         <div class="stage-foot">
@@ -305,7 +311,7 @@
   let lastCross = null;
   let periods = [];
   let prevTheta = 0;
-  const graphHistory = { theta: [], omega: [] };
+  const graphHistory = { time: [], theta: [], omega: [] };
   let lastGraphSample = -Infinity;
 
   function reset() {
@@ -318,6 +324,7 @@
     lastGraphSample = -Infinity;
     graphHistory.theta = [];
     graphHistory.omega = [];
+    graphHistory.time = [];
   }
 
   function step() {
@@ -360,7 +367,7 @@
     canvas.height = Math.round(h * dpr);
     canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const gw = graphCanvas.clientWidth, gh = 260;
+    const gw = graphCanvas.clientWidth, gh = 400;
     graphCanvas.width = Math.round(gw * dpr);
     graphCanvas.height = Math.round(gh * dpr);
     graphCanvas.style.height = gh + 'px';
@@ -455,23 +462,26 @@
   function sampleGraph() {
     if (state.t - lastGraphSample < 0.05) return;
     lastGraphSample = state.t;
+    graphHistory.time.push(state.t);
     graphHistory.theta.push(state.theta * 180 / Math.PI);
     graphHistory.omega.push(state.omega);
-    if (graphHistory.theta.length > 240) { graphHistory.theta.shift(); graphHistory.omega.shift(); }
+    if (graphHistory.theta.length > 240) { graphHistory.time.shift(); graphHistory.theta.shift(); graphHistory.omega.shift(); }
   }
 
   function drawGraph() {
-    const g = graphCtx, cw = graphCanvas.clientWidth, ch = graphCanvas.height / (window.devicePixelRatio || 1);
-    const x = 48, y = 18, w = cw - 68, h = ch - 42;
-    g.clearRect(0, 0, cw, ch); g.fillStyle = 'rgba(255,255,255,.035)'; g.fillRect(x, y, w, h);
-    g.strokeStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.moveTo(x, y + h / 2); g.lineTo(x + w, y + h / 2); g.stroke();
-    g.font = '600 12px system-ui'; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillStyle = '#71aeff'; g.fillText(`● 각도 θ ${(state.theta * 180 / Math.PI).toFixed(3)}°`, x + 10, y + 8);
-    g.fillStyle = '#e6a85c'; g.fillText(`● 각속도 ω ${state.omega.toFixed(4)} rad/s`, x + 10, y + 27);
-    g.fillStyle = 'rgba(255,255,255,.55)'; g.textAlign = 'right'; g.fillText('과거 ← 시간(최근 12초) → 현재', x + w, y + h + 8); g.textAlign = 'left';
-    const maxTheta = Math.max(5, params.deg), maxOmega = Math.max(.5, Math.sqrt(G / params.L) * params.deg * Math.PI / 180);
-    const line = (values, color, scale) => { if (values.length < 2) return; const end = values.length - 1; g.strokeStyle = color; g.lineWidth = 2; g.beginPath(); values.forEach((v, i) => { const px = x + i / end * w, py = y + h / 2 - v / scale * h * .42; i ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke(); const v = values[end], py = y + h / 2 - v / scale * h * .42; g.fillStyle = color; g.beginPath(); g.arc(x + w, py, 4, 0, Math.PI * 2); g.fill(); };
-    line(graphHistory.theta, '#71aeff', maxTheta); line(graphHistory.omega, '#e6a85c', maxOmega);
+    const g=graphCtx,cw=graphCanvas.clientWidth,ch=graphCanvas.height/(window.devicePixelRatio||1),x=72,w=cw-96,plotH=125;
+    g.clearRect(0,0,cw,ch);g.font='12px system-ui';g.textBaseline='middle';
+    const minT=Math.max(0,state.t-12),maxT=Math.max(minT+.001,state.t);
+    const chart=(values,top,color,title,unit,scale)=>{
+      g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,top,w,plotH);g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=1;
+      for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle='rgba(255,255,255,.7)';g.textAlign='right';g.fillText(value.toFixed(unit==='°'?1:2),x-9,py);}
+      for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
+      g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(unit==='°'?3:4):'0'} ${unit}`,x,top-14);g.font='12px system-ui';
+      if(values.length>1){g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(graphHistory.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const v=values[values.length-1],py=top+plotH/2-v/scale*plotH*.48;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();}
+    };
+    chart(graphHistory.theta,34,'#71aeff','각도 θ','°',Math.max(5,params.deg));
+    chart(graphHistory.omega,225,'#e6a85c','각속도 ω','rad/s',Math.max(.5,Math.sqrt(G/params.L)*params.deg*Math.PI/180));
+    g.fillStyle='rgba(255,255,255,.8)';g.textAlign='center';g.fillText('시간 t (s)',x+w/2,386);
   }
 
   let prev = performance.now();
