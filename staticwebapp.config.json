@@ -49,6 +49,14 @@
       "rewrite": "/research-record.html"
     },
     {
+      "route": "/research/report",
+      "rewrite": "/research-report.html"
+    },
+    {
+      "route": "/research/examples",
+      "rewrite": "/research-examples.html"
+    },
+    {
       "route": "/science",
       "rewrite": "/science.html"
     },
