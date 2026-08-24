@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ans2Quest 심화 탐구 — 주제 선정부터 보고서 작성까지 과학 탐구 전 과정을 안내합니다">
+  <title>심화 탐구 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="/theme.js"></script>
+  <style>
+    .research-main { padding-bottom: var(--sp-section); }
+    .research-hero { padding: 72px 0 64px; border-bottom: 1px solid var(--hairline); background: linear-gradient(135deg, color-mix(in srgb,var(--primary) 9%,var(--canvas)),var(--surface-soft)); }
+    .research-hero .container { position: relative; }
+    .eyebrow { margin-bottom: 10px; color: var(--primary-active); font-size: 12px; font-weight: 750; letter-spacing: .14em; }
+    .research-hero h1 { max-width: 760px; color: var(--ink); font-family: var(--font-display); font-size: clamp(34px,5vw,54px); line-height: 1.18; letter-spacing: -.035em; }
+    .research-hero p:last-child { max-width: 690px; margin-top: 16px; color: var(--body); font-size: 17px; line-height: 1.75; word-break: keep-all; }
+    .research-content { padding-top: 64px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+    .section-head h2 { color: var(--ink); font-family: var(--font-display); font-size: clamp(26px,3vw,34px); }
+    .section-head p { max-width: 520px; color: var(--muted); font-size: 14px; line-height: 1.65; text-align: right; word-break: keep-all; }
+    .research-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--sp-lg); }
+    .research-card { display: flex; min-height: 310px; padding: 28px; flex-direction: column; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); transition: transform .18s,border-color .18s,box-shadow .18s; }
+    .research-card:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 12px 28px rgba(20,20,19,.07); }
+    .card-icon { display: grid; width: 48px; height: 48px; margin-bottom: 22px; place-items: center; border-radius: 14px; background: color-mix(in srgb,var(--primary) 11%,var(--canvas)); color: var(--primary-active); }
+    .card-icon svg { width: 25px; height: 25px; }
+    .research-card h3 { margin-bottom: 9px; color: var(--ink); font-size: 21px; }
+    .card-purpose { margin-bottom: 8px; color: var(--primary-active); font-size: 12px; font-weight: 700; }
+    .research-card p:not(.card-purpose) { color: var(--body); font-size: 14px; line-height: 1.7; word-break: keep-all; }
+    .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 24px; }
+    .duration { color: var(--muted); font-size: 12px; }
+    .card-link { position: relative; z-index: 1; color: var(--primary-active); font-size: 13px; font-weight: 700; }
+    .card-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .process { margin-top: 80px; padding: 36px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--surface-soft); }
+    .process h2 { color: var(--ink); font-family: var(--font-display); font-size: 28px; }
+    .process > p { margin-top: 8px; color: var(--body); line-height: 1.65; }
+    .process-list { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-top: 28px; list-style: none; counter-reset: process; }
+    .process-list li { position: relative; min-height: 150px; padding: 20px 18px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); background: var(--canvas); counter-increment: process; }
+    .process-list li::before { content: counter(process,decimal-leading-zero); display: block; margin-bottom: 18px; color: var(--primary); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+    .process-list li:not(:last-child)::after { content: '→'; position: absolute; top: 50%; right: -13px; z-index: 2; color: var(--muted); transform: translateY(-50%); }
+    .process-list strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 16px; }
+    .process-list span { color: var(--muted); font-size: 12.5px; line-height: 1.55; }
+    .module-details { margin-top: 72px; }
+    .module-list { display: grid; gap: 12px; }
+    .module-item { scroll-margin-top: 76px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
+    .module-item summary { padding: 20px 24px; color: var(--ink); font-size: 17px; font-weight: 700; cursor: pointer; }
+    .module-copy { padding: 0 24px 22px; color: var(--body); font-size: 14px; line-height: 1.75; word-break: keep-all; }
+    .module-copy strong { color: var(--primary-active); }
+    @media(max-width:1000px){.research-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.process-list{grid-template-columns:1fr}.process-list li{min-height:0}.process-list li:not(:last-child)::after{content:'↓';top:auto;right:50%;bottom:-17px;transform:translateX(50%)}}
+    @media(max-width:700px){.research-hero{padding:48px 0}.research-content{padding-top:44px}.research-grid{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}.section-head p{text-align:left}.research-card{min-height:280px}.process{margin-top:56px;padding:24px}.module-details{margin-top:56px}}
+  </style>
+</head>
+<body>
+  <header class="top-nav" id="top-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round"/><line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4"/><circle cx="11.5" cy="17" r="1.2" fill="#d97706"/><circle cx="15" cy="19" r=".9" fill="#167a63"/></svg>Ans2Quest</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/simulation/">물리학</a></li><li><a href="/simulation/">화학</a></li><li><a href="/simulation/">생명과학</a></li><li><a href="/simulation/">지구과학</a></li><li><a href="/community">커뮤니티</a></li><li class="active"><a href="/research">심화 탐구</a></li><li><a href="/guide">가이드</a></li>
+      </ul>
+      <div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div>
+      <button class="hamburger" type="button" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </header>
+  <main class="research-main">
+    <section class="research-hero"><div class="container"><p class="eyebrow">ADVANCED INQUIRY</p><h1>궁금증을 나만의 과학 탐구로 발전시키세요</h1><p>주제를 고르는 순간부터 가설 설정, 실험 설계, 결과 분석과 보고서 작성까지. 막막했던 탐구 과정을 한 단계씩 완성할 수 있도록 안내합니다.</p></div></section>
+    <div class="container research-content">
+      <section aria-labelledby="tools-title">
+        <div class="section-head"><h2 id="tools-title">탐구 도구</h2><p>필요한 단계부터 시작해도 좋습니다. 각 도구는 탐구 결과를 대신 만들지 않고, 학생이 스스로 생각하고 기록하도록 돕습니다.</p></div>
+        <div class="research-grid">
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5M8 11h6M11 8v6"/></svg></div><p class="card-purpose">학습 목적 · 탐구 질문 발견하기</p><h3>주제 탐색</h3><p>교과 개념과 일상의 현상을 연결해 조사·실험 가능한 탐구 질문을 찾아봅니다.</p><div class="card-foot"><span class="duration">약 10~15분</span><a class="card-link" href="#topic-search">내용 살펴보기 →</a></div></article>
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18h6M10 22h4M8.5 15.5A7 7 0 1 1 15.5 15.5C14.6 16.2 14 17 14 18h-4c0-1-.6-1.8-1.5-2.5Z"/></svg></div><p class="card-purpose">학습 목적 · 검증 가능한 문장 만들기</p><h3>가설 설정 가이드</h3><p>독립변인과 종속변인의 관계를 분명히 하고 측정할 수 있는 가설로 다듬습니다.</p><div class="card-foot"><span class="duration">약 15~20분</span><a class="card-link" href="#hypothesis">내용 살펴보기 →</a></div></article>
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M7 15h10"/></svg></div><p class="card-purpose">학습 목적 · 공정한 실험 계획하기</p><h3>실험 설계</h3><p>변인 통제, 반복 측정, 안전 수칙과 기록 방법을 포함한 재현 가능한 실험을 설계합니다.</p><div class="card-foot"><span class="duration">약 20~30분</span><a class="card-link" href="#experiment">내용 살펴보기 →</a></div></article>
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h9l3 3v15H6zM14 3v4h4M9 11h6M9 15h6"/></svg></div><p class="card-purpose">학습 목적 · 탐구 역량 언어화하기</p><h3>세특 작성 가이드</h3><p>실제로 수행한 활동과 배운 점을 근거로 탐구 과정의 핵심 메모를 정리합니다.</p><div class="card-foot"><span class="duration">약 15~20분</span><a class="card-link" href="#record">내용 살펴보기 →</a></div></article>
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg></div><p class="card-purpose">학습 목적 · 과학적 글쓰기 완성하기</p><h3>보고서 템플릿</h3><p>탐구 문제부터 결론과 한계까지 빠짐없이 기록할 수 있는 보고서 구조를 확인합니다.</p><div class="card-foot"><span class="duration">약 30~50분</span><a class="card-link" href="#report">내용 살펴보기 →</a></div></article>
+          <article class="research-card"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></div><p class="card-purpose">학습 목적 · 좋은 탐구의 기준 이해하기</p><h3>우수 사례</h3><p>모범 탐구의 질문·설계·분석을 살펴보고 각 부분이 좋은 이유를 찾아봅니다.</p><div class="card-foot"><span class="duration">약 10~20분</span><a class="card-link" href="#examples">내용 살펴보기 →</a></div></article>
+        </div>
+      </section>
+      <section class="process" aria-labelledby="process-title"><h2 id="process-title">과학 탐구의 전체 흐름</h2><p>좋은 탐구는 정답을 빨리 찾는 활동이 아니라, 질문과 증거를 연결하며 설명을 다듬는 과정입니다.</p><ol class="process-list"><li><strong>주제 선정</strong><span>관심 현상에서 측정 가능한 질문을 찾습니다.</span></li><li><strong>가설 설정</strong><span>변인 사이의 예상 관계와 근거를 씁니다.</span></li><li><strong>실험 설계</strong><span>공정하게 비교할 조건과 측정 방법을 정합니다.</span></li><li><strong>결과 분석</strong><span>표와 그래프로 경향, 오차와 한계를 해석합니다.</span></li><li><strong>보고서 작성</strong><span>주장과 근거를 연결하고 후속 질문을 제안합니다.</span></li></ol></section>
+      <section class="module-details" aria-labelledby="detail-title"><div class="section-head"><h2 id="detail-title">각 도구에서 무엇을 하나요?</h2><p>카드의 이동 버튼은 아래 해당 안내로 연결됩니다.</p></div><div class="module-list">
+        <details class="module-item" id="topic-search"><summary>주제 탐색에서 확인할 내용</summary><div class="module-copy"><strong>관심 분야 → 현상 → 측정 가능한 질문</strong>의 순서로 범위를 좁힙니다. 교과 개념, 예상 준비물, 시간과 안전 조건을 함께 검토합니다.</div></details>
+        <details class="module-item" id="hypothesis"><summary>가설 설정 가이드에서 확인할 내용</summary><div class="module-copy">독립변인·종속변인·통제변인을 구분하고, “만약 …하면 …할 것이다. 왜냐하면 …이기 때문이다” 구조로 검증 가능한 가설을 만듭니다.</div></details>
+        <details class="module-item" id="experiment"><summary>실험 설계에서 확인할 내용</summary><div class="module-copy">실험군과 대조군, 반복 횟수, 측정 단위, 기록 간격과 안전 수칙을 정합니다. 다른 사람이 같은 방법으로 재현할 수 있을 만큼 구체적으로 씁니다.</div></details>
+        <details class="module-item" id="record"><summary>세특 작성 가이드에서 확인할 내용</summary><div class="module-copy">허위 활동이나 과장된 평가 문장을 만들지 않습니다. 실제로 한 선택, 해결한 문제, 사용한 증거와 새롭게 생긴 질문을 핵심 메모로 정리합니다.</div></details>
+        <details class="module-item" id="report"><summary>보고서 템플릿에서 확인할 내용</summary><div class="module-copy">탐구 동기, 문제, 이론, 가설, 방법, 결과, 분석, 오차, 결론, 후속 탐구와 참고문헌의 순서로 과학적 주장을 완성합니다.</div></details>
+        <details class="module-item" id="examples"><summary>우수 사례에서 확인할 내용</summary><div class="module-copy">사례를 그대로 복사하지 않고 질문이 구체적인지, 변인이 통제됐는지, 결론이 데이터에 근거하는지를 평가 기준에 따라 살펴봅니다.</div></details>
+      </div></section>
+    </div>
+  </main>
+  <div class="mobile-menu" id="mobile-menu"><div class="mobile-menu-header"><a href="/" class="nav-brand">Ans2Quest</a><button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">✕</button></div><nav><a href="/simulation/">물리학</a><a href="/simulation/">화학</a><a href="/simulation/">생명과학</a><a href="/simulation/">지구과학</a><a href="/community">커뮤니티</a><a href="/research">심화 탐구</a><a href="/guide">가이드</a></nav><div class="mobile-menu-actions" id="mobile-cta"><a href="/login" class="btn btn-primary" style="width:100%">시작하기</a></div></div>
+  <script src="session.js"></script><script src="nav-user.js"></script><script src="nav-dropdown.js"></script>
+</body>
+</html>
