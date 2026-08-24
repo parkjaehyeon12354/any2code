@@ -483,7 +483,11 @@
       for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle='rgba(255,255,255,.7)';g.textAlign='right';g.fillText(value.toFixed(unit==='°'?1:2),x-9,py);}
       for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
       g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(unit==='°'?3:4):'0'} ${unit}`,x,top-14);g.font='12px system-ui';
-      if(values.length>1){g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(graphHistory.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const v=values[values.length-1],py=top+plotH/2-v/scale*plotH*.48;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();}
+      if(values.length>1){
+        g.save();g.beginPath();g.rect(x,top,w,plotH);g.clip();
+        g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(graphHistory.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();
+        const v=values[values.length-1],py=Math.max(top+4,Math.min(top+plotH-4,top+plotH/2-v/scale*plotH*.48));g.fillStyle=color;g.beginPath();g.arc(x+w-4,py,4,0,Math.PI*2);g.fill();g.restore();
+      }
     };
     chart(graphHistory.theta,34,'#71aeff','각도 θ','°',Math.max(5,params.deg));
     chart(graphHistory.omega,225,'#e6a85c','각속도 ω','rad/s',Math.max(.5,Math.sqrt(G/params.L)*params.deg*Math.PI/180));

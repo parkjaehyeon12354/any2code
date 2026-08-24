@@ -256,7 +256,11 @@
       for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
       g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();
       g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(4):'0.0000'} ${unit}`,x,top-14);g.font='12px system-ui';
-      if(values.length>1){g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(history.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();const value=values[values.length-1],py=top+plotH/2-value/scale*plotH*.48;g.fillStyle=color;g.beginPath();g.arc(x+w,py,4,0,Math.PI*2);g.fill();}
+      if(values.length>1){
+        g.save();g.beginPath();g.rect(x,top,w,plotH);g.clip();
+        g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(history.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();
+        const value=values[values.length-1],py=Math.max(top+4,Math.min(top+plotH-4,top+plotH/2-value/scale*plotH*.48));g.fillStyle=color;g.beginPath();g.arc(x+w-4,py,4,0,Math.PI*2);g.fill();g.restore();
+      }
     };
     chart(history.fluxRate,34,'#d7a04b','자기선속 변화율 dΦ/dt','/s',.1);
     chart(history.emf,225,'#69c6ac','유도 기전력 ε','V',.1);
