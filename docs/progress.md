@@ -27,6 +27,8 @@
 | 전자기 유도 시뮬레이션 | 동작 |
 | 시뮬레이션 목록·과목 필터 | 동작 |
 | AI 과학 도우미 (`/science`) | 동작 (로그인 필요 · 3시간마다 200 크레딧) |
+| 가입 마무리 (`/welcome`) | 동작 — 약관 동의 필수, 이름·생일 선택 |
+| 이용약관 (`/terms`) · 개인정보 처리방침 (`/privacy`) | 동작 |
 | 다크 모드 (기기 설정 자동 + 수동 전환) | 동작 |
 
 ---
@@ -54,6 +56,8 @@
 /simulation/pendulum    단진자
 /simulation/electromagnetic-induction   전자기 유도
 /science                AI 과학 도우미
+/welcome                가입 마무리 (약관 동의)
+/terms /privacy         약관 · 개인정보 처리방침
 /login  /admin
 ```
 
@@ -140,7 +144,7 @@ state.theta += state.omega * DT;
 | 요청 크기 | 32KB 초과는 파싱 전 413 |
 | 킬 스위치 | `LOCKDOWN=1` → 모든 API 503 (Azure 포털에서만 조작 가능) |
 
-`npm audit` 취약점 0건. 테스트 179개 통과.
+`npm audit` 취약점 0건. 테스트 191개 통과.
 
 ### 비상 대응
 
@@ -361,6 +365,6 @@ hairline 으로 끊고 13px `--muted` 로 낮췄습니다 — 대비 밝은 모�
 
 - 커밋 153개
 - 코드 약 10,100줄 (HTML/CSS/JS + API)
-- 테스트 179개
+- 테스트 191개
 - API 경로 19개 (핸들러 23개)
 - 시뮬레이션 2개
