@@ -248,22 +248,21 @@
     const g=graphCtx,cw=graphCanvas.clientWidth,ch=graphCanvas.height/(window.devicePixelRatio||1),x=72,w=cw-96,plotH=125;
     g.clearRect(0,0,cw,ch);g.font='12px system-ui';g.textBaseline='middle';
     const minT=Math.max(0,state.t-6),maxT=Math.max(minT+.001,state.t);
-    const scaleFor=(values,min)=>Math.max(min,Math.ceil(Math.max(...values.map(Math.abs),0)*10)/10);
-    const chart=(values,top,color,title,unit,minScale)=>{
-      const scale=scaleFor(values,minScale);g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,top,w,plotH);
+    const chart=(values,top,color,title,unit,scale)=>{
+      g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,top,w,plotH);
       g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=1;
       for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle='rgba(255,255,255,.7)';g.textAlign='right';g.fillText(value.toFixed(2),x-9,py);}
       for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
       g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();
       g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(4):'0.0000'} ${unit}`,x,top-14);g.font='12px system-ui';
       if(values.length>1){
-        g.save();g.beginPath();g.rect(x,top,w,plotH);g.clip();
+        g.save();g.beginPath();g.rect(x+1,top+1,w-2,plotH-2);g.clip();
         g.strokeStyle=color;g.lineWidth=2;g.beginPath();values.forEach((v,i)=>{const px=x+(history.time[i]-minT)/(maxT-minT)*w,py=top+plotH/2-v/scale*plotH*.48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();
-        const value=values[values.length-1],py=Math.max(top+4,Math.min(top+plotH-4,top+plotH/2-value/scale*plotH*.48));g.fillStyle=color;g.beginPath();g.arc(x+w-4,py,4,0,Math.PI*2);g.fill();g.restore();
+        const value=values[values.length-1],py=top+plotH/2-value/scale*plotH*.48;g.fillStyle=color;g.beginPath();g.arc(x+w-4,py,4,0,Math.PI*2);g.fill();g.restore();
       }
     };
-    chart(history.fluxRate,34,'#d7a04b','자기선속 변화율 dΦ/dt','/s',.1);
-    chart(history.emf,225,'#69c6ac','유도 기전력 ε','V',.1);
+    chart(history.fluxRate,34,'#d7a04b','자기선속 변화율 dΦ/dt','/s',8);
+    chart(history.emf,225,'#69c6ac','유도 기전력 ε','V',4);
     g.fillStyle='rgba(255,255,255,.8)';g.textAlign='center';g.fillText('시간 t (s)',x+w/2,386);
   }
   function pushSample(){history.time.push(state.t);history.fluxRate.push(state.fluxRate);history.emf.push(state.emf);if(history.fluxRate.length>120){history.time.shift();history.fluxRate.shift();history.emf.shift();}}
