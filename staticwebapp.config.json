@@ -41,6 +41,14 @@
       "rewrite": "/research-hypothesis.html"
     },
     {
+      "route": "/research/experiment",
+      "rewrite": "/research-experiment.html"
+    },
+    {
+      "route": "/research/record",
+      "rewrite": "/research-record.html"
+    },
+    {
       "route": "/science",
       "rewrite": "/science.html"
     },
