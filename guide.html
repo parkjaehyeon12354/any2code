@@ -34,7 +34,8 @@
       width: 100%;
       padding: 56px 0 48px;
       overflow: hidden;
-      background: linear-gradient(135deg, #f5fbf8 0%, #f7f4ec 100%);
+      /* 토큰으로 둔다. 하드코딩 밝은 값이면 다크에서 흰 글자가 얹혀 안 보인다. */
+      background: linear-gradient(135deg, var(--surface-soft) 0%, var(--canvas) 100%);
       box-sizing: border-box;
     }
 
@@ -51,7 +52,7 @@
       height: 220px;
       right: 5%;
       top: -60px;
-      background: #dcefe7;
+      background: var(--surface-soft);
       opacity: 0.8;
     }
 
@@ -60,7 +61,7 @@
       height: 130px;
       right: 2%;
       bottom: -40px;
-      background: #e7dcbf;
+      background: var(--hairline);
       opacity: 0.7;
     }
 
@@ -130,7 +131,7 @@
       padding: 28px 36px;
       border: 1px solid var(--hairline);
       border-radius: var(--rounded-lg);
-      background: linear-gradient(135deg, #f7fbf8 0%, #ffffff 100%);
+      background: linear-gradient(135deg, var(--surface-soft) 0%, var(--canvas) 100%);
       box-shadow: 0 8px 20px rgba(20, 20, 19, 0.03);
     }
 
@@ -427,7 +428,7 @@
     <div class="nav-cta" id="nav-cta">
       <a href="/login">시작하기</a>
     </div>
-    <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
+    <button class="hamburger" aria-label="메뉴 열기">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     </div>
@@ -554,7 +555,7 @@
         </svg>
         Ans2Quest
       </span>
-      <button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">
+      <button class="mobile-menu-close" aria-label="메뉴 닫기">
         <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
       </button>
     </div>
@@ -575,6 +576,7 @@
 
   <script src="session.js"></script>
   <script src="nav-user.js"></script>
+  <script src="mobile-menu.js"></script>
   <script src="nav-dropdown.js"></script>
 </body>
 </html>

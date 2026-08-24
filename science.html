@@ -81,7 +81,11 @@
     .credit-badge {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 5px 10px; border-radius: 999px;
-      background: var(--surface-soft); color: var(--muted);
+      /* 배경을 --canvas 로 둔다. 이 배지가 앉는 .science-chat 패널이
+         --surface-soft 라, 같은 값을 쓰면 대비 1:1 로 형태가 안 보인다.
+         같은 패널의 .tip 이 이미 --canvas 로 그 대비를 쓰고 있다. */
+      background: var(--canvas); border: 1px solid var(--hairline);
+      color: var(--muted);
       font-size: 12.5px; font-weight: 600; white-space: nowrap;
     }
     .credit-badge.low { color: var(--warn-fg, #8a5c08); background: rgba(217,119,6,.14); }
@@ -166,11 +170,11 @@
       <ul class="nav-links" id="nav-links" aria-label="주요 메뉴">
         <li><a href="/simulation/">시뮬레이션</a></li>
         <li><a href="/community">커뮤니티</a></li>
-        <li><a href="/science" class="active-link">AI 과학 도우미</a></li>
+        <li class="active"><a href="/science" aria-current="page">AI 과학 도우미</a></li>
         <li><a href="/guide">가이드</a></li>
       </ul>
       <div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div>
-    <button class="hamburger" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')">
+    <button class="hamburger" aria-label="메뉴 열기">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     </div>
@@ -187,7 +191,7 @@
       </svg>
       Ans2Quest
     </span>
-    <button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
     </button>
   </div>
@@ -331,6 +335,7 @@
 
   <script src="/session.js"></script>
   <script src="/nav-user.js"></script>
+  <script src="/mobile-menu.js"></script>
   <script src="/llm.js"></script>
   <script>
   /* 제재 배너 · 소명 — community.html 의 흐름을 그대로 가져왔다.

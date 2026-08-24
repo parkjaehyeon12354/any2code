@@ -100,12 +100,6 @@ async function balance(sub) {
   };
 }
 
-/** 쓸 수 있는 상태인가. 잔액이 남아 있으면 true. */
-async function allowed(sub) {
-  const b = await balance(sub);
-  return b.remaining > 0;
-}
-
 /* 실제 사용량을 차감한다. 답변을 받은 뒤에 부른다.
 
    ⚠ 차감에 실패해도 답변은 이미 나갔다. 그 경우 조용히 넘어가되 로그를 남긴다 —
@@ -207,7 +201,7 @@ async function grant(sub, amount, userName) {
 }
 
 module.exports = {
-  balance, allowed, consume, grant, toCredits,
+  balance, consume, grant, toCredits,
   currentPeriod, msUntilReset,
   TOKENS_PER_CREDIT, FREE_CREDITS, RESET_HOURS
 };
