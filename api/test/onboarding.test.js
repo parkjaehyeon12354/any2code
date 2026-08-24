@@ -12,6 +12,47 @@ const path = require('path');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 const readRoot = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
 
+test('약관 동의는 로그인 화면에서 먼저 받는다', () => {
+  /* 소셜 로그인은 누르는 순간 외부 제공자로 넘어가 되돌릴 수 없다.
+     동의를 그 뒤에 받으면 "계정이 만들어진 뒤에 묻는" 꼴이 된다. */
+  const html = readRoot('login.html');
+  assert.ok(/id="agree"/.test(html), '로그인 화면에 동의 체크박스가 있어야 한다');
+  assert.ok(/href="\/terms"/.test(html) && /href="\/privacy"/.test(html),
+    '두 문서로 가는 링크가 있어야 한다');
+
+  // 체크박스가 OAuth 버튼보다 뒤(아래)에 와야 한다 — 사용자가 요청한 배치
+  assert.ok(html.indexOf('class="providers"') < html.indexOf('class="auth-agree"'),
+    '동의는 로그인 버튼 아래에 둔다');
+
+  // 동의 없이 누르면 이동하지 않아야 한다
+  assert.ok(/if \(!agree\.checked\)[\s\S]{0,300}return;/.test(html),
+    '미동의 상태에서 로그인 시작을 막아야 한다');
+});
+
+test('로그인 버튼을 비활성으로 두지 않는다', () => {
+  /* disabled 로 막으면 왜 안 눌리는지 알 수 없다. 누르게 두고 이유를 보여준다. */
+  const html = readRoot('login.html');
+  const guard = html.slice(html.indexOf("if (!agree.checked)"));
+  assert.ok(/notice\.textContent/.test(guard.slice(0, 400)),
+    '막을 때 이유를 화면에 알려야 한다');
+});
+
+test('프로필 화면은 약관을 다시 묻지 않는다', () => {
+  // 로그인 화면에서 이미 받았다. 또 물으면 두 번 묻는 꼴이다.
+  const html = readRoot('welcome.html');
+  assert.ok(!/type="checkbox"/.test(html),
+    '/welcome 에 동의 체크박스가 남아 있으면 안 된다');
+  assert.ok(/w-agreed/.test(html), '동의한 문서 링크는 남겨야 한다');
+});
+
+test('이름·생일은 건너뛸 수 있다', () => {
+  const html = readRoot('welcome.html');
+  assert.ok(/id="w-skip"/.test(html), '건너뛰기 경로가 있어야 한다');
+  // 건너뛰면 빈 값으로 제출돼야 한다 — 그래야 가입은 끝난다
+  const skip = html.slice(html.indexOf("el('w-skip')"));
+  assert.ok(/value = ''/.test(skip.slice(0, 400)), '건너뛰면 빈 값으로 제출해야 한다');
+});
+
 test('동의는 명시적이어야 한다 — 기본값으로 통과하지 않는다', () => {
   const src = read('src/functions/profile.js');
   assert.ok(/body\.agree !== true/.test(src),

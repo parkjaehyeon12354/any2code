@@ -118,6 +118,35 @@
 .oauth-github  { background: #24292f; color: #ffffff; }
 .oauth-discord { background: #5865F2; color: #ffffff; }
 
+/* 약관 동의 — 로그인 버튼 바로 아래. 가입을 가르는 유일한 필수 항목이라
+   테두리를 둘러 눈에 띄게 한다. */
+.auth-agree {
+  margin-top: var(--sp-md);
+  padding: 12px 13px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.auth-agree label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  cursor: pointer;
+}
+.auth-agree input[type="checkbox"] {
+  width: 17px; height: 17px; margin: 1px 0 0;
+  flex: 0 0 auto; accent-color: var(--primary); cursor: pointer;
+}
+.auth-agree a { color: var(--primary); font-weight: 600; text-decoration: underline; }
+/* 동의 없이 누르면 여기로 시선을 끈다 */
+.auth-agree.nudge {
+  border-color: var(--badge-wait-fg);
+  background: var(--badge-wait-bg);
+}
+
 .auth-hint {
   margin-top: var(--sp-md);
   text-align: center;
@@ -154,7 +183,7 @@
 
   <div class="auth-card">
     <h1>탐구를 시작해볼까요?</h1>
-    <p class="auth-lead">소셜 계정으로 로그인한 뒤, 약관에 동의하면 가입이 끝납니다. 이름과 생년월일은 선택이에요.</p>
+    <p class="auth-lead">약관에 동의하고 소셜 계정으로 로그인하면 가입이 시작됩니다. 다음 화면에서 이름과 생년월일을 정할 수 있어요(선택).</p>
 
     <p class="auth-notice" id="notice" role="alert"></p>
 
@@ -193,7 +222,21 @@
       </button>
     </div>
 
-    <p class="auth-hint">로그인 후 <a href="/terms">이용약관</a>과 <a href="/privacy">개인정보 처리방침</a>에 동의하면 가입이 완료됩니다.</p>
+    <!-- 약관 동의를 로그인 버튼 아래에 둔다.
+
+         소셜 로그인은 누르는 순간 외부 제공자로 넘어가 버린다. 동의를 그 뒤에
+         받으면 "이미 계정이 만들어진 뒤에 묻는" 꼴이 된다. 여기서 먼저 받고,
+         체크하지 않으면 버튼 자체가 눌리지 않게 한다. -->
+    <div class="auth-agree">
+      <label for="agree">
+        <input type="checkbox" id="agree">
+        <span>
+          <a href="/terms" target="_blank" rel="noopener">이용약관</a>과
+          <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에
+          동의합니다. <strong>(필수)</strong>
+        </span>
+      </label>
+    </div>
 
     <p class="auth-result" id="result"></p>
   </div>
@@ -225,8 +268,33 @@
     history.replaceState(null, '', location.pathname);   // 새로고침 시 반복 표시 방지
   }
 
+  /* 약관에 동의해야 로그인 버튼이 동작한다.
+
+     소셜 로그인은 누르는 순간 외부 제공자로 넘어가 되돌릴 수 없다. 동의를
+     그 뒤에 받으면 "계정이 만들어진 뒤에 묻는" 꼴이라 여기서 먼저 받는다.
+
+     ⚠ 이건 화면 편의일 뿐 강제가 아니다. 실제 강제는 서버가 한다 —
+     동의 없이는 termsAcceptedAt 이 안 채워지고, /welcome 으로 계속 되돌아온다. */
+  const agree = document.getElementById('agree');
+  const agreeBox = document.querySelector('.auth-agree');
+
+  // 동의하면 경고를 걷는다. 고친 뒤에도 빨간 채로 남으면 안 된다.
+  agree.addEventListener('change', function () {
+    if (!agree.checked) return;
+    agreeBox.classList.remove('nudge');
+    notice.classList.remove('show');
+  });
+
   document.querySelectorAll('.btn-oauth[data-provider]').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      if (!agree.checked) {
+        // 버튼을 비활성으로 두면 왜 안 눌리는지 알 수 없다. 누르게 두고 이유를 보여준다.
+        agreeBox.classList.add('nudge');
+        notice.textContent = '이용약관과 개인정보 처리방침에 동의해야 로그인할 수 있습니다.';
+        notice.classList.add('show');
+        agree.focus();
+        return;
+      }
       const name = btn.dataset.provider;
       btn.disabled = true;
       /* 로그인 페이지 자신으로 돌아오면 곤란하다. ?to= 로 받은 곳이 있으면

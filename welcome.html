@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>가입 마무리 · Ans2Quest</title>
+<title>프로필 설정 · Ans2Quest</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="/styles.css">
 <script src="/theme.js"></script>
@@ -46,20 +46,13 @@
   .w-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .w-hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; line-height: 1.55; }
 
-  /* 약관 동의 — 가입을 가르는 유일한 필수 항목이라 시각적으로 분리한다 */
-  .w-agree {
-    margin: 22px 0 18px; padding: 14px 14px 14px 12px;
+  /* 동의한 문서 링크. 이미 받은 동의라 조용히 둔다. */
+  .w-agreed {
+    margin: 20px 0 16px; padding: 11px 13px;
     background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px;
+    color: var(--muted); font-size: 13px; line-height: 1.55; text-align: center;
   }
-  .w-agree label {
-    display: flex; align-items: flex-start; gap: 10px;
-    color: var(--body); font-size: 13.5px; line-height: 1.6; cursor: pointer;
-  }
-  /* 터치 타겟 44px 을 체크박스 자체로 채우지 않고 label 전체가 받게 한다 */
-  .w-agree input[type="checkbox"] {
-    width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer;
-  }
-  .w-agree a { color: var(--primary); font-weight: 600; text-decoration: underline; }
+  .w-agreed a { color: var(--primary); font-weight: 600; text-decoration: underline; }
 
   .w-submit {
     width: 100%; padding: 13px; border: 0; border-radius: 10px;
@@ -110,21 +103,17 @@
         <p class="w-hint">입력하지 않아도 서비스를 이용할 수 있습니다.</p>
       </div>
 
-      <div class="w-agree">
-        <label for="w-agree">
-          <input type="checkbox" id="w-agree">
-          <span>
-            <a href="/terms" target="_blank" rel="noopener">이용약관</a>과
-            <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>을
-            읽었고 이에 동의합니다. <strong>(필수)</strong>
-          </span>
-        </label>
-      </div>
+      <!-- 약관 동의는 로그인 화면에서 이미 받았다. 여기서 또 물으면 두 번 묻는 꼴이다.
+           무엇에 동의했는지는 확인할 수 있어야 하므로 링크만 남긴다. -->
+      <p class="w-agreed">
+        <a href="/terms" target="_blank" rel="noopener">이용약관</a> ·
+        <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에 동의하셨습니다.
+      </p>
 
-      <button type="submit" class="w-submit" id="w-submit" disabled>동의하고 시작하기</button>
+      <button type="submit" class="w-submit" id="w-submit">시작하기</button>
 
       <p class="w-foot">
-        동의하지 않으시면 <a href="#" id="w-cancel">로그아웃</a>됩니다.
+        <a href="#" id="w-skip">건너뛰기</a> · <a href="#" id="w-cancel">로그아웃</a>
       </p>
     </form>
   </main>
@@ -135,7 +124,7 @@
 (function () {
   var el = function (id) { return document.getElementById(id); };
   var form = el('w-form'), sub = el('w-sub');
-  var agree = el('w-agree'), submit = el('w-submit'), err = el('w-error');
+  var submit = el('w-submit'), err = el('w-error');
 
   /* 약관에 동의하면 원래 가려던 화면으로 이어간다.
      ?to= 는 콜백이 붙여준다. 남이 심어놓은 외부 주소로 튀지 않도록
@@ -150,23 +139,25 @@
     err.textContent = msg;
     err.hidden = false;
     submit.disabled = false;
-    submit.textContent = '동의하고 시작하기';
+    submit.textContent = '시작하기';
   }
 
-  agree.addEventListener('change', function () {
-    submit.disabled = !agree.checked;
+  el('w-skip').addEventListener('click', function (e) {
+    // 이름·생일은 선택이다. 빈 값으로 제출해 가입만 마친다.
+    e.preventDefault();
+    el('w-name').value = '';
+    el('w-birthday').value = '';
+    form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
   });
 
   el('w-cancel').addEventListener('click', function (e) {
     e.preventDefault();
-    // 동의하지 않으면 가입이 성립하지 않는다. 세션을 끊고 홈으로.
+    // 로그아웃하면 가입이 완료되지 않은 채로 남는다. 다시 로그인하면 여기로 돌아온다.
     Session.logout().then(function () { location.replace('/'); });
   });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    if (!agree.checked) return;
-
     submit.disabled = true;
     submit.textContent = '처리하는 중…';
     err.hidden = true;
@@ -176,6 +167,8 @@
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
+        // 동의 자체는 로그인 화면에서 받았다. 여기서 보내는 값은 그걸 서버에
+        // 확정 기록하는 신호다 — 이 요청이 성공해야 가입이 끝난다.
         agree: true,
         name: el('w-name').value.trim(),
         birthday: el('w-birthday').value || null
