@@ -241,7 +241,7 @@ a { color: inherit; text-decoration: none; }
 .form-error {
   margin-bottom: var(--sp-md); padding: 10px 12px;
   background: rgba(189, 59, 59, .1); border-radius: var(--rounded-md);
-  font-size: 13px; line-height: 1.5; color: #9c3030; word-break: keep-all;
+  font-size: 13px; line-height: 1.5; color: var(--badge-bad-fg); word-break: keep-all;
 }
 
 /* ── Top Nav ── */
@@ -353,11 +353,14 @@ a { color: inherit; text-decoration: none; }
 .mega-col a:hover { color: var(--primary); }
 /* 아직 시뮬레이션이 없는 주제. 링크로 두면 눌러보고 아무 일도 안 일어나므로
    아예 눌리지 않게 하고, 왜 안 눌리는지 보이도록 색을 죽인다. */
+/* '준비 중' 항목. 14px 실제 텍스트라 --muted-soft(3.01:1)는 AA 미달 —
+   디자인 시스템이 12px 이상 본문에 쓰지 말라고 못박은 토큰이다.
+   준비 중이라는 신호는 색이 아니라 cursor:default 와 ::after 가 담당한다. */
 .mega-col .soon {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: var(--muted-soft);
+  color: var(--muted);
   padding: 6px 0;
   cursor: default;
 }

@@ -76,7 +76,8 @@
   color: var(--muted);
   word-break: keep-all;
 }
-.field .count { float: right; font-weight: 400; color: var(--muted-soft); }
+/* 글자수는 실제 정보다. --muted-soft 는 2.81:1 로 AA 미달이라 --muted 를 쓴다. */
+.field .count { float: right; font-weight: 400; color: var(--muted); }
 
 /* 읽기 전용 정보 — 계정 연동 상태처럼 여기서 바꿀 수 없는 값 */
 .rows { font-size: 13.5px; }
@@ -232,8 +233,34 @@
     <div class="nav-cta" id="nav-cta">
       <a href="/login">시작하기</a>
     </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </div>
 </header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="/simulation/">시뮬레이션</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <a href="/guide">가이드</a>
+  </nav>
+</div>
 
 <main class="container settings">
   <div class="page-head">
@@ -310,6 +337,7 @@
 
 <script src="session.js"></script>
 <script src="nav-user.js"></script>
+<script src="mobile-menu.js"></script>
 <script>
 (function () {
   const el = (id) => document.getElementById(id);

@@ -121,7 +121,7 @@
   font-size: 12px; font-weight: 500;
 }
 /* 답변을 기다리는 질문 — 훑을 때 도울 곳이 바로 보이게 */
-.tag-open { background: rgba(217, 119, 6, .14); color: #8a5c08; }
+.tag-open { background: var(--badge-wait-bg); color: var(--badge-wait-fg); }
 
 .empty {
   padding: var(--sp-section) var(--sp-lg); text-align: center;
@@ -139,7 +139,7 @@
   border: 1px solid rgba(189, 59, 59, .25);
   border-radius: var(--rounded-lg);
 }
-.suspended strong { display: block; font-size: 14px; font-weight: 600; color: #9c3030; }
+.suspended strong { display: block; font-size: 14px; font-weight: 600; color: var(--badge-bad-fg); }
 .suspended p {
   margin-top: 3px; font-size: 13px; line-height: 1.6; color: var(--body);
   word-break: keep-all;
@@ -177,7 +177,8 @@
 .field select:focus-visible, .field input:focus-visible, .field textarea:focus-visible {
   outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
 }
-.field .count { float: right; font-weight: 400; color: var(--muted-soft); }
+/* 글자수는 실제 정보다. --muted-soft 는 2.81:1 로 AA 미달이라 --muted 를 쓴다. */
+.field .count { float: right; font-weight: 400; color: var(--muted); }
 .field .count.over { color: var(--error); font-weight: 600; }
 
 
@@ -319,13 +320,12 @@
     </button>
   </div>
   <nav>
-    <a href="#">물리학</a>
-    <a href="#">화학</a>
-    <a href="#">생명과학</a>
-    <a href="#">지구과학</a>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/">시뮬레이션</a>
     <a href="/community">커뮤니티</a>
     <a href="/science">AI 과학 도우미</a>
-    <a href="#">심화 탐구</a>
+    <span class="soon">심화 탐구</span>
     <a href="/guide">가이드</a>
   </nav>
   <div class="mobile-menu-actions" id="mobile-cta">

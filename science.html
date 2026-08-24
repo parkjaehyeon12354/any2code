@@ -88,8 +88,8 @@
       color: var(--muted);
       font-size: 12.5px; font-weight: 600; white-space: nowrap;
     }
-    .credit-badge.low { color: var(--warn-fg, #8a5c08); background: rgba(217,119,6,.14); }
-    .credit-badge.empty { color: #9c3030; background: rgba(189,59,59,.1); }
+    .credit-badge.low { color: var(--badge-wait-fg); background: var(--badge-wait-bg); }
+    .credit-badge.empty { color: var(--badge-bad-fg); background: var(--badge-bad-bg); }
     .credit-badge #credit-remaining { font-variant-numeric: tabular-nums; }
     .subject-select { appearance: none; border: 1px solid var(--hairline); border-radius: 8px; padding: 8px 30px 8px 10px; color: var(--body); background: var(--canvas); font: inherit; font-size: 13px; cursor: pointer; }
     .messages { height: 370px; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -119,7 +119,7 @@
       border: 1px solid rgba(189, 59, 59, .25);
       border-radius: var(--rounded-lg);
     }
-    .suspended strong { display: block; font-size: 14px; font-weight: 600; color: #9c3030; }
+    .suspended strong { display: block; font-size: 14px; font-weight: 600; color: var(--badge-bad-fg); }
     .suspended p { margin-top: 3px; font-size: 13px; line-height: 1.6; color: var(--body); word-break: keep-all; }
     .suspended .btn { flex-shrink: 0; }
     .ap-note { margin-top: var(--sp-sm); font-size: 12.5px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
@@ -146,7 +146,7 @@
     .oauth-google { background: #FFFFFF; color: #1f1f1f; border: 1px solid #747775; }
     .chat-form { display: flex; gap: 10px; padding: 16px 18px; background: var(--canvas); border-top: 1px solid var(--hairline); }
     .chat-form input { min-width: 0; flex: 1; padding: 12px 14px; color: var(--ink); border: 1px solid var(--hairline); border-radius: 9px; background: var(--canvas); font: inherit; }
-    .chat-form input:focus, .subject-select:focus { outline: 2px solid rgba(22,122,99,.25); border-color: var(--primary); }
+    .chat-form input:focus, .subject-select:focus { outline: 2px solid var(--primary); outline-offset: 2px; border-color: var(--primary); }
     .chat-form button { flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 9px; color: var(--chat-send-fg, var(--on-primary, #fff)); background: var(--chat-send-bg, var(--primary)); font: inherit; font-weight: 700; cursor: pointer; }
     .chat-form button:hover { background: var(--primary-active); }
     .chat-form button:disabled { opacity: .55; cursor: wait; }
@@ -198,13 +198,12 @@
   <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
        한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
   <nav>
-    <a href="#">물리학</a>
-    <a href="#">화학</a>
-    <a href="#">생명과학</a>
-    <a href="#">지구과학</a>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/">시뮬레이션</a>
     <a href="/community">커뮤니티</a>
     <a href="/science">AI 과학 도우미</a>
-    <a href="#">심화 탐구</a>
+    <span class="soon">심화 탐구</span>
     <a href="/guide">가이드</a>
   </nav>
   <div class="mobile-menu-actions" id="mobile-cta">

@@ -255,12 +255,12 @@ mark {
   padding: 2px 7px;
   border-radius: var(--rounded-pill);
   background: rgba(189, 59, 59, .1);
-  color: #9c3030;
+  color: var(--badge-bad-fg);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
-.row-action.danger { color: #9c3030; border-color: rgba(189, 59, 59, .35); }
+.row-action.danger { color: var(--badge-bad-fg); border-color: rgba(189, 59, 59, .35); }
 .row-action.danger:hover { background: rgba(189, 59, 59, .08); color: #8a2a2a; }
 
 .field-row { margin-bottom: var(--sp-lg); }
@@ -423,8 +423,34 @@ mark {
     </a>
     <span class="admin-badge">관리자</span>
     <div class="nav-cta" id="nav-cta" style="margin-left:auto"></div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </div>
 </header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="/simulation/">시뮬레이션</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <a href="/guide">가이드</a>
+  </nav>
+</div>
 
 <div class="admin-layout">
   <nav class="admin-side">
@@ -775,6 +801,7 @@ Session.refresh().then(function (user) {
 });
 </script>
 <script src="nav-user.js"></script>
+<script src="mobile-menu.js"></script>
 <script>
 (async function () {
   const me = await Session.refresh();
@@ -1527,8 +1554,8 @@ Session.refresh().then(function (user) {
     }
     crBody.innerHTML = CREDITS.map((u) => {
       // 적게 남은 사람을 눈에 띄게 — 서버가 이미 그 순서로 준다
-      const cls = u.remaining <= 0 ? ' style="color:var(--error)"'
-        : u.remaining <= 25 ? ' style="color:var(--warn-fg,#8a5c08)"' : '';
+      const cls = u.remaining <= 0 ? ' style="color:var(--badge-bad-fg)"'
+        : u.remaining <= 25 ? ' style="color:var(--badge-wait-fg)"' : '';
       return '<tr>'
         + '<td>' + esc(u.name) + (u.email ? '<div class="cell-sub">' + esc(u.email) + '</div>' : '') + '</td>'
         + '<td class="cell-muted">' + esc(u.provider || '—') + '</td>'
