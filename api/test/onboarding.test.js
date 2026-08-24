@@ -12,6 +12,47 @@ const path = require('path');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 const readRoot = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
 
+test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {
+  /* 이 두 페이지만 nav-dropdown.js 를 안 읽고 있었다. 드롭다운 마크업도 없어서
+     과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다". */
+  for (const f of ['simulation/pendulum.html', 'simulation/electromagnetic-induction.html']) {
+    const html = readRoot(f);
+    assert.ok(/nav-dropdown\.js/.test(html), `${f} 가 nav-dropdown.js 를 읽어야 한다`);
+    assert.ok(/data-dropdown="physics"/.test(html), `${f} 에 드롭다운 마크업이 있어야 한다`);
+    // 트리거가 실제 경로면 드롭다운이 열리기 전에 이동해버린다
+    assert.ok(/<a href="#" data-dropdown="physics">/.test(html),
+      `${f} 의 드롭다운 트리거는 href="#" 이어야 한다`);
+  }
+});
+
+test('안 쓰는 시뮬레이션 목록 페이지로 가는 링크가 없다', () => {
+  const files = ['Index.html', 'community.html', 'guide.html', 'post.html',
+                 'science.html', 'settings.html', 'admin.html', 'terms.html', 'privacy.html',
+                 'simulation/index.html', 'simulation/pendulum.html',
+                 'simulation/electromagnetic-induction.html'];
+  for (const f of files) {
+    const html = readRoot(f);
+    assert.ok(!/href="\/simulation\/"/.test(html),
+      `${f} 에 /simulation/ 링크가 남아 있다 — 안 쓰기로 한 페이지다`);
+  }
+});
+
+test('목록 페이지를 지웠어도 시뮬레이션에 갈 수 있다', () => {
+  // 목록을 없앤 대신 실제 실험으로 직접 가야 한다. 길이 끊기면 안 된다.
+  for (const f of ['Index.html', 'community.html', 'science.html',
+                   'simulation/pendulum.html', 'simulation/electromagnetic-induction.html']) {
+    const html = readRoot(f);
+    assert.ok(/href="\/simulation\/(pendulum|electromagnetic-induction)\.html"/.test(html),
+      `${f} 에서 시뮬레이션으로 갈 길이 없다`);
+  }
+});
+
+test('목록 페이지는 검색에 노출되지 않는다', () => {
+  const html = readRoot('simulation/index.html');
+  assert.ok(/name="robots" content="noindex/.test(html),
+    '링크를 다 지웠어도 검색 결과로는 들어올 수 있다 — noindex 가 필요하다');
+});
+
 test('약관 동의는 로그인 화면에서 먼저 받는다', () => {
   /* 소셜 로그인은 누르는 순간 외부 제공자로 넘어가 되돌릴 수 없다.
      동의를 그 뒤에 받으면 "계정이 만들어진 뒤에 묻는" 꼴이 된다. */
