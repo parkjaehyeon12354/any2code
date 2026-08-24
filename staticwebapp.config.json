@@ -33,6 +33,14 @@
       "rewrite": "/research.html"
     },
     {
+      "route": "/research/topics",
+      "rewrite": "/research-topics.html"
+    },
+    {
+      "route": "/research/hypothesis",
+      "rewrite": "/research-hypothesis.html"
+    },
+    {
       "route": "/science",
       "rewrite": "/science.html"
     },

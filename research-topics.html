@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="description" content="과목, 학교급, 난이도에 따라 과학 심화 탐구 주제를 찾아보세요">
+  <title>주제 탐색 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="research-pages.css"><script src="/theme.js"></script>
+  <style>
+    .topic-tools { position: sticky; top: 72px; z-index: 20; padding: 18px; box-shadow: 0 8px 24px rgba(20,20,19,.05); }
+    .search-row { display: grid; grid-template-columns: minmax(260px,1.6fr) repeat(3,minmax(140px,.7fr)); gap: 12px; }
+    .search-field { position: relative; }
+    .search-field svg { position: absolute; top: 37px; left: 13px; width: 18px; color: var(--muted); }
+    .search-field input { padding-left: 40px; }
+    .result-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 28px 0 18px; }
+    .result-bar h2 { color: var(--ink); font-size: 22px; }
+    #result-count { color: var(--muted); font-size: 13px; }
+    .topic-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--sp-lg); }
+    .topic-card { display: flex; min-height: 380px; padding: 26px; flex-direction: column; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
+    .topic-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
+    .subject { font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+    .subject.physics{color:#3475c7}.subject.chemistry{color:#ad6900}.subject.biology{color:#16805d}.subject.earth{color:#7254b4}
+    .topic-card h3 { color: var(--ink); font-size: 20px; line-height: 1.42; word-break: keep-all; }
+    .question { margin-top: 12px; padding: 13px 14px; border-left: 3px solid var(--primary); background: var(--surface-soft); color: var(--body); font-size: 14px; line-height: 1.65; word-break: keep-all; }
+    .topic-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; margin-top: 20px; }
+    .topic-info dt { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .topic-info dd { margin-top: 3px; color: var(--ink); font-size: 13px; line-height: 1.5; }
+    .topic-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 22px; }
+    .available { color: var(--primary-active); font-size: 12px; font-weight: 700; }
+    .unavailable { color: var(--muted); font-size: 12px; }
+    @media(max-width:1000px){.search-row{grid-template-columns:1fr 1fr}.topic-tools{position:static}.topic-grid{grid-template-columns:1fr}}
+    @media(max-width:620px){.search-row{grid-template-columns:1fr}.topic-info{grid-template-columns:1fr}.topic-card{min-height:0}.topic-actions{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <header class="top-nav"><div class="nav-inner"><a href="/" class="nav-brand"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4"/><circle cx="12" cy="17" r="1.2" fill="#d97706"/></svg>Ans2Quest</a><ul class="nav-links"><li><a href="/simulation/">시뮬레이션</a></li><li><a href="/community">커뮤니티</a></li><li><a href="/science">AI 과학 도우미</a></li><li class="active"><a href="/research">심화 탐구</a></li><li><a href="/guide">가이드</a></li></ul><div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div><button class="hamburger" type="button" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button></div></header>
+  <main class="inquiry-page">
+    <section class="inquiry-hero"><div class="container"><p class="inquiry-crumb"><a href="/research">심화 탐구</a> · 주제 탐색</p><p class="eyebrow">TOPIC EXPLORER</p><h1>나에게 맞는 과학 탐구 주제 찾기</h1><p class="lead">관심 과목과 학교급, 난이도를 선택하거나 핵심어를 검색하세요. 각 주제의 질문과 교과 개념, 준비 조건을 비교해 실제로 수행할 수 있는 탐구를 고를 수 있습니다.</p></div></section>
+    <div class="container inquiry-content">
+      <section class="topic-tools edu-panel" aria-label="주제 검색 및 필터"><div class="search-row">
+        <div class="field search-field"><label for="topic-search">제목과 핵심어 검색</label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="topic-search" type="search" placeholder="예: 진자, 산과 염기, 생태계" autocomplete="off"></div>
+        <div class="field"><label for="subject-filter">과목</label><select id="subject-filter"><option value="all">전체 과목</option><option value="physics">물리학</option><option value="chemistry">화학</option><option value="biology">생명과학</option><option value="earth">지구과학</option></select></div>
+        <div class="field"><label for="school-filter">학교급</label><select id="school-filter"><option value="all">중·고등학교</option><option value="middle">중학교</option><option value="high">고등학교</option></select></div>
+        <div class="field"><label for="difficulty-filter">난이도</label><select id="difficulty-filter"><option value="all">전체 난이도</option><option value="basic">기초</option><option value="standard">보통</option><option value="advanced">심화</option></select></div>
+      </div></section>
+      <div class="result-bar"><h2>탐구 주제</h2><span id="result-count" aria-live="polite">0개 표시 중</span></div>
+      <section class="topic-grid" id="topic-grid" aria-label="탐구 주제 목록"></section><p class="empty-message" id="empty-message" hidden>조건에 맞는 주제가 없습니다. 필터를 줄이거나 다른 핵심어를 검색해 보세요.</p>
+    </div>
+  </main>
+  <div class="mobile-menu" id="mobile-menu"><div class="mobile-menu-header"><a class="nav-brand" href="/">Ans2Quest</a><button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">✕</button></div><nav><a href="/simulation/">시뮬레이션</a><a href="/community">커뮤니티</a><a href="/science">AI 과학 도우미</a><a href="/research">심화 탐구</a><a href="/guide">가이드</a></nav><div class="mobile-menu-actions" id="mobile-cta"><a href="/login" class="btn btn-primary" style="width:100%">시작하기</a></div></div>
+  <script src="session.js"></script><script src="nav-user.js"></script><script src="research-topics.js"></script>
+</body>
+</html>

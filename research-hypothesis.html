@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="description" content="과학 탐구 질문을 검증 가능한 가설로 바꾸는 연습 가이드"><title>가설 설정 가이드 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="research-pages.css"><script src="/theme.js"></script>
+  <style>
+    .concept-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; }
+    .concept-card { padding: 20px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
+    .concept-card span { color: var(--primary-active); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+    .concept-card h3 { margin: 9px 0 8px; color: var(--ink); font-size: 17px; }
+    .concept-card p { color: var(--body); font-size: 13px; line-height: 1.65; word-break: keep-all; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-lg); }
+    .example-card { padding: 24px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
+    .example-card.bad { border-top: 4px solid #b55353; }.example-card.good { border-top: 4px solid var(--primary); }
+    .example-card h3 { color: var(--ink); font-size: 18px; }.example-card blockquote { margin: 16px 0; padding: 14px; border-radius: var(--rounded-md); background: var(--surface-soft); color: var(--ink); font-size: 15px; line-height: 1.65; }
+    .example-card ul { padding-left: 20px; color: var(--body); font-size: 13px; line-height: 1.75; }
+    .practice-layout { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(300px,.7fr); gap: var(--sp-lg); align-items: start; }
+    .practice-form { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 26px; }
+    .field-wide { grid-column: 1/-1; }
+    .practice-actions { display: flex; flex-wrap: wrap; gap: 10px; grid-column: 1/-1; }
+    .local-note { grid-column: 1/-1; padding: 11px 13px; border-radius: var(--rounded-md); background: color-mix(in srgb,var(--primary) 8%,var(--canvas)); color: var(--body); font-size: 12px; line-height: 1.6; }
+    .check-panel { position: sticky; top: 72px; padding: 24px; }
+    .check-panel h3 { color: var(--ink); font-size: 20px; }.check-panel>p { margin-top: 7px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .check-list { display: grid; gap: 12px; margin-top: 20px; }
+    .check-item { display: flex; gap: 10px; color: var(--body); font-size: 13px; line-height: 1.55; cursor: pointer; }.check-item input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--primary); flex: 0 0 auto; }
+    .check-result { margin-top: 20px; padding: 14px; border-radius: var(--rounded-md); background: var(--surface-soft); color: var(--ink); font-size: 13px; line-height: 1.6; }
+    .preview { margin-top: 22px; padding: 22px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--surface-soft); }
+    .preview h3 { color: var(--ink); font-size: 16px; }.preview dl { display: grid; grid-template-columns: 120px 1fr; gap: 9px 14px; margin-top: 15px; font-size: 13px; }.preview dt { color: var(--muted); }.preview dd { color: var(--ink); word-break: break-word; white-space: pre-wrap; }
+    @media(max-width:1000px){.concept-grid{grid-template-columns:repeat(2,1fr)}.practice-layout{grid-template-columns:1fr}.check-panel{position:static}}
+    @media(max-width:700px){.compare-grid,.practice-form{grid-template-columns:1fr}.field-wide{grid-column:auto}.practice-actions,.local-note{grid-column:auto}.concept-grid{grid-template-columns:1fr}.preview dl{grid-template-columns:1fr}.preview dd{margin-bottom:8px}}
+  </style>
+</head>
+<body>
+  <header class="top-nav"><div class="nav-inner"><a href="/" class="nav-brand"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4"/><circle cx="12" cy="17" r="1.2" fill="#d97706"/></svg>Ans2Quest</a><ul class="nav-links"><li><a href="/simulation/">시뮬레이션</a></li><li><a href="/community">커뮤니티</a></li><li><a href="/science">AI 과학 도우미</a></li><li class="active"><a href="/research">심화 탐구</a></li><li><a href="/guide">가이드</a></li></ul><div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div><button class="hamburger" type="button" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button></div></header>
+  <main class="inquiry-page">
+    <section class="inquiry-hero"><div class="container"><p class="inquiry-crumb"><a href="/research">심화 탐구</a> · 가설 설정 가이드</p><p class="eyebrow">HYPOTHESIS GUIDE</p><h1>좋은 질문을 검증 가능한 가설로 바꾸기</h1><p class="lead">가설은 막연한 예상이 아니라 변인 사이의 관계를 근거와 함께 표현한 문장입니다. 개념을 익힌 뒤 직접 작성하고 체크리스트로 점검해 보세요.</p></div></section>
+    <div class="container inquiry-content">
+      <section class="inquiry-section" aria-labelledby="concept-title"><div class="section-heading"><h2 id="concept-title">가설을 만들기 위한 다섯 가지 개념</h2><p>탐구 질문에서 무엇을 바꾸고, 무엇을 측정하며, 무엇을 같게 유지할지 구분해야 결과를 설명할 수 있습니다.</p></div><div class="concept-grid">
+        <article class="concept-card"><span>QUESTION</span><h3>탐구 질문</h3><p>실험이나 관찰로 답할 수 있도록 대상과 변인을 구체적으로 묻는 문장입니다.</p></article>
+        <article class="concept-card"><span>HYPOTHESIS</span><h3>가설</h3><p>변인 사이의 예상 관계와 그 이유를 과학적 근거에 따라 표현한 잠정적 설명입니다.</p></article>
+        <article class="concept-card"><span>INDEPENDENT</span><h3>독립변인</h3><p>원인을 알아보기 위해 연구자가 의도적으로 바꾸는 조건입니다. 한 번에 하나만 바꾸는 것이 기본입니다.</p></article>
+        <article class="concept-card"><span>DEPENDENT</span><h3>종속변인</h3><p>독립변인의 영향으로 달라지는지 측정하거나 관찰하는 결과입니다. 단위와 측정 방법이 필요합니다.</p></article>
+        <article class="concept-card"><span>CONTROLLED</span><h3>통제변인</h3><p>공정한 비교를 위해 모든 실험에서 같게 유지하는 조건입니다.</p></article>
+      </div></section>
+      <section class="inquiry-section" aria-labelledby="compare-title"><div class="section-heading"><h2 id="compare-title">좋은 가설과 고쳐야 할 가설</h2><p>주제가 같아도 측정 가능한 관계와 근거가 있는지에 따라 검증 가능성이 달라집니다.</p></div><div class="compare-grid">
+        <article class="example-card bad"><h3>고쳐야 할 가설</h3><blockquote>“진자가 길면 더 좋을 것이다.”</blockquote><ul><li>‘좋다’가 무엇을 의미하는지 측정할 수 없습니다.</li><li>어떤 결과가 변하는지 종속변인이 없습니다.</li><li>예상 관계를 뒷받침하는 과학적 근거가 없습니다.</li></ul></article>
+        <article class="example-card good"><h3>검증 가능한 가설</h3><blockquote>“진자의 길이가 길어지면 왕복 주기가 길어질 것이다. 진자의 주기는 길이의 제곱근에 비례하기 때문이다.”</blockquote><ul><li>독립변인: 진자의 길이</li><li>종속변인: 왕복 주기(s)</li><li>변화 방향과 과학적 근거가 분명합니다.</li></ul></article>
+      </div></section>
+      <section class="inquiry-section" aria-labelledby="practice-title"><div class="section-heading"><h2 id="practice-title">직접 작성해 보기</h2><p>입력 내용은 이 브라우저 화면 안에서만 처리됩니다. 서버 전송이나 자동 저장을 하지 않으며, 새로고침하면 사라집니다.</p></div><div class="practice-layout">
+        <div><div class="practice-form edu-panel" role="group" aria-label="가설 작성 연습">
+          <div class="field field-wide"><label for="question">탐구 질문</label><textarea id="question" placeholder="예: 진자의 길이는 왕복 주기에 어떤 영향을 줄까?"></textarea></div>
+          <div class="field field-wide"><label for="hypothesis">나의 가설</label><textarea id="hypothesis" placeholder="만약 …하면 …할 것이다. 왜냐하면 …이기 때문이다."></textarea></div>
+          <div class="field"><label for="independent">독립변인</label><input id="independent" type="text" placeholder="의도적으로 바꿀 조건"></div>
+          <div class="field"><label for="dependent">종속변인</label><input id="dependent" type="text" placeholder="측정할 결과"></div>
+          <div class="field"><label for="controlled">통제변인</label><textarea id="controlled" placeholder="같게 유지할 조건을 쉼표로 구분"></textarea></div>
+          <div class="field"><label for="measurement">측정 방법과 단위</label><textarea id="measurement" placeholder="무엇을 어떤 도구로 몇 회 측정할지 작성"></textarea></div>
+          <p class="local-note">🔒 이 도구에는 제출 기능이 없습니다. 작성한 문장은 네트워크나 계정으로 전송되지 않습니다.</p>
+          <div class="practice-actions"><button class="btn btn-ghost" id="example-button" type="button">단진자 예시 불러오기</button><button class="btn btn-ghost" id="clear-button" type="button">모두 지우기</button></div>
+        </div><section class="preview" aria-live="polite"><h3>작성 내용 정리</h3><dl><dt>탐구 질문</dt><dd id="preview-question">아직 작성하지 않았습니다.</dd><dt>가설</dt><dd id="preview-hypothesis">아직 작성하지 않았습니다.</dd><dt>독립변인</dt><dd id="preview-independent">—</dd><dt>종속변인</dt><dd id="preview-dependent">—</dd><dt>통제변인</dt><dd id="preview-controlled">—</dd><dt>측정 방법</dt><dd id="preview-measurement">—</dd></dl></section></div>
+        <aside class="check-panel edu-panel"><h3>가설 자가 점검</h3><p>작성한 내용을 읽고 실제로 만족하는 항목만 선택하세요.</p><div class="check-list">
+          <label class="check-item"><input type="checkbox">탐구 질문이 실험이나 관찰로 답할 수 있다.</label><label class="check-item"><input type="checkbox">독립변인과 종속변인이 한 가지씩 분명하다.</label><label class="check-item"><input type="checkbox">가설에 변화의 방향 또는 예상 관계가 있다.</label><label class="check-item"><input type="checkbox">예상을 뒷받침하는 과학적 근거가 있다.</label><label class="check-item"><input type="checkbox">통제변인을 같게 유지할 방법이 있다.</label><label class="check-item"><input type="checkbox">종속변인을 수치나 명확한 기준으로 측정할 수 있다.</label>
+        </div><div class="check-result" id="check-result" aria-live="polite">0/6개 확인 · 먼저 가설의 구체성을 점검해 보세요.</div></aside>
+      </div></section>
+    </div>
+  </main>
+  <div class="mobile-menu" id="mobile-menu"><div class="mobile-menu-header"><a class="nav-brand" href="/">Ans2Quest</a><button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">✕</button></div><nav><a href="/simulation/">시뮬레이션</a><a href="/community">커뮤니티</a><a href="/science">AI 과학 도우미</a><a href="/research">심화 탐구</a><a href="/guide">가이드</a></nav><div class="mobile-menu-actions" id="mobile-cta"><a href="/login" class="btn btn-primary" style="width:100%">시작하기</a></div></div>
+  <script src="session.js"></script><script src="nav-user.js"></script><script src="research-hypothesis.js"></script>
+</body></html>
