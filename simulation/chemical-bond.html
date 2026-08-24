@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="두 원자를 당겼다 놓으며 결합 길이와 퍼텐셜 에너지를 관찰하는 시뮬레이션">
+<title>화학 결합 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<script src="/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: var(--sp-md); align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: var(--sp-lg);
+  overflow: hidden;
+}
+.panel-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: var(--sp-lg); }
+
+.ctrl { margin-bottom: var(--sp-lg); }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 8px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 44px;                 /* 모바일 터치 타깃 하한 */
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 2px; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+#bond-graph { display: block; width: 100%; height: 380px; }
+/* 원자 조합 선택 — 라디오처럼 쓰지만 버튼이라 터치가 편하다 */
+.pairs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pairs button {
+  height: 42px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.pairs button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.pairs button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.bond-tag { margin-top: 10px; font-size: 12.5px; color: var(--muted); line-height: 1.6; word-break: keep-all; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <span class="soon">개체와 생태계</span>
+            <span class="soon">세포의 구조</span>
+            <span class="soon">유전과 진화</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <span class="soon">대기와 기상</span>
+            <span class="soon">판과 지각 변동</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">해양과 순환</span>
+            <span class="soon">외권과 천체</span>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="container sim">
+  <!-- 목록 페이지가 없어서 위로 갈 곳은 홈뿐이다. 없는 곳을 가리키지 않는다. -->
+  <p class="crumb"><a href="/">홈</a> · 화학 · 화학 결합</p>
+
+  <div class="head">
+    <h1>화학 결합</h1>
+    <p>두 원자를 직접 당겼다 밀어 보세요. 어느 거리에서 손을 놓아도 <strong>같은 자리로 돌아옵니다</strong> —
+    그 자리가 결합 길이입니다. 결합은 원자가 서로 붙어 있는 상태가 아니라,
+    <strong>에너지가 가장 낮은 거리</strong>라는 것을 확인해 보세요.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="두 원자 사이의 결합"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">결합 길이로</button>
+          <span class="share-said" id="stage-said">원자를 드래그해 보세요</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>원자 조합</h2></div>
+        <div class="panel-body">
+          <div class="pairs" id="pairs"></div>
+          <p class="bond-tag" id="pair-note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="dist">원자 사이 거리</label>
+              <output id="dist-out">74 pm</output>
+            </div>
+            <input type="range" id="dist" min="40" max="260" step="1" value="74">
+            <span class="hint">가까우면 전자껍질이 밀치고, 멀면 끌어당깁니다. 놓으면 균형점으로 돌아갑니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">진동 세기</label>
+              <output id="temp-out">0%</output>
+            </div>
+            <input type="range" id="temp" min="0" max="60" step="1" value="0">
+            <span class="hint">온도를 올린 셈입니다. 세게 흔들면 결합이 끊어질 수 있습니다.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 거리</dt><dd id="r-dist">—</dd></div>
+            <div><dt>결합 길이</dt><dd id="r-eq">—</dd></div>
+            <div><dt>퍼텐셜 에너지</dt><dd id="r-energy">—</dd></div>
+            <div><dt>작용하는 힘</dt><dd id="r-force">—</dd></div>
+            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="bond-graph-title">
+    <div class="analysis-head"><h2 id="bond-graph-title">거리에 따른 퍼텐셜 에너지</h2><p>곡선의 가장 낮은 점이 결합 길이입니다. 주황 점이 지금 위치이고, 점선까지의 깊이가 결합을 끊는 데 필요한 에너지입니다.</p></div>
+    <div class="graph-wrap"><canvas id="bond-graph" aria-label="원자 사이 거리에 따른 퍼텐셜 에너지 그래프"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="bond-formula-title">
+    <div class="analysis-head"><h2 id="bond-formula-title">결합은 왜 특정 거리에서 멈출까</h2><p>시뮬레이션은 레너드-존스 퍼텐셜로 두 원자 사이의 힘을 계산합니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">U(r) = D<sub>e</sub>[(r<sub>0</sub>/r)<sup>12</sup> − 2(r<sub>0</sub>/r)<sup>6</sup>], &nbsp;&nbsp; F = −dU/dr</p>
+      <p>두 원자가 가까워지면 <strong>전자껍질끼리 밀치고</strong>(r<sup>12</sup> 항), 멀어지면 <strong>서로 끌어당깁니다</strong>(r<sup>6</sup> 항). 두 힘이 정확히 상쇄되는 거리가 결합 길이 r<sub>0</sub>이고, 그때 에너지가 가장 낮습니다.</p>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>먼 거리에서는 원자의 전자 구름이 순간적으로 치우치며 쌍극자가 생깁니다. 이 유도 쌍극자 사이의 인력은 거리의 6제곱에 반비례해 −1/r⁶ 꼴로 줄어듭니다.</p><p>반대로 아주 가까워지면 두 원자의 전자가 같은 공간을 차지하려 하는데, 파울리 배타 원리가 이를 막습니다. 이 반발은 훨씬 가파르게 커져서 보통 +1/r¹²로 근사합니다(계산이 쉬워 r⁶의 제곱을 씁니다).</p><p>둘을 합치면 U(r) = D<sub>e</sub>[(r₀/r)¹² − 2(r₀/r)⁶]입니다. 힘은 F = −dU/dr이므로, U가 최소인 지점에서 F = 0입니다. 미분해서 0으로 두면 정확히 r = r₀에서 최소가 됩니다.</p><p>이 지점이 안정한 이유는 <strong>양쪽으로 벗어나면 되돌리는 힘이 생기기 때문</strong>입니다. r &lt; r₀이면 반발력이 이겨 밀어내고, r &gt; r₀이면 인력이 이겨 당깁니다. 슬라이더를 아무 데나 놓고 손을 떼면 항상 r₀로 돌아오는 것이 그 증거입니다.</p><p>곡선의 깊이 D<sub>e</sub>가 결합 에너지입니다. 진동 에너지가 D<sub>e</sub>를 넘으면 원자가 서로 벗어나 결합이 끊어집니다 — 가열하면 분자가 분해되는 이유입니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="../session.js"></script>
+<script src="../nav-user.js"></script>
+<script src="../nav-dropdown.js"></script>
+<script src="../mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 화학 결합 ──
+
+     레너드-존스 퍼텐셜로 두 원자 사이의 힘을 계산한다.
+
+         U(r) = De·[(r0/r)^12 − 2·(r0/r)^6]
+         F(r) = −dU/dr = 12·De/r0·[(r0/r)^13 − (r0/r)^7]
+
+     r0 에서 U 가 최소이고 F = 0 이다. 이 화면의 목적은 "결합 길이" 가
+     외워야 할 숫자가 아니라 힘이 균형을 이루는 지점이라는 것을 보이는 것이다.
+     그래서 곡선을 그려놓고 끝내지 않고, 실제로 당겼다 놓을 수 있게 했다.
+
+     실제 pm·eV 값을 쓰되 시간 규모는 화면에 맞게 조정한다. 실제 분자 진동은
+     펨토초 단위라 그대로 두면 아무것도 안 보인다. */
+  const PAIRS = [
+    { id: 'h2',  label: 'H₂',  r0: 74,  De: 4.52, m: 1,  ca: '#e8e8e8', cb: '#e8e8e8', ra: 22, rb: 22,
+      note: '수소 분자. 결합 길이 74 pm, 결합 에너지 4.52 eV. 가장 단순한 공유 결합입니다.' },
+    { id: 'o2',  label: 'O₂',  r0: 121, De: 5.15, m: 16, ca: '#ff8f6b', cb: '#ff8f6b', ra: 34, rb: 34,
+      note: '산소 분자. 이중 결합이라 수소보다 결합이 강하고, 원자가 무거워 천천히 진동합니다.' },
+    { id: 'n2',  label: 'N₂',  r0: 110, De: 9.79, m: 14, ca: '#8fb8ff', cb: '#8fb8ff', ra: 32, rb: 32,
+      note: '질소 분자. 삼중 결합으로 곡선이 가장 깊습니다 — 공기 중 질소가 좀처럼 반응하지 않는 이유입니다.' },
+    { id: 'hcl', label: 'HCl', r0: 127, De: 4.43, m: 1,  ca: '#e8e8e8', cb: '#9ce8a0', ra: 22, rb: 38,
+      note: '염화 수소. 크기가 다른 두 원자가 만납니다. 전기음성도 차이로 극성을 띱니다.' }
+  ];
+
+  const S = { pair: PAIRS[0], r: 74, temp: 0 };
+  let v = 0;               // 거리의 변화 속도 (진동)
+  let running = true;
+  let dragging = false;
+  let broken = false;      // 결합이 끊어졌는가
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  /* 거리 범위는 분자마다 r0 기준으로 잡는다.
+     고정값(40~400pm)으로 두면 r0=74 인 H₂ 와 r0=127 인 HCl 에 동시에 맞출 수 없다.
+     또 r0 의 3배를 넘어가면 힘이 0.0001 수준이라 놓아도 아무 일이 없어서,
+     "당겼다 놓으면 돌아온다" 는 이 화면의 핵심이 보이지 않는다. */
+  const minR = () => Math.round(S.pair.r0 * 0.55);
+  const maxR = () => Math.round(S.pair.r0 * 2.4);
+
+  /* 퍼텐셜과 힘. r 은 pm, U 는 eV. */
+  function U(r) {
+    const p = S.pair;
+    const x = p.r0 / Math.max(r, 1);
+    return p.De * (Math.pow(x, 12) - 2 * Math.pow(x, 6));
+  }
+  function F(r) {
+    const p = S.pair;
+    const x = p.r0 / Math.max(r, 1);
+    // −dU/dr. 양수면 밀어내고 음수면 당긴다.
+    return (12 * p.De / p.r0) * (Math.pow(x, 13) - Math.pow(x, 7));
+  }
+
+  function step(dt) {
+    if (dragging) { v = 0; return; }
+
+    /* 질량이 클수록 천천히 움직인다. 실제 진동수 규모를 그대로 쓰면
+       화면에서 볼 수 없으므로 비례만 유지한다. */
+    /* 실제 분자 진동은 펨토초 단위라 그대로 두면 화면에서 볼 수 없다.
+       비례 관계(무거우면 느리다)만 유지하고 시간 규모를 키운다.
+
+       ⚠ 두 가지를 조정했다.
+       ① 질량을 √m 으로 나눈다. m 그대로 쓰면 O₂(16u)가 H₂보다 16배 느려
+          되돌아오는 데 20초가 넘어 관찰이 안 된다.
+       ② 힘에 상한을 둔다. 반발항이 r^13 이라 아주 가까우면 값이 폭발해
+          입자가 화면 밖으로 튄다(실제로 속도 71911 까지 갔다). */
+    const raw = F(S.r);
+    const capped = Math.max(-0.6, Math.min(0.6, raw));
+    const a = capped / Math.sqrt(S.pair.m) * 40000;
+    v += a * dt;
+
+    // 진동 세기 = 온도. 무작위로 흔들어 준다.
+    if (S.temp > 0) {
+      v += (Math.random() - 0.5) * S.temp * 0.9;
+    }
+
+    // 마찰을 조금 준다. 없으면 한 번 당긴 진동이 영원히 남아 관찰이 어렵다.
+    v *= (1 - 2.6 * dt);
+
+    S.r += v * dt;
+
+    // 결합이 끊어졌는지 — 멀리 벗어나 되돌아올 힘이 거의 없는 상태
+    /* 끊어짐 판정 — 거리가 아니라 에너지로 본다.
+       거리로만 보면 조금 당긴 것도 '끊어짐' 이 되는데, 실제로는 되돌아온다.
+       퍼텐셜 우물을 벗어날 만큼(전체 에너지 > 0) 흔들렸을 때만 끊어진 것이다. */
+    const kinetic = 0.5 * S.pair.m * (v / 60) * (v / 60);
+    broken = (U(S.r) + kinetic) > 0 && S.r > S.pair.r0 * 1.8;
+
+    if (S.r < minR()) { S.r = minR(); v = Math.abs(v) * 0.5; }
+    if (S.r > maxR()) { S.r = maxR(); v = -Math.abs(v) * 0.2; }
+
+    el('dist').value = Math.round(S.r);
+    el('dist-out').textContent = Math.round(S.r) + ' pm';
+  }
+
+  // ── 무대 그리기 ──
+  function px(r) {
+    // 거리(pm)를 화면 좌표로. 400 pm 이 화면 폭의 78% 가 되게 맞춘다.
+    return r / maxR() * W() * 0.78;
+  }
+
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+    const cy = H() / 2;
+    const gap = px(S.r);
+    const x1 = W() / 2 - gap / 2, x2 = W() / 2 + gap / 2;
+    const p = S.pair;
+
+    // 결합 — 가까울수록 진하게. 끊어지면 사라진다.
+    if (!broken) {
+      const strength = Math.max(0, 1 - Math.abs(S.r - p.r0) / (p.r0 * 1.6));
+      ctx.strokeStyle = `rgba(255,255,255,${0.08 + strength * 0.5})`;
+      ctx.lineWidth = 2 + strength * 5;
+      ctx.beginPath(); ctx.moveTo(x1, cy); ctx.lineTo(x2, cy); ctx.stroke();
+    }
+
+    /* 결합 길이 기준선 — 원자가 '있어야 할 자리' 를 표시한다.
+       지금 위치(x1, x2)와 나란히 놓아야 얼마나 벗어났는지 보인다.
+       화면 중앙 기준으로 그리면 원자와 어긋나 보여서 무슨 선인지 알 수 없다. */
+    const eqHalf = px(p.r0) / 2;
+    const ex1 = W() / 2 - eqHalf, ex2 = W() / 2 + eqHalf;
+    ctx.strokeStyle = 'rgba(255,255,255,.25)';
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ex1, cy - 58); ctx.lineTo(ex1, cy + 58);
+    ctx.moveTo(ex2, cy - 58); ctx.lineTo(ex2, cy + 58);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(`결합 길이 ${p.r0} pm`, W() / 2, cy - 68);
+
+    // 원자
+    const atom = (x, r, color) => {
+      const grd = ctx.createRadialGradient(x - r * 0.3, cy - r * 0.3, r * 0.1, x, cy, r);
+      grd.addColorStop(0, '#ffffff');
+      grd.addColorStop(0.35, color);
+      grd.addColorStop(1, color);
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1;
+      ctx.stroke();
+    };
+    atom(x1, p.ra, p.ca);
+    atom(x2, p.rb, p.cb);
+
+    // 힘의 방향 — 화살표로 보여준다. 이게 이 화면의 핵심이다.
+    const f = F(S.r);
+    if (Math.abs(f) > 0.004 && !broken) {
+      const dir = f > 0 ? 1 : -1;          // 양수면 밀어냄
+      const len = Math.min(46, Math.abs(f) * 120 + 12);
+      ctx.strokeStyle = f > 0 ? '#ff9d9d' : '#8fd0ff';
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = 2.5;
+      [[x1, -dir], [x2, dir]].forEach(([x, d]) => {
+        const from = x + d * (p.ra + 8), to = from + d * len;
+        ctx.beginPath(); ctx.moveTo(from, cy); ctx.lineTo(to, cy); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(to + d * 7, cy);
+        ctx.lineTo(to - d * 3, cy - 5);
+        ctx.lineTo(to - d * 3, cy + 5);
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.fillText(f > 0 ? '밀어내는 중' : '끌어당기는 중', W() / 2, cy + 84);
+    }
+
+    if (broken) {
+      ctx.fillStyle = '#ff9d9d';
+      ctx.font = '600 14px system-ui';
+      ctx.fillText('결합이 끊어졌습니다', W() / 2, cy + 84);
+    }
+
+    ctx.fillStyle = '#9a9a9a';
+    ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText(p.label, 14, H() - 14);
+  }
+
+  // ── 퍼텐셜 곡선 ──
+  const graph = el('bond-graph');
+  const g = graph.getContext('2d');
+
+  function drawGraph() {
+    const gw = graph.width / DPR, gh = graph.height / DPR;
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.clearRect(0, 0, gw, gh);
+
+    const pad = { l: 62, r: 20, t: 24, b: 44 };
+    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
+    const p = S.pair;
+
+    const rMin = 0.6 * p.r0, rMax = 3.2 * p.r0;
+    const uMin = -p.De * 1.15, uMax = p.De * 0.85;
+    const sx = (r) => x + (r - rMin) / (rMax - rMin) * w;
+    const sy = (u) => y + (uMax - u) / (uMax - uMin) * h;
+
+    // 눈금
+    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1;
+    g.font = '12px system-ui'; g.fillStyle = 'rgba(255,255,255,.7)'; g.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const u = uMax - (uMax - uMin) * i / 4;
+      const py = sy(u);
+      g.beginPath(); g.moveTo(x, py); g.lineTo(x + w, py); g.stroke();
+      g.fillText(u.toFixed(1), x - 9, py + 4);
+    }
+    g.textAlign = 'center';
+    for (let i = 0; i <= 5; i++) {
+      const r = rMin + (rMax - rMin) * i / 5;
+      const pxx = sx(r);
+      g.beginPath(); g.moveTo(pxx, y); g.lineTo(pxx, y + h); g.stroke();
+      g.fillText(Math.round(r), pxx, y + h + 18);
+    }
+
+    // U = 0 기준선
+    g.strokeStyle = 'rgba(255,255,255,.3)';
+    g.beginPath(); g.moveTo(x, sy(0)); g.lineTo(x + w, sy(0)); g.stroke();
+
+    // 곡선
+    g.strokeStyle = '#7cc4ff'; g.lineWidth = 2.4;
+    g.beginPath();
+    let started = false;
+    for (let i = 0; i <= 260; i++) {
+      const r = rMin + (rMax - rMin) * i / 260;
+      const u = U(r);
+      if (u > uMax) { started = false; continue; }
+      const pxx = sx(r), pyy = sy(Math.max(uMin, u));
+      started ? g.lineTo(pxx, pyy) : g.moveTo(pxx, pyy);
+      started = true;
+    }
+    g.stroke();
+
+    // 최저점 — 결합 길이
+    g.strokeStyle = 'rgba(255,255,255,.4)'; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(sx(p.r0), y); g.lineTo(sx(p.r0), y + h); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = 'rgba(255,255,255,.85)'; g.textAlign = 'center';
+    g.fillText(`r₀ = ${p.r0} pm`, sx(p.r0), y - 8);
+
+    // 결합 에너지 깊이
+    g.strokeStyle = 'rgba(156,224,160,.8)'; g.lineWidth = 1.6;
+    const dx = sx(p.r0) + 26;
+    g.beginPath(); g.moveTo(dx, sy(0)); g.lineTo(dx, sy(-p.De)); g.stroke();
+    g.fillStyle = '#9ce8a0'; g.textAlign = 'left';
+    g.fillText(`Dₑ = ${p.De} eV`, dx + 7, sy(-p.De / 2) + 4);
+
+    // 지금 위치
+    if (S.r >= rMin && S.r <= rMax) {
+      const u = Math.max(uMin, U(S.r));
+      g.fillStyle = '#ffb35c';
+      g.beginPath(); g.arc(sx(S.r), sy(u), 6, 0, Math.PI * 2); g.fill();
+    }
+
+    // 축 이름
+    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + h); g.lineTo(x + w, y + h); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.textAlign = 'center';
+    g.fillText('원자 사이 거리 r (pm)', x + w / 2, gh - 10);
+    g.save(); g.translate(16, y + h / 2); g.rotate(-Math.PI / 2);
+    g.fillText('퍼텐셜 에너지 U (eV)', 0, 0); g.restore();
+  }
+
+  // ── 측정값 ──
+  function readout() {
+    const u = U(S.r), f = F(S.r), p = S.pair;
+    el('r-dist').textContent = Math.round(S.r) + ' pm';
+    el('r-eq').textContent = p.r0 + ' pm';
+    el('r-energy').textContent = u.toFixed(2) + ' eV';
+    el('r-force').textContent = (f > 0 ? '+' : '') + f.toFixed(3);
+
+    let state, note;
+    if (broken) {
+      state = '끊어짐';
+      note = '원자가 서로의 영향에서 벗어났습니다. 진동 세기를 낮추고 "결합 길이로" 를 눌러 보세요.';
+    } else if (Math.abs(S.r - p.r0) < 3) {
+      state = '안정';
+      note = '힘이 균형을 이룬 상태입니다. 여기가 에너지가 가장 낮은 지점이라 원자가 이 거리를 유지합니다.';
+    } else if (S.r < p.r0) {
+      state = '반발';
+      note = '전자껍질이 겹치려 해서 밀어냅니다. 놓으면 결합 길이로 밀려납니다.';
+    } else {
+      state = '인력';
+      note = '아직 서로 끌어당기고 있습니다. 놓으면 결합 길이로 당겨집니다.';
+    }
+    el('r-state').textContent = state;
+    el('note').textContent = note;
+  }
+
+  // ── 원자 조합 버튼 ──
+  const pairsBox = el('pairs');
+  PAIRS.forEach((p) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = p.label;
+    b.setAttribute('aria-pressed', p.id === S.pair.id ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      S.pair = p;
+      [...pairsBox.children].forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+      el('pair-note').textContent = p.note;
+      resetToEq();
+    });
+    pairsBox.appendChild(b);
+  });
+  el('pair-note').textContent = S.pair.note;
+
+  function syncRange() {
+    const d = el('dist');
+    d.min = minR(); d.max = maxR();
+  }
+
+  function resetToEq() {
+    syncRange();
+    S.r = S.pair.r0; v = 0; broken = false;
+    el('dist').value = Math.round(S.r);
+    el('dist-out').textContent = Math.round(S.r) + ' pm';
+  }
+
+  // ── 조작 ──
+  el('dist').addEventListener('input', (e) => {
+    S.r = Number(e.target.value); v = 0; broken = false;
+    el('dist-out').textContent = S.r + ' pm';
+  });
+  el('temp').addEventListener('input', (e) => {
+    S.temp = Number(e.target.value);
+    el('temp-out').textContent = S.temp + '%';
+  });
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', resetToEq);
+
+  /* 캔버스에서 직접 끌기 — 슬라이더보다 이쪽이 직관적이다.
+     "당겼다 놓으면 돌아온다" 를 몸으로 느끼게 하는 게 목적이다. */
+  function pointerR(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (clientX - rect.left) * (canvas.clientWidth / rect.width);
+    const half = Math.abs(cx - canvas.clientWidth / 2);
+    const r = half * 2 / (canvas.clientWidth * 0.78) * maxR();
+    return Math.max(minR(), Math.min(maxR(), r));
+  }
+  const onDown = (e) => {
+    dragging = true; broken = false;
+    canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+    S.r = pointerR(e.clientX);
+    el('stage-said').textContent = '놓으면 결합 길이로 돌아갑니다';
+  };
+  const onMove = (e) => {
+    if (!dragging) return;
+    S.r = pointerR(e.clientX);
+    el('dist').value = Math.round(S.r);
+    el('dist-out').textContent = Math.round(S.r) + ' pm';
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false; v = 0;
+    el('stage-said').textContent = '원자를 드래그해 보세요';
+  };
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
+  canvas.addEventListener('pointerleave', onUp);
+  canvas.style.touchAction = 'none';   // 모바일에서 드래그가 스크롤로 먹히지 않게
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({ pair: S.pair.id, r: Math.round(S.r), temp: S.temp });
+      const url = location.origin + location.pathname + '?' + q;
+      const box = el('share-url');
+      box.value = url; box.hidden = false; box.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    const pid = q.get('pair');
+    const found = PAIRS.find((p) => p.id === pid);
+    if (found) {
+      S.pair = found;
+      [...pairsBox.children].forEach((c, i) => c.setAttribute('aria-pressed', String(PAIRS[i].id === pid)));
+      el('pair-note').textContent = found.note;
+    }
+    const r = Number(q.get('r'));
+    if (Number.isFinite(r) && r) {
+      syncRange();
+      S.r = Math.max(minR(), Math.min(maxR(), r));
+      el('dist').value = Math.round(S.r);
+      el('dist-out').textContent = Math.round(S.r) + ' pm';
+    } else {
+      resetToEq();
+    }
+    const t = Number(q.get('temp'));
+    if (Number.isFinite(t) && t > 0) {
+      S.temp = Math.min(60, t);
+      el('temp').value = S.temp;
+      el('temp-out').textContent = S.temp + '%';
+    }
+  }
+
+  // ── 루프 ──
+  let last = 0, acc = 0;
+  const DT = 1 / 120;
+  function frame(ts) {
+    const t = ts / 1000;
+    if (!last) last = t;
+    acc += Math.min(0.25, t - last);   // 탭 복귀 시 밀린 시간 폭주 방지
+    last = t;
+    if (running) { while (acc >= DT) { step(DT); acc -= DT; } } else { acc = 0; }
+    draw(); drawGraph(); readout();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.52) * DPR;
+    canvas.style.height = Math.round(w * 0.52) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 380 * DPR;
+  }
+
+  applyQuery();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

@@ -12,6 +12,48 @@ const path = require('path');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 const readRoot = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
 
+test('화학 시뮬레이션 두 개가 드롭다운에 연결돼 있다', () => {
+  /* 시뮬레이션을 만들어놓고 링크를 안 걸면 아무도 못 찾는다.
+     드롭다운이 있는 모든 페이지에서 갈 수 있어야 한다. */
+  const files = ['Index.html', 'community.html', 'guide.html', 'post.html',
+                 'simulation/pendulum.html', 'simulation/electromagnetic-induction.html',
+                 'simulation/particle-motion.html', 'simulation/chemical-bond.html'];
+  for (const f of files) {
+    const html = readRoot(f);
+    assert.ok(/href="\/simulation\/particle-motion\.html"/.test(html),
+      `${f} 에 입자의 운동 링크가 없다`);
+    assert.ok(/href="\/simulation\/chemical-bond\.html"/.test(html),
+      `${f} 에 화학 결합 링크가 없다`);
+    // '준비 중' 으로 남아 있으면 안 된다
+    assert.ok(!/<span class="soon">입자의 운동<\/span>/.test(html),
+      `${f} 에서 입자의 운동이 아직 '준비 중' 이다`);
+    assert.ok(!/<span class="soon">화학 결합<\/span>/.test(html),
+      `${f} 에서 화학 결합이 아직 '준비 중' 이다`);
+  }
+});
+
+test('새 시뮬레이션이 공용 스크립트를 읽는다', () => {
+  // 하나라도 빠지면 그 페이지만 네비게이션·테마가 죽는다(전에 실제로 겪었다)
+  for (const f of ['simulation/particle-motion.html', 'simulation/chemical-bond.html']) {
+    const html = readRoot(f);
+    for (const js of ['theme.js', 'session.js', 'nav-user.js', 'nav-dropdown.js', 'mobile-menu.js']) {
+      assert.ok(html.includes(js), `${f} 가 ${js} 를 안 읽는다`);
+    }
+    assert.ok(/id="mobile-menu"/.test(html), `${f} 에 모바일 메뉴가 없다`);
+  }
+});
+
+test('시뮬레이션 캔버스가 테마와 무관하게 같은 그림을 그린다', () => {
+  /* 무대는 --stage-bg 로 항상 어둡고 캔버스는 흰 계열로 그린다.
+     기존 두 시뮬레이션과 같은 규칙이다 — 캔버스 색을 토큰에서 읽어오게
+     만들면 다크/라이트에서 대비가 뒤집혀 한쪽이 안 보인다. */
+  for (const f of ['simulation/particle-motion.html', 'simulation/chemical-bond.html']) {
+    const html = readRoot(f);
+    assert.ok(/background: var\(--stage-bg\)/.test(html),
+      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+  }
+});
+
 test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {
   /* 이 두 페이지만 nav-dropdown.js 를 안 읽고 있었다. 드롭다운 마크업도 없어서
      과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다". */

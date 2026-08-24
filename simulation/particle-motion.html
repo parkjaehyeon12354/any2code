@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="온도를 바꾸며 기체 입자의 운동과 속력 분포를 관찰하는 시뮬레이션">
+<title>입자의 운동 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<script src="/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: var(--sp-md); align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: var(--sp-lg);
+  overflow: hidden;
+}
+.panel-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: var(--sp-lg); }
+
+.ctrl { margin-bottom: var(--sp-lg); }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 8px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 44px;                 /* 모바일 터치 타깃 하한 */
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 2px; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <span class="soon">개체와 생태계</span>
+            <span class="soon">세포의 구조</span>
+            <span class="soon">유전과 진화</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <span class="soon">대기와 기상</span>
+            <span class="soon">판과 지각 변동</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">해양과 순환</span>
+            <span class="soon">외권과 천체</span>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="container sim">
+  <!-- 목록 페이지가 없어서 위로 갈 곳은 홈뿐이다. 없는 곳을 가리키지 않는다. -->
+  <p class="crumb"><a href="/">홈</a> · 화학 · 입자의 운동</p>
+
+  <div class="head">
+    <h1>입자의 운동</h1>
+    <p>온도를 올리면 기체 입자가 어떻게 움직이는지 직접 보세요.
+    같은 온도에서도 <strong>입자마다 속력이 다릅니다</strong> — 평균만 보고 "모두 같은 속력"이라고
+    생각하기 쉬운데, 아래 분포 그래프에서 실제로 얼마나 퍼져 있는지 확인할 수 있습니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="기체 입자의 운동"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">온도</label>
+              <output id="temp-out">300 K</output>
+            </div>
+            <input type="range" id="temp" min="50" max="1200" step="10" value="300">
+            <span class="hint">온도는 입자의 평균 운동에너지입니다. 올리면 전체가 빨라지고, 분포도 넓게 퍼집니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="count">입자 수</label>
+              <output id="count-out">120개</output>
+            </div>
+            <input type="range" id="count" min="20" max="400" step="10" value="120">
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="mass">입자 질량</label>
+              <output id="mass-out">32 u</output>
+            </div>
+            <input type="range" id="mass" min="2" max="132" step="2" value="32">
+            <span class="hint">같은 온도라면 무거운 입자일수록 느립니다(수소 2, 산소 32, 이산화탄소 44).</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="vol">용기 크기</label>
+              <output id="vol-out">100%</output>
+            </div>
+            <input type="range" id="vol" min="40" max="100" step="1" value="100">
+            <span class="hint">좁힐수록 벽에 부딪히는 횟수가 늘어 압력이 올라갑니다.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>평균 속력</dt><dd id="r-mean">—</dd></div>
+            <div><dt>가장 느린 입자</dt><dd id="r-min">—</dd></div>
+            <div><dt>가장 빠른 입자</dt><dd id="r-max">—</dd></div>
+            <div><dt>충돌 횟수</dt><dd id="r-hits">—</dd></div>
+            <div><dt>상대 압력</dt><dd id="r-press" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="kmt-graph-title">
+    <div class="analysis-head"><h2 id="kmt-graph-title">속력 분포</h2><p>막대는 지금 이 순간 각 속력 구간에 있는 입자 수이고, 선은 맥스웰–볼츠만 분포입니다. 세로 점선이 평균 속력입니다.</p></div>
+    <div class="graph-wrap"><canvas id="speed-graph" aria-label="입자 속력 분포 그래프"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="kmt-formula-title">
+    <div class="analysis-head"><h2 id="kmt-formula-title">온도와 입자의 속력</h2><p>시뮬레이션은 입자 하나하나의 충돌을 계산하고, 그 결과가 이론 분포와 겹치는지 보여줍니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">½mv̄² = (3/2)kT, &nbsp;&nbsp; v<sub>rms</sub> = √(3kT/m)</p>
+      <p>온도는 입자의 <strong>평균 운동에너지</strong>입니다. 온도를 두 배로 올려도 속력이 두 배가 되지는 않습니다 — 제곱근이 붙어 있어 약 1.41배가 됩니다. 슬라이더로 300 K에서 600 K로 올려 평균 속력을 직접 비교해 보세요.</p>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>한 변이 L인 정육면체에 질량 m인 입자가 x축으로 v<sub>x</sub>로 움직인다고 합시다. 벽에 부딪혀 되튈 때 운동량 변화는 2mv<sub>x</sub>이고, 왕복에 걸리는 시간은 2L/v<sub>x</sub>입니다. 따라서 이 입자가 벽에 주는 평균 힘은 mv<sub>x</sub>²/L입니다.</p><p>입자 N개에 대해 더하고 면적 L²로 나누면 P = Nm⟨v<sub>x</sub>²⟩/L³이 됩니다. 방향이 특별할 이유가 없으므로 ⟨v<sub>x</sub>²⟩ = ⟨v²⟩/3이고, PV = (1/3)Nm⟨v²⟩입니다.</p><p>이것을 이상기체 상태방정식 PV = NkT와 견주면 (1/3)m⟨v²⟩ = kT, 즉 <strong>½m⟨v²⟩ = (3/2)kT</strong>를 얻습니다. 온도가 곧 평균 운동에너지라는 뜻입니다. 여기서 v<sub>rms</sub> = √(⟨v²⟩) = √(3kT/m)이 나옵니다.</p><p>같은 온도에서 질량이 크면 속력이 작아지는 것도 이 식에서 바로 보입니다. 수소(2 u)와 산소(32 u)는 질량이 16배 차이나므로 속력은 √16 = 4배 차이가 납니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="../session.js"></script>
+<script src="../nav-user.js"></script>
+<script src="../nav-dropdown.js"></script>
+<script src="../mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 기체 분자 운동론 ──
+
+     입자를 하나하나 굴리고 벽·입자 충돌을 직접 계산한다. 분포를 수식으로
+     그려놓고 입자는 장식으로 두는 방법도 있지만, 그러면 "왜 저런 분포가
+     나오는가" 를 볼 수 없다. 실제로 충돌시켜야 분포가 저절로 생긴다.
+
+     단위는 교과서 값을 그대로 쓰지 않는다. 실제 산소 분자는 상온에서
+     초속 480 m 로 움직여서 화면에 그리면 아무것도 안 보인다. 대신 온도와
+     질량의 '관계' 가 맞도록 비례만 유지한다 — v ∝ √(T/m). */
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const S = { temp: 300, count: 120, mass: 32, vol: 100 };
+  let particles = [];
+  let running = true;
+  let hits = 0;              // 벽 충돌 누적 — 압력의 근거
+  let hitWindow = [];        // 최근 1초간 충돌 (압력 계산용)
+
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+  let DPR = 1;
+
+  // 용기 안쪽 여백. vol 을 줄이면 오른쪽·아래에서 벽이 들어온다.
+  function box() {
+    const pad = 14;
+    const w = (W() - pad * 2) * (S.vol / 100);
+    const h = (H() - pad * 2) * (S.vol / 100);
+    return { x: pad, y: pad, w, h };
+  }
+
+  /* 목표 속력 — v ∝ √(T/m).
+     화면 크기와 무관하게 같은 그림이 나오도록 폭에 비례시킨다. */
+  function targetSpeed() {
+    return Math.sqrt(S.temp / S.mass) * (W() / 900) * 34;
+  }
+
+  function radius() {
+    // 무거운 입자를 크게 그린다. 질량 차이를 눈으로도 알 수 있게.
+    return 2.2 + Math.cbrt(S.mass) * 0.55;
+  }
+
+  function spawn() {
+    const b = box();
+    const v0 = targetSpeed();
+    particles = [];
+    for (let i = 0; i < S.count; i++) {
+      /* 처음부터 맥스웰 분포로 주지 않는다. 전부 같은 속력으로 시작해도
+         충돌만으로 분포가 생기는 것을 보여주는 편이 낫다 — 방향만 무작위. */
+      const a = Math.random() * Math.PI * 2;
+      particles.push({
+        x: b.x + Math.random() * b.w,
+        y: b.y + Math.random() * b.h,
+        vx: Math.cos(a) * v0,
+        vy: Math.sin(a) * v0
+      });
+    }
+    hits = 0;
+    hitWindow = [];
+  }
+
+  /* 온도를 바꾸면 기존 입자의 속력을 비례로 조정한다.
+     다시 뿌리면 분포가 초기화돼서, 온도만 올렸을 때 분포가 어떻게
+     넓어지는지 볼 수 없다. */
+  function rescale(oldV, newV) {
+    if (oldV <= 0) return;
+    const k = newV / oldV;
+    particles.forEach((p) => { p.vx *= k; p.vy *= k; });
+  }
+
+  function step(dt) {
+    const b = box();
+    const r = radius();
+
+    for (const p of particles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      // 벽 충돌 — 되튀면서 횟수를 센다(압력의 근거)
+      if (p.x - r < b.x) { p.x = b.x + r; p.vx = Math.abs(p.vx); hits++; hitWindow.push(now); }
+      if (p.x + r > b.x + b.w) { p.x = b.x + b.w - r; p.vx = -Math.abs(p.vx); hits++; hitWindow.push(now); }
+      if (p.y - r < b.y) { p.y = b.y + r; p.vy = Math.abs(p.vy); hits++; hitWindow.push(now); }
+      if (p.y + r > b.y + b.h) { p.y = b.y + b.h - r; p.vy = -Math.abs(p.vy); hits++; hitWindow.push(now); }
+    }
+
+    /* 입자끼리의 충돌 — 이게 있어야 속력이 섞여 분포가 생긴다.
+       모든 쌍을 보면 N² 이라 400개에서 8만 번이다. 격자로 나눠 가까운
+       것만 본다. */
+    const cell = r * 2.2;
+    const grid = new Map();
+    particles.forEach((p, i) => {
+      const k = ((p.x / cell) | 0) + ',' + ((p.y / cell) | 0);
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(i);
+    });
+
+    for (const [k, list] of grid) {
+      const [cx, cy] = k.split(',').map(Number);
+      const near = [];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const o = grid.get((cx + dx) + ',' + (cy + dy));
+          if (o) near.push(...o);
+        }
+      }
+      for (const i of list) {
+        for (const j of near) {
+          if (j <= i) continue;
+          collide(particles[i], particles[j], r);
+        }
+      }
+    }
+  }
+
+  /* 탄성 충돌 — 두 입자의 질량이 같으므로 충돌축 방향 속도를 맞바꾼다. */
+  function collide(a, c, r) {
+    const dx = c.x - a.x, dy = c.y - a.y;
+    const d2 = dx * dx + dy * dy;
+    const min = r * 2;
+    if (d2 > min * min || d2 === 0) return;
+
+    const d = Math.sqrt(d2);
+    const nx = dx / d, ny = dy / d;
+
+    // 겹친 만큼 떼어놓는다. 안 하면 두 입자가 붙어서 계속 충돌 판정된다.
+    const push = (min - d) / 2;
+    a.x -= nx * push; a.y -= ny * push;
+    c.x += nx * push; c.y += ny * push;
+
+    const va = a.vx * nx + a.vy * ny;
+    const vc = c.vx * nx + c.vy * ny;
+    if (va - vc <= 0) return;   // 이미 멀어지는 중이면 건드리지 않는다
+
+    const diff = va - vc;
+    a.vx -= diff * nx; a.vy -= diff * ny;
+    c.vx += diff * nx; c.vy += diff * ny;
+  }
+
+  function speeds() {
+    return particles.map((p) => Math.hypot(p.vx, p.vy));
+  }
+
+  // ── 그리기 ──
+  function draw() {
+    const b = box();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+
+    // 용기
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = 'rgba(255,255,255,.035)';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+
+    const r = radius();
+    const v0 = targetSpeed() || 1;
+
+    for (const p of particles) {
+      /* 빠른 입자일수록 밝게. 같은 온도에서도 속력이 제각각이라는 것을
+         그림만 봐도 알 수 있게 한다. */
+      const s = Math.hypot(p.vx, p.vy) / v0;
+      const t = Math.max(0, Math.min(1, (s - 0.3) / 1.4));
+      const c = Math.round(150 + t * 105);
+      ctx.fillStyle = `rgb(${c},${Math.round(c * 0.96)},${Math.round(150 + (1 - t) * 60)})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 벽에 부딪히는 중인 입자를 잠깐 강조 — 압력이 '충돌' 이라는 걸 보이게
+    ctx.fillStyle = '#9a9a9a';
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${S.count}개 · ${S.temp} K`, b.x + 8, b.y + b.h - 8);
+  }
+
+  // ── 속력 분포 그래프 ──
+  const graph = el('speed-graph');
+  const g = graph.getContext('2d');
+
+  function drawGraph() {
+    const gw = graph.width / DPR, gh = graph.height / DPR;
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.clearRect(0, 0, gw, gh);
+
+    const sp = speeds();
+    if (!sp.length) return;
+
+    const pad = { l: 52, r: 18, t: 22, b: 40 };
+    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
+
+    const vmax = Math.max(targetSpeed() * 3, Math.max(...sp) * 1.05);
+    const BINS = 26;
+    const bins = new Array(BINS).fill(0);
+    sp.forEach((v) => {
+      const i = Math.min(BINS - 1, Math.floor(v / vmax * BINS));
+      bins[i]++;
+    });
+    const top = Math.max(4, Math.max(...bins) * 1.25);
+
+    // 눈금
+    g.strokeStyle = 'rgba(255,255,255,.12)';
+    g.lineWidth = 1;
+    g.font = '12px system-ui';
+    g.fillStyle = 'rgba(255,255,255,.7)';
+    g.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const py = y + h * i / 4;
+      g.beginPath(); g.moveTo(x, py); g.lineTo(x + w, py); g.stroke();
+      g.fillText(Math.round(top * (1 - i / 4)), x - 9, py + 4);
+    }
+
+    // 막대 — 지금 이 순간의 실제 분포
+    const bw = w / BINS;
+    for (let i = 0; i < BINS; i++) {
+      const bh = bins[i] / top * h;
+      g.fillStyle = 'rgba(120,200,255,.55)';
+      g.fillRect(x + i * bw + 1, y + h - bh, bw - 2, bh);
+    }
+
+    /* 이론 곡선 — 2차원 맥스웰 분포는 f(v) ∝ v·exp(−v²/2a²).
+
+       a² 는 평균속력에서 거꾸로 구한다. 2D 맥스웰에서 ⟨v⟩ = a√(π/2) 이므로
+       a² = 2⟨v⟩²/π 다.
+
+       봉우리는 v = a, 즉 평균의 약 0.8배 지점에 생긴다 — 평균선보다 왼쪽에
+       찍히는 것이 정상이다(분포가 오른쪽으로 긴 꼬리를 갖기 때문).
+       세로 배율만 막대 최고점에 맞춘다. 세로축 단위가 서로 달라서다. */
+    const mean = sp.reduce((a, b) => a + b, 0) / sp.length;
+    const a2 = 2 * mean * mean / Math.PI;
+    g.strokeStyle = '#ffb35c';
+    g.lineWidth = 2;
+    g.beginPath();
+    let peak = 0;
+    const fs = [];
+    for (let i = 0; i <= 120; i++) {
+      const v = vmax * i / 120;
+      const f = (v / a2) * Math.exp(-v * v / (2 * a2));
+      fs.push(f); if (f > peak) peak = f;
+    }
+    fs.forEach((f, i) => {
+      const px = x + w * i / 120;
+      // 곡선의 최고점을 막대 최고점에 맞춰 겹쳐 본다
+      const py = y + h - (f / peak) * (Math.max(...bins) / top * h);
+      i ? g.lineTo(px, py) : g.moveTo(px, py);
+    });
+    g.stroke();
+
+    // 평균 속력 표시
+    const mx = x + mean / vmax * w;
+    g.strokeStyle = 'rgba(255,255,255,.55)';
+    g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(mx, y); g.lineTo(mx, y + h); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = 'rgba(255,255,255,.85)';
+    g.textAlign = 'center';
+    g.fillText('평균', mx, y - 7);
+
+    // 축
+    g.strokeStyle = 'rgba(255,255,255,.55)';
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + h); g.lineTo(x + w, y + h); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.8)';
+    g.textAlign = 'center';
+    g.fillText('속력 (상대값)', x + w / 2, gh - 10);
+    g.save();
+    g.translate(14, y + h / 2); g.rotate(-Math.PI / 2);
+    g.fillText('입자 수', 0, 0);
+    g.restore();
+  }
+
+  // ── 화면 갱신 ──
+  function readout() {
+    const sp = speeds();
+    if (!sp.length) return;
+    const mean = sp.reduce((a, b) => a + b, 0) / sp.length;
+    const base = targetSpeed() || 1;
+
+    el('r-mean').textContent = (mean / base).toFixed(2) + ' × 기준';
+    el('r-min').textContent = (Math.min(...sp) / base).toFixed(2) + ' ×';
+    el('r-max').textContent = (Math.max(...sp) / base).toFixed(2) + ' ×';
+    el('r-hits').textContent = hits.toLocaleString() + '회';
+
+    // 최근 1초간 벽 충돌 → 상대 압력
+    const cutoff = now - 1;
+    hitWindow = hitWindow.filter((t) => t > cutoff);
+    el('r-press').textContent = hitWindow.length + ' /s';
+
+    const ratio = Math.max(...sp) / Math.min(...sp);
+    el('note').textContent =
+      `가장 빠른 입자가 가장 느린 입자보다 약 ${ratio.toFixed(0)}배 빠릅니다. ` +
+      '같은 온도라도 입자마다 속력이 다릅니다.';
+  }
+
+  // ── 슬라이더 ──
+  const labels = {
+    temp: (v) => v + ' K',
+    count: (v) => v + '개',
+    mass: (v) => v + ' u',
+    vol: (v) => v + '%'
+  };
+
+  ['temp', 'count', 'mass', 'vol'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      const before = targetSpeed();
+      S[k] = Number(input.value);
+      el(k + '-out').textContent = labels[k](input.value);
+
+      if (k === 'count') {
+        spawn();
+      } else if (k === 'temp' || k === 'mass') {
+        // 분포를 유지한 채 속력만 비례 조정 — 다시 뿌리면 관찰이 끊긴다
+        rescale(before, targetSpeed());
+      }
+    });
+  });
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', () => { spawn(); });
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({ temp: S.temp, count: S.count, mass: S.mass, vol: S.vol });
+      const url = location.origin + location.pathname + '?' + q;
+      const box = el('share-url');
+      box.value = url; box.hidden = false; box.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['temp', 'count', 'mass', 'vol'].forEach((k) => {
+      const v = Number(q.get(k));
+      if (!Number.isFinite(v) || !v) return;
+      const input = el(k);
+      const clamped = Math.max(Number(input.min), Math.min(Number(input.max), v));
+      S[k] = clamped; input.value = clamped;
+      el(k + '-out').textContent = labels[k](clamped);
+    });
+  }
+
+  // ── 루프 ──
+  let now = 0;
+  let last = 0;
+  let acc = 0;
+  const DT = 1 / 120;
+
+  function frame(ts) {
+    const t = ts / 1000;
+    if (!last) last = t;
+    /* 탭을 숨겼다 돌아오면 밀린 시간이 한꺼번에 들어온다. 0.25초로 잘라
+       입자가 벽을 뚫고 나가는 것을 막는다(pendulum 과 같은 이유). */
+    acc += Math.min(0.25, t - last);
+    last = t;
+
+    if (running) {
+      while (acc >= DT) { now += DT; step(DT); acc -= DT; }
+    } else {
+      acc = 0;
+    }
+
+    draw();
+    drawGraph();
+    readout();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.62) * DPR;
+    canvas.style.height = Math.round(w * 0.62) + 'px';
+
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 340 * DPR;
+  }
+
+  applyQuery();
+  resize();
+  spawn();
+  window.addEventListener('resize', () => { resize(); });
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
