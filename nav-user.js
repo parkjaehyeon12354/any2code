@@ -79,6 +79,24 @@
   const drawn = Session.load();
   render(drawn);
   Session.refresh().then(function (user) {
+    /* 가입을 안 끝냈으면(약관 미동의) 가입 화면으로 되돌린다.
+
+       로그인 쿠키가 있다고 가입이 끝난 게 아니다 — 콜백에서 /welcome 으로
+       보내지만, 사용자가 주소를 직접 치거나 뒤로가기로 빠져나올 수 있다.
+       그때도 결국 여기로 돌아오게 만든다.
+
+       ⚠ 서버(onboarded)만 믿는다. 캐시(drawn)로 판단하면 sessionStorage 를
+       손대는 것만으로 가입 절차를 건너뛸 수 있다.
+       /welcome 자신과 약관·정책 문서는 제외 — 동의하려면 읽을 수 있어야 한다. */
+    if (user && user.onboarded === false) {
+      var here = window.location.pathname;
+      var free = ['/welcome', '/terms', '/privacy', '/login'];
+      if (free.indexOf(here) === -1) {
+        window.location.replace('/welcome?to=' + encodeURIComponent(here + window.location.search));
+        return;
+      }
+    }
+
     if (JSON.stringify(user) !== JSON.stringify(drawn) || !document.getElementById('profile-menu')) {
       render(user);
     }

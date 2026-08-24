@@ -103,11 +103,24 @@ app.http('authCallback', {
         context.error('사용자 문서 갱신 실패:', e.message);
       }
 
+      /* 가입 절차를 안 끝냈으면 /welcome 으로 보낸다.
+
+         돌아갈 곳은 ?to= 로 넘겨, 약관에 동의하면 원래 가려던 화면으로 이어진다.
+         profile.read 가 실패하면 그냥 원래 경로로 보낸다 — DB 가 흔들린다고
+         멀쩡한 기존 사용자를 가입 화면에 가둘 이유는 없다. */
+      const target = session.stateTarget(q.get('state'));
+      let location = target;
+      try {
+        const doc = await profile.read(user.sub);
+        if (!doc || !doc.termsAcceptedAt) {
+          location = '/welcome?to=' + encodeURIComponent(target);
+        }
+      } catch { /* 판단이 안 되면 통과시킨다 */ }
+
       // 세션 발급과 state 쿠키 폐기를 한 응답에 함께 싣는다.
-      // 돌아갈 곳은 state 토큰 안에 넣어둔 경로 — 없으면 '/'.
       return {
         status: 302,
-        headers: { Location: session.stateTarget(q.get('state')) },
+        headers: { Location: location },
         cookies: [session.issue(user), session.clearState()]
       };
     } catch (e) {
@@ -136,7 +149,12 @@ app.http('me', {
     // 표시 이름도 쿠키가 아니라 지금 문서 기준으로 읽는다. 쿠키는 14일 살아있어서
     // 이름을 바꿔도 그때까지 옛 이름이 상단바에 남는다 — role 과 같은 이유다.
     let name = user.name;
-    try { name = await profile.displayName(user); } catch { name = user.name; }
+    let onboarded = true;   // 조회 실패 시 가입 절차로 되돌리지 않는다(로그인은 살린다)
+    try {
+      const doc = await profile.read(user.sub);
+      name = (doc && doc.displayName) || user.name;
+      onboarded = !!(doc && doc.termsAcceptedAt);
+    } catch { name = user.name; }
 
     // AI 크레딧 잔액. 실패해도 null 로 두고 로그인은 정상 처리한다.
     let creditBalance = null;
@@ -152,6 +170,8 @@ app.http('me', {
         suspendedPermanent: suspended ? !!suspended.permanent : false,
         // AI 도우미 크레딧 잔액. 조회에 실패해도 로그인 자체는 막지 않는다.
         credit: creditBalance,
+        // 가입 절차(약관 동의)를 끝냈는지. false 면 화면이 /welcome 으로 되돌린다.
+        onboarded,
         name,
         email: user.email,
         picture: user.picture,

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가입 마무리 · Ans2Quest</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/styles.css">
+<script src="/theme.js"></script>
+<style>
+  /* 가입 마지막 단계. 로그인은 됐지만 약관 동의가 남은 상태다.
+     상단 네비를 두지 않는다 — 여기서 다른 데로 새면 가입이 안 끝난 채
+     떠돌게 되고, 어느 화면에서도 다시 이리로 돌아오게 된다. */
+  .welcome-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 40px var(--sp-lg); background: var(--canvas); box-sizing: border-box;
+  }
+  .welcome {
+    width: 100%; max-width: 440px;
+    background: var(--surface-soft); border: 1px solid var(--hairline);
+    border-radius: var(--rounded-lg); padding: 32px 28px;
+    box-shadow: 0 8px 30px rgba(19, 42, 35, .05);
+  }
+  .welcome-brand {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--ink); font-weight: 700; font-size: 17px; margin-bottom: 20px;
+  }
+  .welcome-brand svg { width: 24px; height: 24px; }
+  .welcome h1 {
+    font-family: var(--font-display); color: var(--ink);
+    font-size: 22px; margin: 0 0 8px;
+  }
+  .welcome-sub { color: var(--muted); font-size: 14px; line-height: 1.65; margin: 0 0 24px; word-break: keep-all; }
+
+  .w-field { margin-bottom: 16px; }
+  .w-field label {
+    display: block; color: var(--ink); font-size: 13.5px; font-weight: 600; margin-bottom: 6px;
+  }
+  .w-optional { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
+  .w-field input {
+    width: 100%; box-sizing: border-box;
+    padding: 11px 12px; border: 1px solid var(--hairline);
+    border-radius: 9px; background: var(--canvas); color: var(--ink);
+    font: inherit; font-size: 14.5px;
+  }
+  .w-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .w-hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; line-height: 1.55; }
+
+  /* 약관 동의 — 가입을 가르는 유일한 필수 항목이라 시각적으로 분리한다 */
+  .w-agree {
+    margin: 22px 0 18px; padding: 14px 14px 14px 12px;
+    background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px;
+  }
+  .w-agree label {
+    display: flex; align-items: flex-start; gap: 10px;
+    color: var(--body); font-size: 13.5px; line-height: 1.6; cursor: pointer;
+  }
+  /* 터치 타겟 44px 을 체크박스 자체로 채우지 않고 label 전체가 받게 한다 */
+  .w-agree input[type="checkbox"] {
+    width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer;
+  }
+  .w-agree a { color: var(--primary); font-weight: 600; text-decoration: underline; }
+
+  .w-submit {
+    width: 100%; padding: 13px; border: 0; border-radius: 10px;
+    background: var(--primary); color: var(--on-primary, #fff);
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .w-submit:disabled { opacity: .5; cursor: not-allowed; }
+  .w-submit:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .w-error {
+    margin: 0 0 14px; padding: 11px 13px; border-radius: 9px;
+    background: var(--badge-bad-bg); color: var(--badge-bad-fg);
+    font-size: 13.5px; line-height: 1.55;
+  }
+  .w-foot { margin: 16px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+  .w-foot a { color: var(--muted); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="welcome-wrap">
+  <main class="welcome">
+    <div class="welcome-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </div>
+
+    <h1>거의 다 됐어요</h1>
+    <p class="welcome-sub" id="w-sub">잠시만요, 계정을 확인하고 있습니다…</p>
+
+    <form id="w-form" hidden>
+      <p class="w-error" id="w-error" hidden></p>
+
+      <div class="w-field">
+        <label for="w-name">표시 이름 <span class="w-optional">선택</span></label>
+        <input type="text" id="w-name" maxlength="20" autocomplete="nickname" placeholder="비워두면 로그인 계정 이름을 씁니다">
+        <p class="w-hint">커뮤니티에 글을 쓸 때 보이는 이름입니다. 나중에 설정에서 바꿀 수 있어요.</p>
+      </div>
+
+      <div class="w-field">
+        <label for="w-birthday">생년월일 <span class="w-optional">선택</span></label>
+        <input type="date" id="w-birthday" autocomplete="bday" max="2099-12-31" min="1900-01-01">
+        <p class="w-hint">입력하지 않아도 서비스를 이용할 수 있습니다.</p>
+      </div>
+
+      <div class="w-agree">
+        <label for="w-agree">
+          <input type="checkbox" id="w-agree">
+          <span>
+            <a href="/terms" target="_blank" rel="noopener">이용약관</a>과
+            <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>을
+            읽었고 이에 동의합니다. <strong>(필수)</strong>
+          </span>
+        </label>
+      </div>
+
+      <button type="submit" class="w-submit" id="w-submit" disabled>동의하고 시작하기</button>
+
+      <p class="w-foot">
+        동의하지 않으시면 <a href="#" id="w-cancel">로그아웃</a>됩니다.
+      </p>
+    </form>
+  </main>
+</div>
+
+<script src="/session.js"></script>
+<script>
+(function () {
+  var el = function (id) { return document.getElementById(id); };
+  var form = el('w-form'), sub = el('w-sub');
+  var agree = el('w-agree'), submit = el('w-submit'), err = el('w-error');
+
+  /* 약관에 동의하면 원래 가려던 화면으로 이어간다.
+     ?to= 는 콜백이 붙여준다. 남이 심어놓은 외부 주소로 튀지 않도록
+     '/' 로 시작하고 '//' 가 아닌 값만 받는다(오픈 리다이렉트 방어). */
+  function nextPath() {
+    var raw = new URLSearchParams(location.search).get('to') || '/';
+    if (raw.charAt(0) !== '/' || raw.charAt(1) === '/' || raw.charAt(1) === '\\') return '/';
+    return raw;
+  }
+
+  function fail(msg) {
+    err.textContent = msg;
+    err.hidden = false;
+    submit.disabled = false;
+    submit.textContent = '동의하고 시작하기';
+  }
+
+  agree.addEventListener('change', function () {
+    submit.disabled = !agree.checked;
+  });
+
+  el('w-cancel').addEventListener('click', function (e) {
+    e.preventDefault();
+    // 동의하지 않으면 가입이 성립하지 않는다. 세션을 끊고 홈으로.
+    Session.logout().then(function () { location.replace('/'); });
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!agree.checked) return;
+
+    submit.disabled = true;
+    submit.textContent = '처리하는 중…';
+    err.hidden = true;
+
+    fetch('/api/profile/terms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        agree: true,
+        name: el('w-name').value.trim(),
+        birthday: el('w-birthday').value || null
+      })
+    }).then(function (r) {
+      return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; });
+    }).then(function (res) {
+      if (res.ok) { location.replace(nextPath()); return; }
+      if (res.status === 401) { location.replace('/login'); return; }
+      fail((res.d && res.d.error) || '가입을 마치지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }).catch(function () {
+      fail('네트워크에 문제가 있습니다. 연결을 확인하고 다시 시도해 주세요.');
+    });
+  });
+
+  // 로그인 상태부터 확인한다. 로그인 안 했으면 여기 있을 이유가 없고,
+  // 이미 가입을 끝냈으면 되돌려보낸다(뒤로가기로 이 화면에 다시 들어오는 경우).
+  Session.refresh().then(function (me) {
+    if (!me) { location.replace('/login'); return; }
+    if (me.onboarded) { location.replace(nextPath()); return; }
+
+    sub.textContent = me.name
+      ? me.name + ' 님, 반가워요. 아래 항목만 확인하면 시작할 수 있습니다.'
+      : '반가워요. 아래 항목만 확인하면 시작할 수 있습니다.';
+    form.hidden = false;
+    el('w-name').placeholder = me.name ? '비워두면 ' + me.name + ' 으로 표시됩니다' : '비워두면 로그인 계정 이름을 씁니다';
+  }).catch(function () {
+    // 확인에 실패해도 가입을 막지는 않는다. 제출 시 서버가 다시 판정한다.
+    sub.textContent = '아래 항목만 확인하면 시작할 수 있습니다.';
+    form.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

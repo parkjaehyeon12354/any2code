@@ -62,11 +62,20 @@ test('돌아갈 경로는 서명된 state 안에 담는다', () => {
 });
 
 test('콜백은 state 에서 꺼낸 경로로 보낸다', () => {
-  assert.ok(/Location:\s*session\.stateTarget\(/.test(AUTH_SRC),
+  /* 이동 경로를 stateTarget 으로 정해야 한다.
+
+     ⚠ Location 에 그 값을 직접 넣는지로 검사하면 안 된다 — 가입 절차가 생기면서
+     `const target = stateTarget(...)` 로 한 번 받아 두고, 미동의 사용자는
+     /welcome?to=<target> 으로 감싸 보내게 바뀌었다. 그때 이 검사가 깨졌다.
+     확인할 것은 "경로가 stateTarget 에서 나오는가" 이지 대입 형태가 아니다. */
+  assert.ok(/session\.stateTarget\(q\.get\('state'\)\)/.test(AUTH_SRC),
     '콜백이 stateTarget 으로 이동 경로를 정해야 한다');
   // 예전처럼 '/' 로 고정돼 있으면 로그인 후 항상 메인으로 튕긴다
   assert.ok(!/headers:\s*\{\s*Location:\s*'\/'\s*\}/.test(AUTH_SRC),
     "Location 이 '/' 로 고정돼 있으면 안 된다");
+  // 가입 화면으로 우회할 때도 원래 목적지를 잃지 않아야 한다
+  assert.ok(/\/welcome\?to=' \+ encodeURIComponent\(target\)/.test(AUTH_SRC),
+    '가입 미완료로 우회시킬 때 원래 경로를 ?to= 로 넘겨야 한다');
 });
 
 test('stateTarget 은 검증을 통과한 값만 돌려준다', () => {

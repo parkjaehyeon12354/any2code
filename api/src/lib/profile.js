@@ -72,7 +72,12 @@ const view = (doc, user) => ({
   provider: user.provider,
   joinedAt: (doc && doc.joinedAt) || null,
   lastLoginAt: (doc && doc.lastLoginAt) || null,
-  nameChangedAt: (doc && doc.nameChangedAt) || null
+  nameChangedAt: (doc && doc.nameChangedAt) || null,
+  /* 약관에 동의한 시각. null 이면 아직 가입 절차를 안 끝낸 것이다.
+
+     동의 여부를 boolean 이 아니라 '언제' 로 남긴다. 약관이 바뀌면 그 시점보다
+     앞선 동의는 다시 받아야 하는데, boolean 이면 그 판단을 할 수 없다. */
+  termsAcceptedAt: (doc && doc.termsAcceptedAt) || null
 });
 
 async function read(sub) {
@@ -109,9 +114,41 @@ async function ensure(user) {
     provider: user.provider,
     displayName: null,
     birthday: null,
+    // 로그인만으로는 가입이 끝나지 않는다. /welcome 에서 약관에 동의해야 채워진다.
+    termsAcceptedAt: null,
     joinedAt: now,
     lastLoginAt: now
   });
+}
+
+/* 약관 동의를 기록하고, 함께 받은 이름·생일(선택)을 저장한다.
+
+   save() 를 재사용하지 않는 이유 —
+   save() 는 이름 변경에 1분 제한을 건다. 가입 첫 화면에서 이름을 넣는 건
+   '변경' 이 아니라 최초 입력인데, 그 제한에 걸리면 가입이 막힌다.
+   또 save() 는 옛 글의 작성자명을 갱신하는데, 가입 시점엔 글이 없다. */
+async function acceptTerms(user, input) {
+  const src = input && typeof input === 'object' ? input : {};
+
+  // 이름과 생일은 선택이다. 빈 값이면 건드리지 않는다.
+  const rawName = typeof src.name === 'string' ? src.name.trim() : '';
+  const name = rawName ? checkName(rawName) : null;
+  const birthday = src.birthday ? checkBirthday(src.birthday) : null;
+
+  if (!(await read(user.sub))) await ensure(user);
+
+  const now = new Date().toISOString();
+  const ops = [{ op: 'set', path: '/termsAcceptedAt', value: now }];
+
+  // 제공자 이름과 같으면 굳이 박아두지 않는다(save() 와 같은 규칙)
+  if (name && name !== user.name) {
+    ops.push({ op: 'set', path: '/displayName', value: name });
+    ops.push({ op: 'set', path: '/nameChangedAt', value: now });
+  }
+  if (birthday) ops.push({ op: 'set', path: '/birthday', value: birthday });
+
+  await container().item(docId(user.sub), user.sub).patch(ops);
+  return view(await read(user.sub), user);
 }
 
 /** 글·답변에 박아 둘 작성자명. 아직 안 바꿨으면 제공자 이름. */
@@ -234,4 +271,4 @@ async function discipline(sub) {
 }
 
 // NAME_MIN·NAME_MAX 는 화면이 input 의 minlength/maxlength 에 그대로 쓴다 (functions/profile.js)
-module.exports = { ensure, read, save, view, displayName, discipline, NAME_MIN, NAME_MAX };
+module.exports = { ensure, read, save, view, displayName, discipline, acceptTerms, NAME_MIN, NAME_MAX };

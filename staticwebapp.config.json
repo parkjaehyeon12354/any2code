@@ -37,6 +37,18 @@
       "rewrite": "/login.html"
     },
     {
+      "route": "/welcome",
+      "rewrite": "/welcome.html"
+    },
+    {
+      "route": "/terms",
+      "rewrite": "/terms.html"
+    },
+    {
+      "route": "/privacy",
+      "rewrite": "/privacy.html"
+    },
+    {
       "route": "/admin",
       "rewrite": "/admin.html"
     },

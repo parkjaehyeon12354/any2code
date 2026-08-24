@@ -67,3 +67,43 @@ app.http('profileSave', {
     }
   }
 });
+
+/* 가입 마무리 — 약관 동의 + 이름·생일(선택).
+
+   로그인만으로는 가입이 끝나지 않는다. 이 요청이 성공해야 termsAcceptedAt 이
+   채워지고, 그 전까지 화면은 /welcome 으로 되돌린다.
+
+   ⚠ 별도 엔드포인트로 둔 이유 — PUT /profile 은 이름 변경에 1분 제한을 건다.
+   가입 첫 화면의 이름 입력은 '변경' 이 아니라 최초 입력인데, 그 제한에 걸리면
+   가입 자체가 막힌다. */
+app.http('profileAcceptTerms', {
+  route: 'profile/terms',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+
+    if (Number(request.headers.get('content-length') || 0) > 8 * 1024) {
+      return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
+    }
+
+    let body;
+    try { body = await request.json(); } catch { return { status: 400, jsonBody: { error: '요청 형식이 잘못됐습니다.' } }; }
+
+    // 동의는 반드시 명시적이어야 한다. 기본값으로 통과시키지 않는다.
+    if (body && body.agree !== true) {
+      return { status: 400, jsonBody: { error: '이용약관과 개인정보 처리방침에 동의해야 가입할 수 있습니다.' } };
+    }
+
+    try {
+      const saved = await profile.acceptTerms(user, body);
+      return { status: 201, jsonBody: { profile: saved, limits } };
+    } catch (e) {
+      if (e.code === 'BAD_PROFILE') return { status: 400, jsonBody: { error: e.message } };
+      context.error('약관 동의 저장 실패:', e.message);
+      return dbFail(e, '저장하지 못했습니다.');
+    }
+  }
+});
