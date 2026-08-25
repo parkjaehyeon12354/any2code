@@ -29,10 +29,9 @@
 .head p { font-size:15px; color:var(--muted); word-break:keep-all; max-width:65ch; }
 .layout { display:grid; grid-template-columns:minmax(700px,1fr) 420px; gap:var(--sp-lg); align-items:start; }
 .stage { position:relative; background:var(--stage-bg); border:1px solid var(--hairline); border-radius:var(--rounded-lg); overflow:hidden; }
-#canvas { display:block; width:100%; height:auto; touch-action:none; }
+#canvas { display:block; width:100%; height:auto; }
 .stage-foot { display:flex; align-items:center; gap:var(--sp-sm); flex-wrap:wrap; padding:var(--sp-md); border-top:1px solid var(--hairline); background:var(--surface-soft); }
 .stage-foot .btn { height:40px; padding:0 16px; font-size:13.5px; }
-.stage-tip { margin-left:auto; font-size:12.5px; color:var(--muted); }
 .panel { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--rounded-lg); margin-bottom:var(--sp-lg); overflow:hidden; }
 .side-panels { display:grid; grid-template-columns:1fr; gap:var(--sp-md); align-items:start; }
 .side-panels .panel { margin-bottom:0; }
@@ -74,7 +73,7 @@
 .concept p { margin:0; font-size:13.5px; }
 .concept details { margin-top:10px; background:var(--canvas); }
 .concept .proof { color:var(--body); }
-@media(max-width:1200px){.layout{grid-template-columns:1fr}.side-panels{grid-template-columns:1fr 1fr}.stage-tip{width:100%;margin-left:0}
+@media(max-width:1200px){.layout{grid-template-columns:1fr}.side-panels{grid-template-columns:1fr 1fr}
   /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
   .sim{padding-left:var(--sp-lg);padding-right:var(--sp-lg)}}
 @media(max-width:700px){.side-panels{grid-template-columns:1fr}}
@@ -226,7 +225,6 @@
       <div class="stage-foot">
         <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
         <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
-        <span class="stage-tip">자석을 직접 좌우로 끌어도 됩니다.</span>
       </div>
     </div>
 
@@ -299,7 +297,7 @@
   const el=id=>document.getElementById(id);
   const canvas=el('canvas'),ctx=canvas.getContext('2d'),graphCanvas=el('graph-canvas'),graphCtx=graphCanvas.getContext('2d');
   const params={strength:.6,speed:1,turns:100,pole:1};
-  const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,dragging:false,lastMovedAt:0};
+  const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,lastMovedAt:0};
   const history={time:[],fluxRate:[],emf:[]};
   let last=performance.now(),lastSample=0;
 
@@ -322,7 +320,7 @@
   }
   function update(dt){
     state.t+=dt;
-    if(!state.dragging){state.prevX=state.x;state.x=autoPosition();}
+    state.prevX=state.x;state.x=autoPosition();
     state.prevFlux=state.flux;state.flux=magneticFlux(state.x);
     const dx=state.x-state.prevX,deltaFlux=state.flux-state.prevFlux;
     state.fluxRate=deltaFlux/Math.max(dt,.001);
@@ -393,14 +391,8 @@
     el('r-direction').className=Math.abs(emf)<.0005?'zero':emf>0?'positive':'negative';
     el('note').textContent=Math.abs(emf)<.0005?'dΦ/dt = 0이므로 유도 기전력과 전류가 0입니다.':state.fluxRate>0?'자기선속이 증가하여 이를 방해하는 방향으로 유도 전류가 흐릅니다.':'자기선속이 감소하여 변화를 막는 반대 방향으로 유도 전류가 흐릅니다.';
   }
-  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running||state.dragging)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);drawGraph();requestAnimationFrame(frame);}
+  function frame(now){let dt=Math.min((now-last)/1000,.05);last=now;if(state.running)update(dt);else{state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;}numbers();draw();sample(now);drawGraph();requestAnimationFrame(frame);}
   function reset(){state.t=0;state.x=bounds().left;state.prevX=state.x;state.velocity=0;state.flux=magneticFlux(state.x);state.prevFlux=state.flux;state.fluxRate=0;state.emf=0;state.lastMovedAt=0;history.time=[];history.fluxRate=[];history.emf=[];}
-  function pointerX(e){const r=canvas.getBoundingClientRect();return(e.clientX-r.left)/r.width*canvas.clientWidth;}
-  canvas.addEventListener('pointerdown',e=>{const x=pointerX(e);if(Math.abs(x-state.x)<90){state.dragging=true;state.running=false;canvas.setPointerCapture(e.pointerId);el('toggle').textContent='이어서';}});
-  canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;const b=bounds();state.prevX=state.x;state.x=Math.max(b.left,Math.min(b.right,pointerX(e)));update(1/60);});
-  function stopDragging(){state.dragging=false;state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;pushSample();}
-  canvas.addEventListener('pointerup',stopDragging);
-  canvas.addEventListener('pointercancel',stopDragging);
   el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
   el('speed').addEventListener('input',function(){params.speed=Number(this.value);el('speed-out').textContent=params.speed.toFixed(1)+'×';});
   el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
