@@ -88,6 +88,69 @@ test('시뮬레이션 캔버스가 테마와 무관하게 같은 그림을 그�
   }
 });
 
+test('생명과학 시뮬레이션 두 개가 드롭다운에 연결돼 있다', () => {
+  const files = ['Index.html', 'community.html', 'guide.html', 'post.html',
+                 'simulation/pendulum.html', 'simulation/electromagnetic-induction.html',
+                 'simulation/particle-motion.html', 'simulation/chemical-bond.html',
+                 'simulation/cell-structure.html', 'simulation/genetics-evolution.html'];
+  for (const f of files) {
+    const html = readRoot(f);
+    assert.ok(/href="\/simulation\/cell-structure\.html"/.test(html),
+      `${f} 에 세포의 구조 링크가 없다`);
+    assert.ok(/href="\/simulation\/genetics-evolution\.html"/.test(html),
+      `${f} 에 유전과 진화 링크가 없다`);
+    assert.ok(!/<span class="soon">세포의 구조<\/span>/.test(html),
+      `${f} 에서 세포의 구조가 아직 '준비 중' 이다`);
+    assert.ok(!/<span class="soon">유전과 진화<\/span>/.test(html),
+      `${f} 에서 유전과 진화가 아직 '준비 중' 이다`);
+  }
+});
+
+test('생명과학 시뮬레이션이 공용 스크립트를 읽는다', () => {
+  for (const f of ['simulation/cell-structure.html', 'simulation/genetics-evolution.html']) {
+    const html = readRoot(f);
+    for (const js of ['theme.js', 'session.js', 'nav-user.js', 'nav-dropdown.js', 'mobile-menu.js']) {
+      assert.ok(html.includes(js), `${f} 가 ${js} 를 안 읽는다`);
+    }
+    assert.ok(/id="mobile-menu"/.test(html), `${f} 에 모바일 메뉴가 없다`);
+    assert.ok(/background: var\(--stage-bg\)/.test(html),
+      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+  }
+});
+
+test('유전 시뮬레이션의 교배 계산이 멘델 법칙과 맞는다', () => {
+  /* 이 화면의 존재 이유다. 계산이 틀리면 학생이 틀린 걸 배운다.
+     punnettCells 를 꺼내 직접 돌려본다. */
+  const html = readRoot('simulation/genetics-evolution.html');
+  const m = html.match(/function punnettCells\(\)[\s\S]*?\n  \}/);
+  assert.ok(m, 'punnettCells 를 찾을 수 없다');
+
+  const fn = new Function('S', m[0] + '; return punnettCells();');
+  const tally = (a, b) => {
+    const out = fn({ parents: [a, b] });
+    const c = { BB: 0, Bb: 0, bb: 0 };
+    out.forEach((g) => c[g]++);
+    return c;
+  };
+
+  // Bb × Bb → 1:2:1, 겉모습 3:1 (교과서의 대표 사례)
+  let c = tally('Bb', 'Bb');
+  assert.deepStrictEqual(c, { BB: 1, Bb: 2, bb: 1 }, 'Bb × Bb 는 1:2:1 이어야 한다');
+  assert.strictEqual(c.BB + c.Bb, 3, '겉모습은 검정 3 : 흰색 1');
+
+  // BB × bb → 전부 Bb (잡종 1대가 모두 우성)
+  c = tally('BB', 'bb');
+  assert.deepStrictEqual(c, { BB: 0, Bb: 4, bb: 0 }, 'BB × bb 는 전부 Bb 여야 한다');
+
+  // Bb × bb → 1:1 (검정 2 : 흰색 2). 검정을 3 으로 잘못 세면 안 된다
+  c = tally('Bb', 'bb');
+  assert.deepStrictEqual(c, { BB: 0, Bb: 2, bb: 2 }, 'Bb × bb 는 Bb 2 : bb 2 여야 한다');
+
+  // bb × bb → 전부 bb (열성끼리는 우성이 나올 수 없다)
+  c = tally('bb', 'bb');
+  assert.deepStrictEqual(c, { BB: 0, Bb: 0, bb: 4 }, 'bb × bb 에서 검정이 나오면 안 된다');
+});
+
 test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {
   /* 이 두 페이지만 nav-dropdown.js 를 안 읽고 있었다. 드롭다운 마크업도 없어서
      과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다". */

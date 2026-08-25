@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="교배로 자손을 예측하고 환경 압력에 따라 집단이 어떻게 변하는지 보는 시뮬레이션">
+<title>유전과 진화 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script src="/assets/js/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 부모 유전자형 고르기 */
+.cross { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cross-col > span { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.gt-row { display: flex; gap: 5px; }
+.gt-row button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body);
+  font: 600 14px "Cambria Math", Georgia, serif; cursor: pointer;
+}
+.gt-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary);
+}
+.gt-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 퍼넷 사각형 */
+.punnett { margin-top: 14px; display: grid; grid-template-columns: 34px 1fr 1fr; gap: 4px; }
+.punnett div {
+  display: flex; align-items: center; justify-content: center;
+  height: 42px; border-radius: 7px; font: 600 14px "Cambria Math", Georgia, serif;
+}
+.punnett .hd { background: transparent; color: var(--muted); font-size: 13px; }
+.punnett .cell { border: 1px solid var(--hairline); background: var(--canvas); color: var(--ink); }
+.punnett .cell.dom { background: var(--badge-ok-bg, rgba(22,122,99,.16)); }
+
+.mode-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.mode-row button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.mode-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.mode-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+#eco-graph { display: block; width: 100%; height: 360px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <span class="soon">개체와 생태계</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <span class="soon">대기와 기상</span>
+            <span class="soon">판과 지각 변동</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">해양과 순환</span>
+            <span class="soon">외권과 천체</span>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 생명과학 · 유전과 진화</p>
+
+  <div class="head">
+    <h1>유전과 진화</h1>
+    <p>유전과 진화는 <strong>같은 이야기</strong>입니다. 유전이 변이를 만들고, 환경이 그중 일부를 고릅니다.
+    교배로 자손이 어떻게 나오는지 본 다음, 그 집단에 환경을 바꿔 세대가 지나면 어떻게 되는지 확인해 보세요.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="집단의 유전자형 분포"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">세대 진행</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>무엇을 볼까</h2></div>
+        <div class="panel-body">
+          <div class="mode-row" id="mode"></div>
+          <p class="note" id="mode-note"></p>
+        </div>
+      </div>
+
+      <div class="panel" id="cross-panel">
+        <div class="panel-head"><h2>부모 교배</h2></div>
+        <div class="panel-body">
+          <div class="cross">
+            <div class="cross-col">
+              <span>부모 1</span>
+              <div class="gt-row" data-parent="0"></div>
+            </div>
+            <div class="cross-col">
+              <span>부모 2</span>
+              <div class="gt-row" data-parent="1"></div>
+            </div>
+          </div>
+          <div class="punnett" id="punnett"></div>
+          <p class="note" id="cross-note"></p>
+        </div>
+      </div>
+
+      <div class="panel" id="evo-panel" hidden>
+        <div class="panel-head"><h2>환경</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="pressure">검은 개체의 생존율</label>
+              <output id="pressure-out">50%</output>
+            </div>
+            <input type="range" id="pressure" min="5" max="95" step="1" value="50">
+            <span class="hint">숲이 어두우면 검은 개체가 유리합니다. 50%면 어느 쪽도 유리하지 않습니다.</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="popsize">집단 크기</label>
+              <output id="popsize-out">200마리</output>
+            </div>
+            <input type="range" id="popsize" min="20" max="400" step="10" value="200">
+            <span class="hint">작은 집단은 우연만으로도 빈도가 크게 흔들립니다(유전적 부동).</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="mut">돌연변이율</label>
+              <output id="mut-out">0.0%</output>
+            </div>
+            <input type="range" id="mut" min="0" max="50" step="1" value="0">
+            <span class="hint">사라진 대립유전자를 다시 만들어 냅니다.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>세대</dt><dd id="r-gen">0</dd></div>
+            <div><dt>B 빈도 (검정)</dt><dd id="r-freq">—</dd></div>
+            <div><dt>BB : Bb : bb</dt><dd id="r-geno">—</dd></div>
+            <div><dt>겉모습 비율</dt><dd id="r-pheno">—</dd></div>
+            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="evo-graph-title">
+    <div class="analysis-head"><h2 id="evo-graph-title">세대에 따른 대립유전자 빈도</h2><p>파란선은 B(검정), 주황선은 b(흰색)의 빈도입니다. 환경을 바꾸면 선이 갈라지기 시작합니다.</p></div>
+    <div class="graph-wrap"><canvas id="eco-graph" aria-label="세대별 대립유전자 빈도 변화"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="evo-formula-title">
+    <div class="analysis-head"><h2 id="evo-formula-title">유전이 변이를 만들고 환경이 고른다</h2><p>멘델의 법칙과 자연선택은 따로 배우지만 이어져 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">p² + 2pq + q² = 1, &nbsp;&nbsp; p + q = 1</p>
+      <p>어떤 힘도 작용하지 않으면 대립유전자 빈도는 <strong>세대가 지나도 변하지 않습니다</strong>(하디–바인베르크 평형). 진화란 이 평형이 깨지는 것이고, 그 원인이 자연선택·유전적 부동·돌연변이입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>B의 빈도를 p, b의 빈도를 q라 하면 p + q = 1입니다. 부모가 무작위로 만난다면 자손이 BB일 확률은 p × p = p², Bb는 2pq(BB 순서 두 가지), bb는 q²입니다. 셋을 더하면 (p + q)² = 1이 됩니다.</p><p>중요한 것은 <strong>이 비율이 다음 세대에도 그대로 유지된다</strong>는 점입니다. 우성 형질이라고 해서 세대가 갈수록 늘어나지 않습니다 — 흔한 오해입니다. 시뮬레이션에서 생존율을 50%로 두고 세대를 진행해 보면 빈도가 거의 변하지 않는 것을 볼 수 있습니다.</p><p>생존율을 바꾸면 평형이 깨집니다. 검은 개체가 유리하면 B를 가진 개체가 더 많이 살아남아 다음 세대에 B를 더 많이 남깁니다. 이것이 <strong>자연선택</strong>입니다.</p><p>다만 열성 대립유전자는 좀처럼 완전히 사라지지 않습니다. Bb인 개체가 겉으로는 검은색이라 선택을 피하면서 b를 계속 물려주기 때문입니다. 생존율을 극단으로 두고 여러 세대를 돌려도 b가 남아 있는 것을 확인해 보세요.</p><p>집단을 작게 하면 다른 일이 일어납니다. 생존율이 50%여도 빈도가 크게 출렁이고, 때로는 한쪽이 우연히 사라집니다. 이것이 <strong>유전적 부동</strong>이며, 작은 집단일수록 강하게 나타납니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 유전과 진화 ──
+
+     교배(멘델)와 집단 변화(진화)를 한 화면에서 잇는다. 둘을 따로 배우면
+     "유전이 변이를 만들고 환경이 고른다" 는 연결이 안 보인다.
+
+     대립유전자는 B(검정, 우성)와 b(흰색, 열성) 하나뿐이다. 형질을 여러 개
+     두면 표가 커지기만 하고 원리는 그대로다. */
+  const GENOTYPES = ['BB', 'Bb', 'bb'];
+  const COLOR = { BB: '#3a3a3a', Bb: '#5a5a5a', bb: '#e8e8e8' };
+
+  const S = {
+    mode: 'cross',          // cross(교배) | evolve(진화)
+    parents: ['Bb', 'Bb'],  // 교과서의 대표 사례 — 3:1 이 나오는 조합
+    pressure: 50,           // 검은 개체 생존율(%)
+    popSize: 200,
+    mut: 0                  // 돌연변이율 (0~50 → 0~5%)
+  };
+
+  let pop = [];             // 개체들의 유전자형
+  let gen = 0;
+  let history = [];         // 세대별 B 빈도
+  let running = false;
+  let acc = 0;
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  // ── 집단 만들기 ──
+  function seed() {
+    pop = [];
+    // 교배 결과 비율대로 집단을 만든다 — 교배 화면과 진화 화면이 이어진다
+    const kids = punnettCells();
+    for (let i = 0; i < S.popSize; i++) {
+      pop.push(kids[i % kids.length]);
+    }
+    // 순서가 규칙적이면 그림이 줄무늬가 된다
+    for (let i = pop.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pop[i], pop[j]] = [pop[j], pop[i]];
+    }
+    gen = 0;
+    history = [freqB()];
+  }
+
+  /* 퍼넷 사각형 — 부모 각각에서 대립유전자 하나씩 받는다 */
+  function punnettCells() {
+    const a = S.parents[0], b = S.parents[1];
+    const out = [];
+    for (const x of a) for (const y of b) {
+      // 'bB' 는 'Bb' 와 같다. 대문자를 앞으로 모아 표기를 통일한다.
+      out.push([x, y].sort().reverse().join('') === 'Bb' ? 'Bb' : (x === 'B' && y === 'B' ? 'BB' : (x === 'b' && y === 'b' ? 'bb' : 'Bb')));
+    }
+    return out;
+  }
+
+  const freqB = () => {
+    if (!pop.length) return 0;
+    let n = 0;
+    for (const g of pop) n += (g === 'BB' ? 2 : g === 'Bb' ? 1 : 0);
+    return n / (pop.length * 2);
+  };
+
+  const counts = () => {
+    const c = { BB: 0, Bb: 0, bb: 0 };
+    for (const g of pop) c[g]++;
+    return c;
+  };
+
+  /* 한 세대 — 생존 → 무작위 교배 → 자손 */
+  function step() {
+    if (!pop.length) return;
+
+    // ① 생존. 검은 개체(BB, Bb)와 흰 개체(bb)의 생존율이 다르다.
+    const pB = S.pressure / 100;
+    const survivors = pop.filter((g) => {
+      const black = g !== 'bb';
+      return Math.random() < (black ? pB : 1 - pB);
+    });
+
+    // 전멸하면 볼 것이 없다. 최소한을 남긴다.
+    const parents = survivors.length >= 2 ? survivors : pop.slice(0, 2);
+
+    // ② 무작위 교배로 다음 세대를 채운다
+    const next = [];
+    for (let i = 0; i < S.popSize; i++) {
+      const m = parents[Math.floor(Math.random() * parents.length)];
+      const f = parents[Math.floor(Math.random() * parents.length)];
+      let a = m[Math.floor(Math.random() * 2)];
+      let b = f[Math.floor(Math.random() * 2)];
+
+      // ③ 돌연변이 — 사라진 대립유전자를 되살린다
+      const rate = S.mut / 1000;   // 0~50 → 0~5%
+      if (Math.random() < rate) a = a === 'B' ? 'b' : 'B';
+      if (Math.random() < rate) b = b === 'B' ? 'b' : 'B';
+
+      next.push(a === 'B' && b === 'B' ? 'BB' : (a === 'b' && b === 'b' ? 'bb' : 'Bb'));
+    }
+    pop = next;
+    gen++;
+    history.push(freqB());
+    if (history.length > 400) history.shift();
+  }
+
+  // ── 무대: 개체를 격자로 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+    if (!pop.length) return;
+
+    /* 격자 배치. 범례 자리(아래 28px)를 뺀 영역을 꽉 채운다.
+
+       ⚠ cols 만 구하고 rows 를 나눗셈으로 얻으면 아래가 크게 남는다.
+       cols 를 구한 뒤 rows 에 맞춰 칸 높이를 다시 계산해야 한다. */
+    const pad = 18, legend = 28;
+    const availW = W() - pad * 2;
+    const availH = H() - pad * 2 - legend;
+    const cols = Math.max(1, Math.round(Math.sqrt(pop.length * availW / availH)));
+    const rows = Math.ceil(pop.length / cols);
+    const cw = availW / cols;
+    const ch = availH / rows;
+    const r = Math.max(2.2, Math.min(cw, ch) * 0.36);
+
+    pop.forEach((g, i) => {
+      const x = pad + (i % cols) * cw + cw / 2;
+      const y = pad + Math.floor(i / cols) * ch + ch / 2;
+      ctx.fillStyle = COLOR[g];
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      // 흰 개체는 어두운 무대에서 테두리가 없으면 배경과 붙어 보인다
+      if (g === 'bb') { ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+      // 이형접합(Bb)은 겉은 검지만 b 를 갖고 있다 — 점으로 표시
+      if (g === 'Bb' && r > 4) {
+        ctx.fillStyle = 'rgba(255,255,255,.55)';
+        ctx.beginPath(); ctx.arc(x, y, r * 0.3, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    // 범례
+    const items = [['BB', '검정(순종)'], ['Bb', '검정(잡종)'], ['bb', '흰색']];
+    ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    items.forEach(([g, label], i) => {
+      const x = 16 + i * 118, y = H() - 14;
+      ctx.fillStyle = COLOR[g];
+      ctx.beginPath(); ctx.arc(x, y - 4, 5, 0, Math.PI * 2); ctx.fill();
+      if (g === 'bb') { ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.fillText(label, x + 11, y);
+    });
+  }
+
+  // ── 그래프: 세대별 빈도 ──
+  const graph = el('eco-graph');
+  const g2 = graph.getContext('2d');
+
+  function drawGraph() {
+    const gw = graph.width / DPR, gh = graph.height / DPR;
+    g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g2.clearRect(0, 0, gw, gh);
+
+    const pad = { l: 56, r: 20, t: 26, b: 42 };
+    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
+
+    // 눈금
+    g2.strokeStyle = 'rgba(255,255,255,.12)'; g2.lineWidth = 1;
+    g2.font = '12px system-ui'; g2.fillStyle = 'rgba(255,255,255,.7)'; g2.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const py = y + h * i / 4;
+      g2.beginPath(); g2.moveTo(x, py); g2.lineTo(x + w, py); g2.stroke();
+      g2.fillText((1 - i / 4).toFixed(2), x - 9, py + 4);
+    }
+
+    // 0.5 기준선 — 평형 여부를 한눈에
+    g2.strokeStyle = 'rgba(255,255,255,.3)'; g2.setLineDash([5, 4]);
+    g2.beginPath(); g2.moveTo(x, y + h / 2); g2.lineTo(x + w, y + h / 2); g2.stroke();
+    g2.setLineDash([]);
+
+    const n = Math.max(2, history.length);
+    const sx = (i) => x + (n === 1 ? 0 : i / (n - 1) * w);
+
+    // B 와 b 두 선
+    [[history, '#7cc4ff', 'B (검정)'], [history.map((v) => 1 - v), '#ffb35c', 'b (흰색)']]
+      .forEach(([data, color, label], k) => {
+        g2.strokeStyle = color; g2.lineWidth = 2.4;
+        g2.beginPath();
+        data.forEach((v, i) => {
+          const px = sx(i), py = y + h - v * h;
+          i ? g2.lineTo(px, py) : g2.moveTo(px, py);
+        });
+        g2.stroke();
+        if (data.length) {
+          const last = data[data.length - 1];
+          g2.fillStyle = color;
+          g2.beginPath(); g2.arc(sx(data.length - 1), y + h - last * h, 5, 0, Math.PI * 2); g2.fill();
+          /* 범례는 각 선이 자기 자리에만 쓴다.
+             ⚠ 전에는 두 번째 선이 왼쪽에도 써서 첫 번째(B) 라벨을 덮었다.
+             그래서 파란선인데 "b (흰색)" 으로 보였다. */
+          g2.font = '600 13px system-ui';
+          g2.textAlign = k === 0 ? 'left' : 'right';
+          g2.fillText(`${label}  ${last.toFixed(3)}`, k === 0 ? x + 8 : x + w - 4, y - 8);
+        }
+      });
+
+    // 축
+    g2.strokeStyle = 'rgba(255,255,255,.55)'; g2.lineWidth = 1;
+    g2.beginPath(); g2.moveTo(x, y); g2.lineTo(x, y + h); g2.lineTo(x + w, y + h); g2.stroke();
+    g2.fillStyle = 'rgba(255,255,255,.8)'; g2.textAlign = 'center';
+    g2.fillText(`세대 (지금 ${gen}세대)`, x + w / 2, gh - 10);
+    g2.save(); g2.translate(15, y + h / 2); g2.rotate(-Math.PI / 2);
+    g2.fillText('대립유전자 빈도', 0, 0); g2.restore();
+  }
+
+  // ── 퍼넷 사각형 ──
+  function renderPunnett() {
+    const box = el('punnett');
+    const a = S.parents[0], b = S.parents[1];
+    const cells = punnettCells();
+    let html = '<div class="hd"></div>';
+    html += `<div class="hd">${b[0]}</div><div class="hd">${b[1]}</div>`;
+    for (let i = 0; i < 2; i++) {
+      html += `<div class="hd">${a[i]}</div>`;
+      for (let j = 0; j < 2; j++) {
+        const gt = cells[i * 2 + j];
+        html += `<div class="cell${gt !== 'bb' ? ' dom' : ''}">${gt}</div>`;
+      }
+    }
+    box.innerHTML = html;
+
+    const c = { BB: 0, Bb: 0, bb: 0 };
+    cells.forEach((g) => c[g]++);
+    const black = c.BB + c.Bb;
+    el('cross-note').textContent =
+      `자손 유전자형 ${c.BB}:${c.Bb}:${c.bb} (BB:Bb:bb), 겉모습은 검정 ${black} : 흰색 ${c.bb}. ` +
+      (black === 3 && c.bb === 1 ? '교과서에 나오는 3:1 입니다.' : '');
+  }
+
+  // ── 측정값 ──
+  function readout() {
+    const c = counts();
+    const p = freqB();
+    el('r-gen').textContent = gen + '세대';
+    el('r-freq').textContent = p.toFixed(3);
+    el('r-geno').textContent = `${c.BB} : ${c.Bb} : ${c.bb}`;
+    const black = c.BB + c.Bb;
+    el('r-pheno').textContent = pop.length
+      ? `검정 ${(black / pop.length * 100).toFixed(0)}% / 흰색 ${(c.bb / pop.length * 100).toFixed(0)}%`
+      : '—';
+
+    let state, note;
+    if (p >= 0.999) {
+      state = 'B 고정';
+      note = 'b 가 사라졌습니다. 돌연변이가 없으면 다시 나타나지 않습니다.';
+    } else if (p <= 0.001) {
+      state = 'b 고정';
+      note = 'B 가 사라졌습니다.';
+    } else if (S.mode === 'cross') {
+      state = '교배 결과';
+      note = '부모를 바꿔 보세요. 아래 "환경 압력" 으로 넘어가면 이 집단이 세대를 거칩니다.';
+    } else if (Math.abs(S.pressure - 50) < 3) {
+      state = '평형에 가까움';
+      note = '어느 쪽도 유리하지 않으면 빈도가 거의 변하지 않습니다(하디–바인베르크). ' +
+             '집단을 작게 하면 우연만으로 흔들리는 것을 볼 수 있습니다.';
+    } else if (S.pressure > 50) {
+      state = '검정 유리';
+      note = 'B 가 늘고 있습니다. 다만 Bb 인 개체가 겉으로는 검은색이라 b 를 숨긴 채 물려주기 때문에, b 는 좀처럼 완전히 사라지지 않습니다.';
+    } else {
+      state = '흰색 유리';
+      note = 'bb 만 살아남기 유리해 b 가 빠르게 늘어납니다. 열성 형질은 겉으로 드러나므로 선택이 곧바로 작용합니다.';
+    }
+    el('r-state').textContent = state;
+    el('note').textContent = note;
+  }
+
+  // ── 모드 ──
+  const modeBox = el('mode');
+  [['cross', '교배 (멘델)'], ['evolve', '세대 변화 (진화)']].forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label;
+    b.setAttribute('aria-pressed', String(S.mode === id));
+    b.addEventListener('click', () => {
+      S.mode = id;
+      [...modeBox.children].forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+      el('cross-panel').hidden = id !== 'cross';
+      el('evo-panel').hidden = id !== 'evolve';
+      running = false;
+      el('toggle').textContent = '세대 진행';
+      if (id === 'evolve') { seed(); }
+      updateModeNote();
+      readout();
+    });
+    modeBox.appendChild(b);
+  });
+
+  function updateModeNote() {
+    el('mode-note').textContent = S.mode === 'cross'
+      ? '부모 유전자형을 고르면 자손이 어떤 비율로 나오는지 보여줍니다.'
+      : '교배로 만든 집단이 세대를 거칩니다. 환경을 바꿔 무엇이 달라지는지 보세요.';
+  }
+
+  // ── 부모 고르기 ──
+  document.querySelectorAll('.gt-row').forEach((row) => {
+    const idx = Number(row.dataset.parent);
+    GENOTYPES.forEach((gt) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = gt;
+      b.setAttribute('aria-pressed', String(S.parents[idx] === gt));
+      b.addEventListener('click', () => {
+        S.parents[idx] = gt;
+        [...row.children].forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+        renderPunnett(); seed(); readout();
+      });
+      row.appendChild(b);
+    });
+  });
+
+  // ── 슬라이더 ──
+  const labels = {
+    pressure: (v) => v + '%',
+    popsize: (v) => v + '마리',
+    mut: (v) => (v / 10).toFixed(1) + '%'
+  };
+  ['pressure', 'popsize', 'mut'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      const v = Number(input.value);
+      el(k + '-out').textContent = labels[k](v);
+      if (k === 'pressure') S.pressure = v;
+      if (k === 'mut') S.mut = v;
+      if (k === 'popsize') { S.popSize = v; seed(); }
+      readout();
+    });
+  });
+
+  el('toggle').addEventListener('click', () => {
+    if (S.mode === 'cross') {
+      // 교배 화면에서 눌렀으면 진화 화면으로 넘겨준다 — 둘이 이어져 있다는 뜻
+      modeBox.children[1].click();
+      return;
+    }
+    running = !running;
+    el('toggle').textContent = running ? '멈춤' : '세대 진행';
+  });
+  el('reset').addEventListener('click', () => { seed(); running = false; el('toggle').textContent = '세대 진행'; readout(); });
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({
+        mode: S.mode, p1: S.parents[0], p2: S.parents[1],
+        pressure: S.pressure, pop: S.popSize, mut: S.mut
+      });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['p1', 'p2'].forEach((k, i) => {
+      const v = q.get(k);
+      if (GENOTYPES.includes(v)) {
+        S.parents[i] = v;
+        const row = document.querySelector(`.gt-row[data-parent="${i}"]`);
+        [...row.children].forEach((c) => c.setAttribute('aria-pressed', String(c.textContent === v)));
+      }
+    });
+    [['pressure', 'pressure'], ['pop', 'popsize'], ['mut', 'mut']].forEach(([qk, id]) => {
+      const v = Number(q.get(qk));
+      if (!Number.isFinite(v) || q.get(qk) === null) return;
+      const input = el(id);
+      const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
+      input.value = c;
+      el(id + '-out').textContent = labels[id](c);
+      if (id === 'pressure') S.pressure = c;
+      if (id === 'popsize') S.popSize = c;
+      if (id === 'mut') S.mut = c;
+    });
+    if (q.get('mode') === 'evolve') modeBox.children[1].click();
+  }
+
+  // ── 루프 ──
+  let last = 0;
+  const GEN_INTERVAL = 0.45;   // 세대 간격(초). 너무 빠르면 변화를 못 따라간다
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    // 탭을 숨겼다 돌아오면 밀린 시간이 한꺼번에 들어온다
+    acc += Math.min(0.25, now - last);
+    last = now;
+    if (running && S.mode === 'evolve') {
+      while (acc >= GEN_INTERVAL) { step(); acc -= GEN_INTERVAL; readout(); }
+    } else {
+      acc = 0;
+    }
+    draw(); drawGraph();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.56) * DPR;
+    canvas.style.height = Math.round(w * 0.56) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 360 * DPR;
+  }
+
+  renderPunnett();
+  seed();
+  applyQuery();
+  updateModeNote();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
