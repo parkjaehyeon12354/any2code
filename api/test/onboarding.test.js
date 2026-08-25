@@ -151,6 +151,110 @@ test('유전 시뮬레이션의 교배 계산이 멘델 법칙과 맞는다', ()
   assert.deepStrictEqual(c, { BB: 0, Bb: 0, bb: 4 }, 'bb × bb 에서 검정이 나오면 안 된다');
 });
 
+test('지구과학 시뮬레이션 두 개가 드롭다운에 연결돼 있다', () => {
+  const files = ['Index.html', 'community.html', 'guide.html', 'post.html',
+                 'simulation/pendulum.html', 'simulation/particle-motion.html',
+                 'simulation/cell-structure.html', 'simulation/plate-tectonics.html',
+                 'simulation/earth-seasons.html'];
+  for (const f of files) {
+    const html = readRoot(f);
+    assert.ok(/href="\/simulation\/plate-tectonics\.html"/.test(html),
+      `${f} 에 판과 지각 변동 링크가 없다`);
+    assert.ok(/href="\/simulation\/earth-seasons\.html"/.test(html),
+      `${f} 에 외권과 천체 링크가 없다`);
+    assert.ok(!/<span class="soon">판과 지각 변동<\/span>/.test(html),
+      `${f} 에서 판과 지각 변동이 아직 '준비 중' 이다`);
+    assert.ok(!/<span class="soon">외권과 천체<\/span>/.test(html),
+      `${f} 에서 외권과 천체가 아직 '준비 중' 이다`);
+  }
+});
+
+test('지구과학 시뮬레이션이 공용 스크립트를 읽는다', () => {
+  for (const f of ['simulation/plate-tectonics.html', 'simulation/earth-seasons.html']) {
+    const html = readRoot(f);
+    for (const js of ['theme.js', 'session.js', 'nav-user.js', 'nav-dropdown.js', 'mobile-menu.js']) {
+      assert.ok(html.includes(js), `${f} 가 ${js} 를 안 읽는다`);
+    }
+    assert.ok(/id="mobile-menu"/.test(html), `${f} 에 모바일 메뉴가 없다`);
+    assert.ok(/background: var\(--stage-bg\)/.test(html),
+      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+  }
+});
+
+test('계절 계산이 교과서 값과 맞는다', () => {
+  /* 이 화면의 존재 이유는 "계절은 거리가 아니라 기울기 때문" 을 보이는 것이다.
+     계산이 틀리면 오해를 바로잡기는커녕 새 오해를 만든다.
+     실제 함수를 꺼내 서울의 교과서 값이 나오는지 확인한다. */
+  const html = readRoot('simulation/earth-seasons.html');
+
+  const grab = (name) => {
+    const m = html.match(new RegExp(`function ${name}\\([\\s\\S]*?\\n  \\}`));
+    assert.ok(m, `${name} 를 찾을 수 없다`);
+    return m[0];
+  };
+
+  // S(기울기)와 city(위도)를 주입해 실제 코드를 그대로 돌린다
+  const make = (tilt, lat) => new Function('S', 'city', 'rad', 'deg', `
+    ${grab('declination')}
+    ${grab('noonAltitude')}
+    ${grab('dayLength')}
+    return { declination, noonAltitude, dayLength };
+  `)({ tilt }, () => ({ lat }),
+     (d) => d * Math.PI / 180, (r) => r * 180 / Math.PI);
+
+  const seoul = make(23.5, 37.5);
+  const near = (a, b, tol, msg) =>
+    assert.ok(Math.abs(a - b) < tol, `${msg}: ${a.toFixed(2)} (기대 ${b}±${tol})`);
+
+  // 서울 하지 76°, 동지 29°, 춘분 52.5° — 교과서에 그대로 나오는 값
+  near(seoul.noonAltitude(172), 76.0, 0.5, '서울 하지 남중고도');
+  near(seoul.noonAltitude(355), 29.0, 0.5, '서울 동지 남중고도');
+  near(seoul.noonAltitude(79), 52.5, 0.5, '서울 춘분 남중고도');
+  near(seoul.dayLength(79), 12.0, 0.3, '춘분 낮 길이');
+
+  // 기울기 0 → 계절이 사라진다. 이 화면의 핵심 주장이다.
+  const flat = make(0, 37.5);
+  for (const day of [79, 172, 265, 355]) {
+    near(flat.noonAltitude(day), 52.5, 0.1, `기울기 0 ${day}일 남중고도`);
+    near(flat.dayLength(day), 12.0, 0.1, `기울기 0 ${day}일 낮 길이`);
+  }
+
+  // 남반구는 계절이 반대 — 시드니는 12월에 태양이 높다
+  const sydney = make(23.5, -33.9);
+  assert.ok(sydney.noonAltitude(355) > sydney.noonAltitude(172),
+    '남반구는 12월(동지 날짜)에 태양이 더 높아야 한다');
+
+  // 북극권 위쪽은 하지에 백야(24h)
+  const arctic = make(23.5, 70);
+  assert.strictEqual(arctic.dayLength(172), 24, '위도 70°는 하지에 백야여야 한다');
+  assert.strictEqual(arctic.dayLength(355), 0, '위도 70°는 동지에 극야여야 한다');
+});
+
+test('판 경계 판정이 밀도 차이를 따른다', () => {
+  /* "무거운 판이 밑으로 들어간다" 가 이 화면이 가르치려는 전부다.
+     대륙끼리는 아무도 안 들어가고 솟아야 한다(히말라야). */
+  const html = readRoot('simulation/plate-tectonics.html');
+  const kinds = html.match(/const KINDS = \{[\s\S]*?\n  \};/);
+  const subFn = html.match(/function subducting\(\)[\s\S]*?\n  \}/);
+  assert.ok(kinds && subFn, 'KINDS 나 subducting 을 찾을 수 없다');
+
+  const run = (left, right, bnd) => new Function('S', `
+    ${kinds[0]}
+    const L = () => KINDS[S.left], R = () => KINDS[S.right];
+    ${subFn[0]}
+    return subducting();
+  `)({ left, right, bnd });
+
+  // 해양판이 대륙판보다 무겁다 → 해양판이 들어간다
+  assert.strictEqual(run('ocean', 'cont', 'convergent'), 'left', '해양판(왼쪽)이 들어가야 한다');
+  assert.strictEqual(run('cont', 'ocean', 'convergent'), 'right', '해양판(오른쪽)이 들어가야 한다');
+  // 대륙 + 대륙 → 아무도 안 들어간다. 솟아서 습곡 산맥이 된다.
+  assert.strictEqual(run('cont', 'cont', 'convergent'), null, '대륙끼리는 섭입이 없어야 한다');
+  // 발산·보존 경계에는 섭입이 없다
+  assert.strictEqual(run('ocean', 'cont', 'divergent'), null, '발산 경계에 섭입이 있으면 안 된다');
+  assert.strictEqual(run('ocean', 'cont', 'transform'), null, '보존 경계에 섭입이 있으면 안 된다');
+});
+
 test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {
   /* 이 두 페이지만 nav-dropdown.js 를 안 읽고 있었다. 드롭다운 마크업도 없어서
      과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다". */

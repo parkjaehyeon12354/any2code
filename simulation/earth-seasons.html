@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="자전축 기울기를 바꾸며 계절이 왜 생기는지 확인하는 시뮬레이션">
+<title>외권과 천체 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script src="/assets/js/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 소기관 목록 — 누르면 무대에서 강조된다 */
+.organelles { display: grid; gap: 6px; }
+.organelles button {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.organelles button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.organelles button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.organelles .dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.organelles .plant-only {
+  margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  background: var(--badge-wait-bg); color: var(--badge-wait-fg); font-weight: 600;
+}
+.organelles button[aria-pressed="true"] .plant-only { background: rgba(255,255,255,.22); color: inherit; }
+
+/* 동물/식물 전환 */
+.cell-kind { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.cell-kind button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.cell-kind button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.cell-kind button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.fact { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+        border: 1px solid var(--hairline); border-radius: 9px;
+        font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.fact strong { color: var(--ink); }
+.fact .job { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* 도시(위도) 고르기 */
+.cities { display: grid; gap: 5px; }
+.cities button {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.cities button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.cities button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cities .lat { font-size: 11.5px; opacity: .7; }
+
+.preset-row { display: flex; gap: 6px; margin-top: 10px; }
+.preset-row button {
+  flex: 1; height: 34px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer;
+}
+.preset-row button:hover { color: var(--ink); }
+.preset-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.season-now { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+              border: 1px solid var(--hairline); border-radius: 9px;
+              font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.season-now strong { color: var(--ink); }
+.season-now .sub { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+#daylight-graph { display: block; width: 100%; height: 360px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <span class="soon">개체와 생태계</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">움직이는 지구</p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <span class="soon">대기와 기상</span>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">지구와 우주</p>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <span class="soon">해양과 순환</span>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 지구과학 · 외권과 천체</p>
+
+  <div class="head">
+    <h1>외권과 천체</h1>
+    <p>여름이 더운 이유가 <strong>태양과 가까워서</strong>일까요? 실제로 지구가 태양에 가장 가까운 때는
+    <strong>1월</strong>입니다. 자전축 기울기를 직접 0도로 바꿔 보면, 거리와 상관없이 계절이
+    사라지는 것을 확인할 수 있습니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="지구의 공전과 계절"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">봄으로</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="tilt">자전축 기울기</label>
+              <output id="tilt-out">23.5°</output>
+            </div>
+            <input type="range" id="tilt" min="0" max="90" step="0.5" value="23.5">
+            <span class="hint">지금 지구는 23.5°입니다. 0°로 두면 어떻게 되는지 확인해 보세요.</span>
+            <div class="preset-row">
+              <button type="button" data-tilt="0">0° (기울기 없음)</button>
+              <button type="button" data-tilt="23.5">23.5° (지구)</button>
+              <button type="button" data-tilt="82">82° (천왕성)</button>
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="ecc">궤도 찌그러짐</label>
+              <output id="ecc-out">0.017</output>
+            </div>
+            <input type="range" id="ecc" min="0" max="0.5" step="0.005" value="0.017">
+            <span class="hint">지구 궤도는 거의 원(0.017)입니다. 키워도 계절 차이는 별로 안 생깁니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="speed">공전 속도</label>
+              <output id="speed-out">1.0×</output>
+            </div>
+            <input type="range" id="speed" min="0" max="3" step="0.1" value="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>어디서 볼까</h2></div>
+        <div class="panel-body">
+          <div class="cities" id="cities"></div>
+          <div class="season-now" id="season-now"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>날짜</dt><dd id="r-date">—</dd></div>
+            <div><dt>태양까지 거리</dt><dd id="r-dist">—</dd></div>
+            <div><dt>남중 고도</dt><dd id="r-alt">—</dd></div>
+            <div><dt>낮 길이</dt><dd id="r-day">—</dd></div>
+            <div><dt>받는 햇빛</dt><dd id="r-energy" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="daylight-title">
+    <div class="analysis-head"><h2 id="daylight-title">1년 동안의 낮 길이와 태양 고도</h2><p>파란선은 낮 길이, 주황선은 남중 고도입니다. 자전축 기울기를 0으로 만들면 두 선이 평평해집니다 — 계절이 사라진다는 뜻입니다.</p></div>
+    <div class="graph-wrap"><canvas id="daylight-graph" aria-label="1년간 낮 길이와 태양 고도 변화"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="astro-formula-title">
+    <div class="analysis-head"><h2 id="astro-formula-title">계절은 거리가 아니라 기울기 때문이다</h2><p>가장 흔한 오해를 시뮬레이션으로 직접 확인할 수 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">남중 고도 = 90° − 위도 + 태양 적위</p>
+      <p>지구는 <strong>1월에 태양과 가장 가깝고</strong>(약 1억 4,710만 km) 7월에 가장 멉니다(약 1억 5,210만 km). 거리로 계절이 정해진다면 북반구는 1월이 여름이어야 합니다. 실제로는 반대입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>계절을 만드는 것은 <strong>자전축이 23.5° 기울어져 공전한다</strong>는 사실입니다. 기울어진 채로 태양 주위를 돌기 때문에, 어떤 때는 북반구가 태양 쪽으로 기울고 어떤 때는 반대로 기웁니다.</p><p>태양 쪽으로 기울면 두 가지가 동시에 일어납니다. 첫째, <strong>태양이 더 높이 뜹니다</strong>(남중 고도 증가). 빛이 더 수직으로 들어오면 같은 넓이에 더 많은 에너지가 모입니다. 손전등을 바닥에 수직으로 비출 때와 비스듬히 비출 때를 떠올리면 됩니다.</p><p>둘째, <strong>낮이 길어집니다</strong>. 데워지는 시간이 길고 식는 시간이 짧으니 더 더워집니다. 이 두 효과가 겹쳐 여름이 됩니다.</p><p>남중 고도는 <strong>90° − 위도 + 태양 적위</strong>로 구합니다. 태양 적위는 태양이 천구 적도에서 얼마나 벗어나 있는지를 나타내며, 하지에 +23.5°, 동지에 −23.5°, 춘분·추분에 0°입니다.</p><p>서울(위도 37.5°)의 하지 남중 고도는 90 − 37.5 + 23.5 = <strong>76°</strong>, 동지에는 90 − 37.5 − 23.5 = <strong>29°</strong>입니다. 시뮬레이션에서 서울을 고르고 계절을 바꿔 이 값이 나오는지 확인해 보세요.</p><p>기울기를 0°로 만들면 적위가 항상 0이 되어 남중 고도가 1년 내내 같아집니다. 낮도 항상 12시간입니다. <strong>계절이 사라집니다.</strong> 반대로 천왕성처럼 82°로 두면 극단적으로 변합니다 — 한쪽 반구가 수십 년간 낮이고 반대쪽은 밤입니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 외권과 천체: 계절이 왜 생기는가 ──
+
+     "여름에 태양과 가까워서 덥다" 는 흔한 오해다. 실제로는 1월에 더 가깝다.
+     그래서 이 화면은 자전축 기울기를 직접 바꿔 보게 한다 — 0도로 두면
+     거리와 상관없이 계절이 사라지는 것을 눈으로 확인할 수 있다.
+
+     계산은 실제 천문 공식을 쓴다. 서울 하지 76도, 동지 29도가 그대로 나온다. */
+  const CITIES = [
+    { id: 'seoul', name: '서울', lat: 37.5 },
+    { id: 'singapore', name: '싱가포르', lat: 1.3 },
+    { id: 'sydney', name: '시드니', lat: -33.9 },
+    { id: 'reykjavik', name: '레이캬비크', lat: 64.1 }
+  ];
+
+  const S = { tilt: 23.5, ecc: 0.017, speed: 1, city: 'seoul' };
+  let running = true;
+  let dayOfYear = 80;      // 춘분 언저리에서 시작
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  const city = () => CITIES.find((c) => c.id === S.city);
+  const rad = (d) => d * Math.PI / 180;
+  const deg = (r) => r * 180 / Math.PI;
+
+  /* 태양 적위 — 태양이 천구 적도에서 얼마나 벗어났는가.
+     기울기가 0이면 항상 0이 되어 계절이 사라진다. 이게 이 화면의 핵심이다.
+
+     춘분(3/20, 79일)을 0 으로 두고 사인파로 근사한다. */
+  function declination(day) {
+    return S.tilt * Math.sin(2 * Math.PI * (day - 79) / 365.24);
+  }
+
+  /* 남중 고도 = 90 − |위도 − 적위|.
+     교과서의 "90 − 위도 + 적위" 는 북반구 기준이라 절댓값으로 일반화한다. */
+  function noonAltitude(day) {
+    const d = declination(day);
+    return 90 - Math.abs(city().lat - d);
+  }
+
+  /* 낮 길이 — 시간각으로 구한다.
+        cos(H) = −tan(위도)·tan(적위)
+     |cos| > 1 이면 해가 지지 않거나(백야) 뜨지 않는다(극야). */
+  function dayLength(day) {
+    const d = rad(declination(day));
+    const lat = rad(city().lat);
+    const c = -Math.tan(lat) * Math.tan(d);
+    if (c <= -1) return 24;      // 백야
+    if (c >= 1) return 0;        // 극야
+    return 2 * deg(Math.acos(c)) / 15;
+  }
+
+  /* 태양까지 거리 — 케플러 궤도. 근일점은 1월 초(4일)다.
+     "여름에 가깝다" 가 틀렸다는 것을 숫자로 보여주는 부분. */
+  function sunDistance(day) {
+    const a = 149.6;             // 백만 km
+    const theta = 2 * Math.PI * (day - 4) / 365.24;
+    return a * (1 - S.ecc * S.ecc) / (1 + S.ecc * Math.cos(theta));
+  }
+
+  /* 지표가 받는 햇빛 세기 — 고도의 사인에 비례하고 거리 제곱에 반비례한다.
+     계절을 만드는 것이 거리가 아니라 고도라는 것을 대조해 보여준다. */
+  function insolation(day) {
+    const alt = noonAltitude(day);
+    if (alt <= 0) return 0;
+    const r = sunDistance(day) / 149.6;
+    const hours = dayLength(day) / 12;    // 낮 길이도 함께 반영
+    return Math.sin(rad(Math.min(90, alt))) * hours / (r * r);
+  }
+
+  function seasonName(day) {
+    const d = declination(day);
+    const north = city().lat >= 0;
+    // 남반구는 계절이 반대다 — 시드니를 넣은 이유
+    const v = north ? d : -d;
+    if (v > S.tilt * 0.7) return '여름';
+    if (v < -S.tilt * 0.7) return '겨울';
+    // 적위가 커지는 중이면 봄, 줄어드는 중이면 가을
+    const rising = Math.cos(2 * Math.PI * (day - 79) / 365.24) > 0;
+    return (north ? rising : !rising) ? '봄' : '가을';
+  }
+
+  function dateLabel(day) {
+    const d = new Date(2026, 0, 1);
+    d.setDate(Math.floor(day));
+    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+
+  // ── 무대: 공전 궤도 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+
+    const cx = W() * 0.42, cy = H() * 0.5;
+    const a = Math.min(W(), H()) * 0.34;       // 긴반지름
+    const bAxis = a * Math.sqrt(1 - S.ecc * S.ecc);
+    const focus = a * S.ecc;                   // 태양은 초점에 있다
+
+    // 궤도
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 5]);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, a, bAxis, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 태양
+    const sx = cx + focus, sy = cy;
+    const glow = ctx.createRadialGradient(sx, sy, 2, sx, sy, 34);
+    glow.addColorStop(0, 'rgba(255,220,120,.95)');
+    glow.addColorStop(1, 'rgba(255,180,60,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(sx, sy, 34, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(sx, sy, 13, 0, Math.PI * 2); ctx.fill();
+
+    // 지구 위치 — 근일점(1/4)에서 시작해 반시계로 돈다
+    const th = 2 * Math.PI * (dayOfYear - 4) / 365.24;
+    const ex = cx + a * Math.cos(th), ey = cy + bAxis * Math.sin(th);
+
+    // 계절 표시점 — 춘분·하지·추분·동지
+    [[79, '춘분'], [172, '하지'], [265, '추분'], [355, '동지']].forEach(([d, label]) => {
+      const t2 = 2 * Math.PI * (d - 4) / 365.24;
+      const px = cx + a * Math.cos(t2), py = cy + bAxis * Math.sin(t2);
+      ctx.fillStyle = 'rgba(255,255,255,.3)';
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      /* 이름표를 궤도 바깥으로 민다. 점 바로 위에 두면 그 자리에 지구가
+         왔을 때 글자와 겹쳐 둘 다 안 읽힌다. */
+      const ux = (px - cx) / a, uy = (py - cy) / bAxis;
+      const ulen = Math.hypot(ux, uy) || 1;
+      ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,255,255,.45)';
+      ctx.fillText(label, px + ux / ulen * 22, py + uy / ulen * 22 + 4);
+    });
+
+    drawEarth(ex, ey, sx, sy);
+
+    // 오른쪽에 확대한 지구 — 기울기와 밝은 면을 자세히
+    drawDetail(W() * 0.845, H() * 0.5, Math.min(W(), H()) * 0.15);
+
+    ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#9a9a9a';
+    ctx.fillText(`${dateLabel(dayOfYear)} · ${city().name} ${seasonName(dayOfYear)}`, 14, H() - 14);
+  }
+
+  function drawEarth(ex, ey, sx, sy) {
+    const r = 11;
+    // 밤낮 — 태양 반대쪽이 어둡다
+    const ang = Math.atan2(ey - sy, ex - sx);
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.fillStyle = '#4a7fb5';
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.beginPath(); ctx.arc(0, 0, r, ang - Math.PI / 2, ang + Math.PI / 2); ctx.fill();
+    // 자전축 — 공전하는 동안 방향이 바뀌지 않는다. 이게 계절의 원인이다.
+    ctx.rotate(rad(-S.tilt));
+    ctx.strokeStyle = '#ff9d6b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -r * 1.7); ctx.lineTo(0, r * 1.7); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 확대한 지구 — 자전축, 적도, 지금 고른 도시, 밝은 면 */
+  function drawDetail(cx, cy, r) {
+    const d = declination(dayOfYear);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 지구
+    ctx.fillStyle = '#3f6f9f';
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+
+    /* 밤 그림자 — 태양이 왼쪽에 있으므로 오른쪽 절반이 어둡다.
+
+       ⚠ 적위만큼 경계를 기울인다. 적위가 +(북반구 여름)면 북극 쪽이 더 밝아
+       그림자가 남쪽으로 밀린다. 회전을 먼저 걸고 x>0 을 칠하면 밝은 쪽과
+       어두운 쪽이 뒤바뀌므로, 그림자 사각형만 기울여 그린다. */
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.rotate(rad(-d));            // 적위가 +면 그림자가 남쪽으로 기운다
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillRect(0, -r * 2, r * 2, r * 4);
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(rad(-S.tilt));
+
+    // 적도
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
+
+    // 자전축
+    ctx.strokeStyle = '#ff9d6b'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, -r * 1.35); ctx.lineTo(0, r * 1.35); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('N', 0, -r * 1.45);
+
+    // 고른 도시 위치
+    const la = rad(city().lat);
+    const px = 0, py = -Math.sin(la) * r;
+    const rr = Math.cos(la) * r;
+    ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(px, py, rr, rr * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(-rr * 0.5, py, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+
+    // 라벨
+    ctx.font = '11.5px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.fillText(`기울기 ${S.tilt.toFixed(1)}°`, cx, cy + r * 1.75);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText(city().name, cx, cy + r * 1.75 + 16);
+  }
+
+  // ── 그래프: 1년간 낮 길이와 고도 ──
+  const graph = el('daylight-graph');
+  const g2 = graph.getContext('2d');
+
+  function drawGraph() {
+    const gw = graph.width / DPR, gh = graph.height / DPR;
+    g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g2.clearRect(0, 0, gw, gh);
+
+    const pad = { l: 58, r: 58, t: 30, b: 44 };
+    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
+
+    // 눈금 — 왼쪽 낮 길이(0~24h), 오른쪽 고도(0~90도)
+    g2.strokeStyle = 'rgba(255,255,255,.12)'; g2.lineWidth = 1;
+    g2.font = '12px system-ui';
+    for (let i = 0; i <= 4; i++) {
+      const py = y + h * i / 4;
+      g2.beginPath(); g2.moveTo(x, py); g2.lineTo(x + w, py); g2.stroke();
+      g2.fillStyle = '#7cc4ff'; g2.textAlign = 'right';
+      g2.fillText(Math.round(24 * (1 - i / 4)) + 'h', x - 9, py + 4);
+      g2.fillStyle = '#ffb35c'; g2.textAlign = 'left';
+      g2.fillText(Math.round(90 * (1 - i / 4)) + '°', x + w + 9, py + 4);
+    }
+
+    // 월 구분
+    g2.fillStyle = 'rgba(255,255,255,.6)'; g2.textAlign = 'center';
+    for (let m = 0; m < 12; m += 2) {
+      const day = m * 30.4 + 1;
+      const px = x + w * day / 365;
+      g2.strokeStyle = 'rgba(255,255,255,.08)';
+      g2.beginPath(); g2.moveTo(px, y); g2.lineTo(px, y + h); g2.stroke();
+      g2.fillText((m + 1) + '월', px, y + h + 18);
+    }
+
+    // 두 곡선
+    const plot = (fn, max, color) => {
+      g2.strokeStyle = color; g2.lineWidth = 2.4;
+      g2.beginPath();
+      for (let d = 1; d <= 365; d += 2) {
+        const px = x + w * d / 365;
+        const py = y + h - Math.max(0, Math.min(max, fn(d))) / max * h;
+        d === 1 ? g2.moveTo(px, py) : g2.lineTo(px, py);
+      }
+      g2.stroke();
+    };
+    plot(dayLength, 24, '#7cc4ff');
+    plot(noonAltitude, 90, '#ffb35c');
+
+    // 지금 위치
+    const nx = x + w * dayOfYear / 365;
+    g2.strokeStyle = 'rgba(255,255,255,.5)'; g2.setLineDash([5, 4]); g2.lineWidth = 1.5;
+    g2.beginPath(); g2.moveTo(nx, y); g2.lineTo(nx, y + h); g2.stroke();
+    g2.setLineDash([]);
+    [[dayLength(dayOfYear), 24, '#7cc4ff'], [noonAltitude(dayOfYear), 90, '#ffb35c']]
+      .forEach(([v, max, c]) => {
+        g2.fillStyle = c;
+        g2.beginPath();
+        g2.arc(nx, y + h - Math.max(0, Math.min(max, v)) / max * h, 5, 0, Math.PI * 2);
+        g2.fill();
+      });
+
+    // 범례
+    g2.font = '600 13px system-ui';
+    g2.fillStyle = '#7cc4ff'; g2.textAlign = 'left';
+    g2.fillText(`낮 길이  ${dayLength(dayOfYear).toFixed(1)} h`, x + 6, y - 10);
+    g2.fillStyle = '#ffb35c'; g2.textAlign = 'right';
+    g2.fillText(`남중 고도  ${noonAltitude(dayOfYear).toFixed(1)}°`, x + w - 6, y - 10);
+
+    // 기울기 0이면 계절이 없다는 것을 글로도 알려준다
+    if (S.tilt < 0.6) {
+      g2.fillStyle = 'rgba(255,255,255,.8)'; g2.textAlign = 'center';
+      g2.font = '600 14px system-ui';
+      g2.fillText('기울기가 0이라 1년 내내 같습니다 — 계절이 없습니다', x + w / 2, y + h / 2);
+    }
+
+    g2.strokeStyle = 'rgba(255,255,255,.55)'; g2.lineWidth = 1;
+    g2.beginPath(); g2.moveTo(x, y); g2.lineTo(x, y + h); g2.lineTo(x + w, y + h); g2.stroke();
+  }
+
+  // ── 측정값 ──
+  function readout() {
+    const dist = sunDistance(dayOfYear);
+    const alt = noonAltitude(dayOfYear);
+    const len = dayLength(dayOfYear);
+    const sun = insolation(dayOfYear);
+
+    el('r-date').textContent = dateLabel(dayOfYear);
+    el('r-dist').textContent = (dist * 1e6 / 1e4).toFixed(0) + '만 km';
+    el('r-alt').textContent = alt.toFixed(1) + '°';
+    el('r-day').textContent = len === 24 ? '24시간 (백야)' : len === 0 ? '0시간 (극야)' : len.toFixed(1) + '시간';
+    el('r-energy').textContent = (sun * 100).toFixed(0) + '%';
+
+    const season = seasonName(dayOfYear);
+    el('season-now').innerHTML =
+      `<strong>${city().name} (위도 ${city().lat}°) — 지금은 ${season}</strong>` +
+      `<span class="sub">남중 고도 ${alt.toFixed(1)}°, 낮 ${len.toFixed(1)}시간</span>`;
+
+    // 이 화면에서 가장 중요한 안내 — 상황마다 다른 설명을 준다
+    let note;
+    if (S.tilt < 0.6) {
+      note = '기울기를 0으로 두면 남중 고도와 낮 길이가 1년 내내 같습니다. ' +
+             '거리가 변해도 계절은 생기지 않습니다 — 계절을 만드는 것은 기울기입니다.';
+    } else if (S.tilt > 60) {
+      note = '천왕성처럼 크게 기울면 극단적입니다. 한쪽 반구가 오랫동안 낮이고 반대쪽은 계속 밤입니다.';
+    } else if (dist < 148 && season === '겨울') {
+      note = `지금 태양과의 거리는 ${(dist * 100).toFixed(0)}만 km 로 1년 중 가까운 편인데도 겨울입니다. ` +
+             '"여름에 태양과 가까워서 덥다" 가 틀렸다는 증거입니다.';
+    } else if (dist > 151 && season === '여름') {
+      note = `지금 태양과 가장 먼 쪽(${(dist * 100).toFixed(0)}만 km)인데도 여름입니다. ` +
+             '태양이 높이 뜨고 낮이 길기 때문입니다.';
+    } else if (Math.abs(city().lat) < 10) {
+      note = '적도 근처는 1년 내내 태양이 높고 낮 길이도 거의 같습니다. 그래서 계절 변화가 작습니다.';
+    } else if (len === 24) {
+      note = '해가 지지 않는 백야입니다. 위도가 높으면 여름에 이런 일이 생깁니다.';
+    } else if (len === 0) {
+      note = '해가 뜨지 않는 극야입니다.';
+    } else if (city().lat < 0) {
+      note = '남반구라 북반구와 계절이 반대입니다. 같은 날짜에 서울과 비교해 보세요.';
+    } else {
+      note = '태양이 높이 뜰수록, 낮이 길수록 더 많은 에너지를 받습니다. 이 둘이 겹쳐 계절이 됩니다.';
+    }
+    el('note').textContent = note;
+  }
+
+  // ── 도시 ──
+  const cityBox = el('cities');
+  CITIES.forEach((c) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(S.city === c.id));
+    b.innerHTML = `<span>${c.name}</span><span class="lat">위도 ${c.lat}°</span>`;
+    b.addEventListener('click', () => {
+      S.city = c.id;
+      [...cityBox.children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      readout();
+    });
+    cityBox.appendChild(b);
+  });
+
+  // ── 슬라이더 ──
+  const labels = {
+    tilt: (v) => Number(v).toFixed(1) + '°',
+    ecc: (v) => Number(v).toFixed(3),
+    speed: (v) => Number(v).toFixed(1) + '×'
+  };
+  ['tilt', 'ecc', 'speed'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      S[k] = Number(input.value);
+      el(k + '-out').textContent = labels[k](input.value);
+      readout();
+    });
+  });
+
+  // 기울기 빠른 선택 — 0도를 눌러보게 유도하는 게 목적이다
+  document.querySelectorAll('.preset-row button').forEach((b) => {
+    b.addEventListener('click', () => {
+      const v = Number(b.dataset.tilt);
+      S.tilt = v;
+      el('tilt').value = v;
+      el('tilt-out').textContent = labels.tilt(v);
+      readout();
+    });
+  });
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', () => { dayOfYear = 80; readout(); });
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      /* speed 도 함께 싣는다. 날짜만 넘기면 링크를 연 순간부터 시간이 흘러
+         내가 보여주려던 날이 아니게 된다. */
+      const q = new URLSearchParams({
+        tilt: S.tilt, ecc: S.ecc, city: S.city,
+        day: Math.round(dayOfYear), speed: S.speed
+      });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['tilt', 'ecc', 'speed'].forEach((k) => {
+      const v = Number(q.get(k));
+      if (q.get(k) === null || !Number.isFinite(v)) return;
+      const input = el(k);
+      const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
+      S[k] = c; input.value = c;
+      el(k + '-out').textContent = labels[k](c);
+    });
+    const c = q.get('city');
+    if (CITIES.some((x) => x.id === c)) {
+      S.city = c;
+      [...cityBox.children].forEach((b, i) => b.setAttribute('aria-pressed', String(CITIES[i].id === c)));
+    }
+    const d = Number(q.get('day'));
+    if (Number.isFinite(d) && d >= 1 && d <= 365) dayOfYear = d;
+    // 속도가 0이면 멈춘 상태로 연다. 버튼 표시도 맞춰준다.
+    if (S.speed === 0) { running = false; el('toggle').textContent = '이어서'; }
+  }
+
+  // ── 루프 ──
+  let last = 0;
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    // 탭을 숨겼다 돌아오면 밀린 시간이 한꺼번에 들어온다
+    const dt = Math.min(0.25, now - last);
+    last = now;
+    if (running) {
+      // 한 바퀴에 약 18초 — 계절 변화를 따라갈 수 있는 속도
+      dayOfYear += dt * 20 * S.speed;
+      if (dayOfYear > 365) dayOfYear -= 365;
+      readout();
+    }
+    draw(); drawGraph();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 360 * DPR;
+  }
+
+  applyQuery();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

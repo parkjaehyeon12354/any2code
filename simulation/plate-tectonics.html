@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="판 종류와 경계를 바꾸며 해구·산맥·화산이 왜 그 자리에 생기는지 보는 시뮬레이션">
+<title>판과 지각 변동 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script src="/assets/js/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 소기관 목록 — 누르면 무대에서 강조된다 */
+.organelles { display: grid; gap: 6px; }
+.organelles button {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.organelles button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.organelles button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.organelles .dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.organelles .plant-only {
+  margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  background: var(--badge-wait-bg); color: var(--badge-wait-fg); font-weight: 600;
+}
+.organelles button[aria-pressed="true"] .plant-only { background: rgba(255,255,255,.22); color: inherit; }
+
+/* 동물/식물 전환 */
+.cell-kind { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.cell-kind button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.cell-kind button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.cell-kind button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.fact { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+        border: 1px solid var(--hairline); border-radius: 9px;
+        font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.fact strong { color: var(--ink); }
+.fact .job { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* 경계 종류 고르기 */
+.bnd { display: grid; gap: 6px; }
+.bnd button {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.bnd button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.bnd button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.bnd .arrow { font-size: 15px; letter-spacing: -1px; flex: 0 0 auto; opacity: .85; }
+.bnd small { display: block; margin-top: 2px; font-size: 11.5px; opacity: .75; font-weight: 400; }
+
+/* 판 종류 */
+.plate-kind { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: var(--sp-md); }
+.plate-kind > div > span { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.pk-row { display: flex; gap: 5px; }
+.pk-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.pk-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.pk-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.result { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+          border: 1px solid var(--hairline); border-radius: 9px;
+          font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.result strong { color: var(--ink); }
+.result .where { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+#quake-graph { display: block; width: 100%; height: 340px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <span class="soon">개체와 생태계</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">움직이는 지구</p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <span class="soon">대기와 기상</span>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">지구와 우주</p>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <span class="soon">해양과 순환</span>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 지구과학 · 판과 지각 변동</p>
+
+  <div class="head">
+    <h1>판과 지각 변동</h1>
+    <p>왜 어떤 곳은 <strong>산맥</strong>이 되고 어떤 곳은 <strong>해구</strong>가 될까요?
+    답은 부딪히는 두 판의 <strong>밀도 차이</strong>에 있습니다. 판 종류를 바꿔 가며
+    직접 부딪혀 보세요.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="판의 경계와 지각 변동"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>판의 종류</h2></div>
+        <div class="panel-body">
+          <div class="plate-kind">
+            <div><span>왼쪽 판</span><div class="pk-row" data-side="0"></div></div>
+            <div><span>오른쪽 판</span><div class="pk-row" data-side="1"></div></div>
+          </div>
+          <p class="note" id="kind-note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>경계 종류</h2></div>
+        <div class="panel-body">
+          <div class="bnd" id="bnd"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>무엇이 생기나</h2></div>
+        <div class="panel-body">
+          <div class="result" id="result"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>이동 속도</dt><dd id="r-speed">—</dd></div>
+            <div><dt>경과</dt><dd id="r-time">—</dd></div>
+            <div><dt>지형 변화</dt><dd id="r-relief">—</dd></div>
+            <div><dt>지진 깊이</dt><dd id="r-depth">—</dd></div>
+            <div><dt>화산</dt><dd id="r-volcano" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="quake-title">
+    <div class="analysis-head"><h2 id="quake-title">지진이 일어나는 깊이</h2><p>가로는 위치, 세로는 깊이입니다. 섭입대에서는 판이 비스듬히 들어가면서 진원이 점점 깊어집니다 — 이것을 베니오프대라고 합니다.</p></div>
+    <div class="graph-wrap"><canvas id="quake-graph" aria-label="위치별 지진 발생 깊이"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="plate-note-title">
+    <div class="analysis-head"><h2 id="plate-note-title">밀도가 지형을 결정한다</h2><p>세 가지 경계를 외우는 것보다, 왜 그렇게 되는지 아는 편이 쉽습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">해양 지각 ≈ 3.0 g/cm³ &nbsp; &gt; &nbsp; 대륙 지각 ≈ 2.7 g/cm³</p>
+      <p>해양판은 현무암질이라 무겁고, 대륙판은 화강암질이라 가볍습니다. 두 판이 부딪히면 <strong>무거운 쪽이 밑으로 들어갑니다</strong>. 이것만 알면 나머지는 따라옵니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>해양판 + 대륙판</strong>이면 해양판이 들어갑니다(섭입). 들어가는 자리가 움푹 파여 <strong>해구</strong>가 되고, 판이 깊이 내려가면서 물을 함께 끌고 들어갑니다. 이 물이 맨틀의 녹는점을 낮춰 마그마가 생기고, 대륙 쪽으로 올라와 <strong>화산</strong>을 만듭니다. 안데스 산맥이 이렇게 만들어졌습니다.</p><p><strong>해양판 + 해양판</strong>이면 더 오래되고 차가운 쪽이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 <strong>호상 열도</strong>가 됩니다. 일본 열도가 대표적입니다.</p><p><strong>대륙판 + 대륙판</strong>이면 어느 쪽도 들어가지 못합니다. 둘 다 가벼워 맨틀에 가라앉지 않기 때문입니다. 그래서 부딪힌 자리가 위로 솟아 <strong>습곡 산맥</strong>이 됩니다. 히말라야가 지금도 자라고 있는 이유입니다.</p><p><strong>발산 경계</strong>에서는 맨틀이 올라와 새 지각을 만듭니다. 바다에서는 <strong>해령</strong>, 육지에서는 <strong>열곡대</strong>가 됩니다. 대서양 중앙 해령과 동아프리카 열곡대가 그 예입니다.</p><p><strong>보존 경계</strong>에서는 판이 스쳐 지나갑니다. 지각이 생기지도 사라지지도 않아 화산은 없지만, 쌓인 힘이 한꺼번에 풀리며 <strong>얕은 지진</strong>이 자주 납니다. 산안드레아스 단층이 그렇습니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 판과 지각 변동 ──
+
+     교과서는 경계 세 가지를 그림으로 보여주고 끝낸다. 그런데 "왜 여기는
+     해구고 저기는 산맥인가" 는 밀도 차이 하나로 설명된다. 그래서 판 종류를
+     고르게 하고, 밀도가 큰 쪽이 실제로 밑으로 들어가는 것을 보여준다.
+
+     지각 두께와 밀도는 실제 값이다. 다만 이동 속도는 연 수 cm 라 그대로
+     쓰면 아무것도 안 보이므로, 화면에서는 크게 부풀린다. */
+  const KINDS = {
+    ocean: { id: 'ocean', name: '해양판', density: 3.0, thick: 0.06, color: '#3f6f8f', label: '현무암질 · 무겁다' },
+    cont:  { id: 'cont',  name: '대륙판', density: 2.7, thick: 0.14, color: '#8a7a5c', label: '화강암질 · 가볍다' }
+  };
+
+  const BOUNDARIES = [
+    { id: 'divergent', name: '발산 경계', arrow: '←  →', desc: '서로 멀어진다' },
+    { id: 'convergent', name: '수렴 경계', arrow: '→  ←', desc: '서로 부딪힌다' },
+    { id: 'transform', name: '보존 경계', arrow: '↑  ↓', desc: '스쳐 지나간다' }
+  ];
+
+  const S = { left: 'ocean', right: 'cont', bnd: 'convergent', speed: 1 };
+  let running = true;
+  let t = 0;
+  let quakes = [];     // {x, depth, mag, age}
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  const L = () => KINDS[S.left];
+  const R = () => KINDS[S.right];
+
+  /* 어느 판이 밑으로 들어가는가 — 이 화면의 핵심.
+     밀도가 큰 쪽이 들어간다. 같으면(대륙+대륙) 아무도 안 들어가고 솟는다. */
+  function subducting() {
+    if (S.bnd !== 'convergent') return null;
+    const a = L().density, b = R().density;
+    if (Math.abs(a - b) < 0.01) return null;        // 같은 종류 — 충돌
+    return a > b ? 'left' : 'right';
+  }
+
+  /* 지금 조건에서 생기는 지형 */
+  function landform() {
+    const a = L(), b = R();
+    const both = (x, y) => (a.id === x && b.id === y) || (a.id === y && b.id === x);
+
+    if (S.bnd === 'divergent') {
+      if (a.id === 'ocean' && b.id === 'ocean')
+        return { name: '해령', where: '대서양 중앙 해령',
+                 why: '맨틀이 올라와 새 해양 지각을 만듭니다. 여기서 만들어진 지각이 양쪽으로 퍼져 나갑니다.',
+                 volcano: '있음 (해저 화산)', depth: '얕음 (0~30 km)' };
+      return { name: '열곡대', where: '동아프리카 열곡대',
+               why: '대륙이 갈라지는 중입니다. 계속 벌어지면 바닷물이 들어와 새 바다가 됩니다.',
+               volcano: '있음', depth: '얕음 (0~30 km)' };
+    }
+
+    if (S.bnd === 'transform') {
+      return { name: '변환 단층', where: '산안드레아스 단층',
+               why: '지각이 생기지도 사라지지도 않습니다. 쌓인 힘이 한꺼번에 풀리며 얕은 지진이 자주 납니다.',
+               volcano: '없음', depth: '얕음 (0~20 km)' };
+    }
+
+    // 수렴 경계 — 밀도로 갈린다
+    if (both('ocean', 'cont'))
+      return { name: '해구 + 습곡산맥 + 화산', where: '안데스 산맥, 페루-칠레 해구',
+               why: '무거운 해양판이 가벼운 대륙판 밑으로 들어갑니다. 들어가는 자리가 해구, 판이 끌고 간 물이 마그마를 만들어 대륙 쪽에 화산이 생깁니다.',
+               volcano: '있음 (안산암질)', depth: '깊어짐 (0~700 km)' };
+    if (a.id === 'ocean' && b.id === 'ocean')
+      return { name: '해구 + 호상 열도', where: '일본 열도, 마리아나 해구',
+               why: '더 오래되고 차가운 판이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 섬들이 활처럼 늘어섭니다.',
+               volcano: '있음', depth: '깊어짐 (0~700 km)' };
+    return { name: '습곡 산맥', where: '히말라야 산맥',
+             why: '둘 다 가벼워 어느 쪽도 맨틀에 가라앉지 못합니다. 그래서 부딪힌 자리가 위로 솟습니다. 히말라야는 지금도 자라고 있습니다.',
+             volcano: '거의 없음', depth: '중간 (0~100 km)' };
+  }
+
+  // ── 그리기 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+
+    const surface = H() * 0.34;      // 지표면 높이
+    const mid = W() / 2;
+    const sub = subducting();
+    const a = L(), b = R();
+
+    // 맨틀
+    const grd = ctx.createLinearGradient(0, surface, 0, H());
+    grd.addColorStop(0, '#5a3020');
+    grd.addColorStop(1, '#2a1410');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, surface, W(), H() - surface);
+
+    // 맨틀 대류 화살표 — 판을 움직이는 힘
+    drawConvection(surface);
+
+    // 벌어짐/겹침 정도. 발산은 벌어지고 수렴은 겹친다.
+    const move = S.bnd === 'divergent' ? Math.min(W() * 0.13, t * 9 * S.speed)
+               : S.bnd === 'convergent' ? Math.min(W() * 0.10, t * 7 * S.speed)
+               : 0;
+
+    if (S.bnd === 'divergent') {
+      drawDivergent(surface, mid, move, a, b);
+    } else if (S.bnd === 'transform') {
+      drawTransform(surface, mid, a, b);
+    } else {
+      drawConvergent(surface, mid, move, a, b, sub);
+    }
+
+    drawQuakes(surface);
+
+    /* 바다 — 해양판 위에 물이 있다. 이게 있어야 해구가 '바다 밑' 임이 보인다.
+
+       ⚠ 판을 다 그린 뒤에 덮어야 한다. 먼저 그리면 판이 물 위를 덮어
+       "바다가 판 아래" 인 이상한 그림이 된다. */
+    const seaH = H() * 0.055;
+    const sea = (x0, w0) => {
+      ctx.fillStyle = 'rgba(70,150,215,.55)';
+      ctx.fillRect(x0, surface - seaH, w0, seaH);
+      // 수면선 — 없으면 어두운 배경에 묻혀 물인지 판인지 모른다
+      ctx.strokeStyle = 'rgba(150,210,255,.75)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x0, surface - seaH); ctx.lineTo(x0 + w0, surface - seaH); ctx.stroke();
+    };
+    if (a.id === 'ocean') sea(0, mid);
+    if (b.id === 'ocean') sea(mid, W() - mid);
+
+    // 이름표
+    ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.fillText(a.name, W() * 0.18, surface - H() * 0.09);
+    ctx.fillText(b.name, W() * 0.82, surface - H() * 0.09);
+
+    // 지형 이름 — 무엇이 생겼는지 무대에서 바로 알려준다
+    const lf = landform();
+    ctx.font = '600 15px system-ui';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText(lf.name, mid, H() * 0.12);
+
+    ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#9a9a9a';
+    ctx.fillText(BOUNDARIES.find((x) => x.id === S.bnd).name, 14, H() - 14);
+  }
+
+  /* 맨틀 대류 — 판이 왜 움직이는지의 답 */
+  function drawConvection(surface) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,170,120,.22)';
+    ctx.lineWidth = 2;
+    const rows = 2;
+    for (let r = 0; r < rows; r++) {
+      const cy = surface + (H() - surface) * (0.35 + r * 0.4);
+      for (let i = 0; i < 4; i++) {
+        const cx = W() * (0.14 + i * 0.24);
+        const ph = (t * 0.4 + i * 0.25 + r * 0.5) % 1;
+        const rad = (H() - surface) * 0.13;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, ph * Math.PI * 2, ph * Math.PI * 2 + Math.PI * 1.1);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function plateTop(kind, surface) { return surface - (kind.id === 'ocean' ? 0 : H() * 0.04); }
+
+  /* 발산 — 가운데가 벌어지고 새 지각이 채워진다 */
+  function drawDivergent(surface, mid, move, a, b) {
+    const th = H() * 0.09;
+    ctx.fillStyle = a.color;
+    ctx.fillRect(0, plateTop(a, surface), mid - move, th + (a.id === 'cont' ? H() * 0.04 : 0));
+    ctx.fillStyle = b.color;
+    ctx.fillRect(mid + move, plateTop(b, surface), W() - mid - move, th + (b.id === 'cont' ? H() * 0.04 : 0));
+
+    // 새로 만들어지는 지각 — 위로 솟은 해령/열곡
+    if (move > 1) {
+      ctx.fillStyle = '#c94f2a';
+      ctx.beginPath();
+      ctx.moveTo(mid - move, surface + th);
+      ctx.lineTo(mid - move * 0.5, surface - th * 0.5);
+      ctx.lineTo(mid + move * 0.5, surface - th * 0.5);
+      ctx.lineTo(mid + move, surface + th);
+      ctx.closePath(); ctx.fill();
+
+      // 올라오는 마그마
+      ctx.strokeStyle = 'rgba(255,140,60,.7)'; ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        const ph = (t * 0.8 + i / 3) % 1;
+        ctx.globalAlpha = 1 - ph;
+        ctx.beginPath();
+        ctx.moveTo(mid, H() - (H() - surface) * ph * 0.8);
+        ctx.lineTo(mid, H() - (H() - surface) * ph * 0.8 - 14);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* 보존 — 스쳐 지나간다. 위에서 본 그림이라야 뜻이 통한다. */
+  function drawTransform(surface, mid, a, b) {
+    const th = H() * 0.09;
+    ctx.fillStyle = a.color;
+    ctx.fillRect(0, plateTop(a, surface), mid - 2, th + (a.id === 'cont' ? H() * 0.04 : 0));
+    ctx.fillStyle = b.color;
+    ctx.fillRect(mid + 2, plateTop(b, surface), W() - mid - 2, th + (b.id === 'cont' ? H() * 0.04 : 0));
+
+    // 어긋나는 방향 — 위아래 화살표로 표현
+    ctx.strokeStyle = '#ffd166'; ctx.fillStyle = '#ffd166'; ctx.lineWidth = 2.5;
+    const off = Math.sin(t * 1.2) * 12;
+    [[mid - 40, -1], [mid + 40, 1]].forEach(([x, dir]) => {
+      const y0 = surface - H() * 0.14 + off * dir;
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + dir * 26); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y0 + dir * 34);
+      ctx.lineTo(x - 5, y0 + dir * 24);
+      ctx.lineTo(x + 5, y0 + dir * 24);
+      ctx.closePath(); ctx.fill();
+    });
+
+    // 단층선
+    ctx.strokeStyle = 'rgba(255,255,255,.5)';
+    ctx.setLineDash([6, 5]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(mid, surface - H() * 0.06); ctx.lineTo(mid, H()); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* 수렴 — 밀도가 큰 쪽이 들어간다. 같으면 솟는다. */
+  function drawConvergent(surface, mid, move, a, b, sub) {
+    const th = H() * 0.09;
+
+    if (!sub) {
+      // 대륙 + 대륙 — 어느 쪽도 못 들어가서 솟아오른다(습곡 산맥)
+      const up = Math.min(H() * 0.16, move * 1.4);
+      ctx.fillStyle = a.color;
+      ctx.fillRect(0, plateTop(a, surface), mid + 6, th + H() * 0.04);
+      ctx.fillStyle = b.color;
+      ctx.fillRect(mid - 6, plateTop(b, surface), W() - mid + 6, th + H() * 0.04);
+      // 솟은 산맥
+      ctx.fillStyle = a.color;
+      ctx.beginPath();
+      ctx.moveTo(mid - W() * 0.16, plateTop(a, surface));
+      ctx.lineTo(mid - W() * 0.05, plateTop(a, surface) - up);
+      ctx.lineTo(mid, plateTop(a, surface) - up * 1.25);
+      ctx.lineTo(mid + W() * 0.05, plateTop(a, surface) - up);
+      ctx.lineTo(mid + W() * 0.16, plateTop(a, surface));
+      ctx.closePath(); ctx.fill();
+      // 습곡 무늬 — 눌려서 접힌 지층
+      ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.lineWidth = 1.6;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        const y = plateTop(a, surface) - up * (0.25 + i * 0.28);
+        ctx.moveTo(mid - W() * 0.11 + i * 6, y);
+        ctx.quadraticCurveTo(mid, y - up * 0.2, mid + W() * 0.11 - i * 6, y);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    // 섭입 — 무거운 판이 비스듬히 들어간다
+    const goesLeft = sub === 'left';
+    const heavy = goesLeft ? a : b;
+    const light = goesLeft ? b : a;
+    const dir = goesLeft ? 1 : -1;    // 들어가는 방향
+
+    // 가벼운 판 (위에 남는다)
+    ctx.fillStyle = light.color;
+    if (goesLeft) ctx.fillRect(mid, plateTop(light, surface), W() - mid, th + (light.id === 'cont' ? H() * 0.04 : 0));
+    else ctx.fillRect(0, plateTop(light, surface), mid, th + (light.id === 'cont' ? H() * 0.04 : 0));
+
+    // 해구 — 들어가는 자리가 파인다
+    const trenchX = mid - dir * W() * 0.02;
+    ctx.fillStyle = 'rgba(20,40,60,.55)';
+    ctx.beginPath();
+    ctx.moveTo(trenchX - W() * 0.05, surface);
+    ctx.lineTo(trenchX, surface + H() * 0.05);
+    ctx.lineTo(trenchX + W() * 0.05, surface);
+    ctx.closePath(); ctx.fill();
+
+    // 무거운 판 — 비스듬히 내려가는 판
+    const len = H() * 0.55;
+    ctx.save();
+    ctx.fillStyle = heavy.color;
+    ctx.beginPath();
+    const x0 = goesLeft ? 0 : W();
+    ctx.moveTo(x0, plateTop(heavy, surface));
+    ctx.lineTo(trenchX, surface);
+    ctx.lineTo(trenchX + dir * len * 0.7, surface + len);
+    ctx.lineTo(trenchX + dir * len * 0.7 - dir * th * 1.6, surface + len);
+    ctx.lineTo(trenchX - dir * th * 0.2, surface + th);
+    ctx.lineTo(x0, plateTop(heavy, surface) + th);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 마그마 — 판이 끌고 간 물이 맨틀을 녹인다
+    const magmaX = trenchX + dir * W() * 0.14;
+    ctx.strokeStyle = 'rgba(255,120,50,.75)'; ctx.lineWidth = 3.5;
+    for (let i = 0; i < 4; i++) {
+      const ph = (t * 0.55 + i / 4) % 1;
+      ctx.globalAlpha = (1 - ph) * .9;
+      const y = surface + H() * 0.34 - ph * H() * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(magmaX + dir * (1 - ph) * W() * 0.02, y);
+      ctx.lineTo(magmaX + dir * (1 - ph) * W() * 0.02, y - 15);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    /* 화산 — 마그마가 올라온 자리.
+       ⚠ 밑변을 판 윗면보다 살짝 아래(+2px)에 둔다. 정확히 같은 값이면
+       경계선 때문에 산이 떠 보인다. */
+    const vh = H() * 0.10;
+    const vbase = plateTop(light, surface) + 2;
+    ctx.fillStyle = '#6b5540';
+    ctx.beginPath();
+    ctx.moveTo(magmaX - W() * 0.045, vbase);
+    ctx.lineTo(magmaX, vbase - vh);
+    ctx.lineTo(magmaX + W() * 0.045, vbase);
+    ctx.closePath(); ctx.fill();
+    // 분화구
+    ctx.fillStyle = '#ff7a3c';
+    ctx.beginPath();
+    ctx.arc(magmaX, vbase - vh, 4 + Math.sin(t * 3) * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* 지진 — 경계 종류마다 깊이 분포가 다르다. 이게 베니오프대의 근거다. */
+  function spawnQuake() {
+    const sub = subducting();
+    const mid = W() / 2;
+    let x, depth;
+
+    if (S.bnd === 'convergent' && sub) {
+      /* 섭입대 — 판을 따라 깊어진다(베니오프대).
+
+         ⚠ 기울기를 무대의 판과 맞춰야 한다. drawConvergent 는 세로 len 을
+         내려가는 동안 가로로 dir*len*0.7 만큼 간다. 지진만 다른 기울기로
+         찍으면 점들이 판 옆 허공에 뜬다. */
+      const along = Math.random();
+      const dir = sub === 'left' ? 1 : -1;
+      depth = along * 700;
+      const surfaceY = H() * 0.34;
+      const alongPx = along * (H() - surfaceY);          // 세로로 내려간 거리
+      x = mid - dir * W() * 0.02 + dir * alongPx * 0.7;  // 해구에서 시작해 같은 기울기로
+      // 판 두께만큼 좌우로 흩어준다. 한 줄로만 찍히면 선처럼 보인다.
+      x += (Math.random() - 0.5) * W() * 0.035;
+    } else if (S.bnd === 'convergent') {
+      // 대륙 충돌 — 중간 깊이
+      depth = Math.random() * 100;
+      x = mid + (Math.random() - 0.5) * W() * 0.25;
+    } else {
+      // 발산·보존 — 얕다
+      depth = Math.random() * (S.bnd === 'transform' ? 20 : 30);
+      x = mid + (Math.random() - 0.5) * W() * 0.1;
+    }
+    quakes.push({ x, depth, mag: 1 + Math.random() * 2, age: 0 });
+    if (quakes.length > 90) quakes.shift();
+  }
+
+  function drawQuakes(surface) {
+    const scale = (H() - surface) / 700;   // 700km 를 맨틀 영역에 대응
+    quakes.forEach((q) => {
+      const y = surface + q.depth * scale;
+      const a = Math.max(0, 1 - q.age / 6);
+      if (a <= 0) return;
+      ctx.fillStyle = `rgba(255,220,120,${a * .85})`;
+      ctx.beginPath();
+      ctx.arc(q.x, y, q.mag * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // ── 지진 깊이 그래프 ──
+  const graph = el('quake-graph');
+  const g2 = graph.getContext('2d');
+
+  function drawGraph() {
+    const gw = graph.width / DPR, gh = graph.height / DPR;
+    g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g2.clearRect(0, 0, gw, gh);
+
+    const pad = { l: 62, r: 20, t: 24, b: 42 };
+    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
+
+    // 깊이 눈금 (아래로 갈수록 깊다)
+    g2.strokeStyle = 'rgba(255,255,255,.12)'; g2.lineWidth = 1;
+    g2.font = '12px system-ui'; g2.fillStyle = 'rgba(255,255,255,.7)'; g2.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const py = y + h * i / 4;
+      g2.beginPath(); g2.moveTo(x, py); g2.lineTo(x + w, py); g2.stroke();
+      g2.fillText(Math.round(700 * i / 4) + ' km', x - 9, py + 4);
+    }
+
+    // 지진 점 — 무대와 같은 데이터를 위치·깊이 평면에 찍는다
+    const mid = W() / 2;
+    quakes.forEach((q) => {
+      const px = x + w * (0.5 + (q.x - mid) / W() * 0.9);
+      const py = y + h * (q.depth / 700);
+      if (px < x || px > x + w) return;
+      g2.fillStyle = 'rgba(255,220,120,.8)';
+      g2.beginPath(); g2.arc(px, py, q.mag * 1.6, 0, Math.PI * 2); g2.fill();
+    });
+
+    // 지표면
+    g2.strokeStyle = 'rgba(255,255,255,.55)'; g2.lineWidth = 1.5;
+    g2.beginPath(); g2.moveTo(x, y); g2.lineTo(x + w, y); g2.stroke();
+
+    g2.fillStyle = 'rgba(255,255,255,.8)'; g2.textAlign = 'center';
+    g2.font = '12px system-ui';
+    g2.fillText('위치 (경계가 가운데)', x + w / 2, gh - 10);
+    g2.save(); g2.translate(16, y + h / 2); g2.rotate(-Math.PI / 2);
+    g2.fillText('진원 깊이', 0, 0); g2.restore();
+
+    if (S.bnd === 'convergent' && subducting()) {
+      g2.fillStyle = '#ffd166'; g2.textAlign = 'left'; g2.font = '600 13px system-ui';
+      g2.fillText('베니오프대 — 판을 따라 진원이 깊어집니다', x + 10, y + 20);
+    }
+  }
+
+  // ── 측정값 ──
+  function readout() {
+    const lf = landform();
+    // 실제 판 이동 속도는 연 수 cm 다
+    el('r-speed').textContent = (S.bnd === 'transform' ? 5.5 : S.bnd === 'divergent' ? 4.0 : 7.0).toFixed(1) + ' cm/년';
+    el('r-time').textContent = Math.round(t * 12) + '만 년';
+    el('r-relief').textContent = lf.name.split(' + ')[0];
+    el('r-depth').textContent = lf.depth;
+    el('r-volcano').textContent = lf.volcano;
+    el('note').textContent = lf.why;
+
+    el('result').innerHTML =
+      '<strong>' + lf.name + '</strong>' +
+      '<span class="where">실제 사례: ' + lf.where + '</span>';
+  }
+
+  // ── 판 종류 고르기 ──
+  document.querySelectorAll('.pk-row').forEach((row) => {
+    const side = Number(row.dataset.side);
+    ['ocean', 'cont'].forEach((k) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = KINDS[k].name;
+      b.setAttribute('aria-pressed', String((side === 0 ? S.left : S.right) === k));
+      b.addEventListener('click', () => {
+        if (side === 0) S.left = k; else S.right = k;
+        [...row.children].forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+        restart(); updateKindNote(); readout();
+      });
+      row.appendChild(b);
+    });
+  });
+
+  function updateKindNote() {
+    const a = L(), b = R();
+    if (a.density === b.density) {
+      el('kind-note').textContent = `둘 다 ${a.name}입니다 (밀도 ${a.density}). 밀도가 같으면 어느 쪽도 밑으로 들어가지 못합니다.`;
+    } else {
+      const heavy = a.density > b.density ? a : b;
+      el('kind-note').textContent =
+        `${a.name} ${a.density} vs ${b.name} ${b.density} — 무거운 ${heavy.name}이 밑으로 들어갑니다.`;
+    }
+  }
+
+  // ── 경계 고르기 ──
+  const bndBox = el('bnd');
+  BOUNDARIES.forEach((bd) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(S.bnd === bd.id));
+    b.innerHTML = '<span class="arrow">' + bd.arrow + '</span>' +
+      '<span>' + bd.name + '<small>' + bd.desc + '</small></span>';
+    b.addEventListener('click', () => {
+      S.bnd = bd.id;
+      [...bndBox.children].forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+      restart(); readout();
+    });
+    bndBox.appendChild(b);
+  });
+
+  function restart() { t = 0; quakes = []; }
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', restart);
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({ left: S.left, right: S.right, bnd: S.bnd });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['left', 'right'].forEach((k, i) => {
+      const v = q.get(k);
+      if (v !== 'ocean' && v !== 'cont') return;
+      S[k] = v;
+      const row = document.querySelector(`.pk-row[data-side="${i}"]`);
+      [...row.children].forEach((c) => c.setAttribute('aria-pressed', String(c.textContent === KINDS[v].name)));
+    });
+    const bd = q.get('bnd');
+    if (BOUNDARIES.some((x) => x.id === bd)) {
+      S.bnd = bd;
+      [...bndBox.children].forEach((c, i) => c.setAttribute('aria-pressed', String(BOUNDARIES[i].id === bd)));
+    }
+  }
+
+  // ── 루프 ──
+  let last = 0, quakeAcc = 0;
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    // 탭을 숨겼다 돌아오면 밀린 시간이 한꺼번에 들어온다
+    const dt = Math.min(0.25, now - last);
+    last = now;
+
+    if (running) {
+      t += dt;
+      quakes.forEach((q) => { q.age += dt; });
+      quakes = quakes.filter((q) => q.age < 6);
+      quakeAcc += dt;
+      // 경계마다 지진 빈도가 다르다 — 보존 경계가 가장 잦다
+      const interval = S.bnd === 'transform' ? 0.25 : S.bnd === 'convergent' ? 0.32 : 0.5;
+      while (quakeAcc >= interval) { spawnQuake(); quakeAcc -= interval; }
+    }
+
+    draw(); drawGraph();
+    if (running) readout();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.56) * DPR;
+    canvas.style.height = Math.round(w * 0.56) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 340 * DPR;
+  }
+
+  applyQuery();
+  updateKindNote();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
