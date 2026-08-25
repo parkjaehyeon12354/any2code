@@ -526,6 +526,15 @@
     ctx.strokeStyle = fixed ? '#fff' : '#ffb35c'; ctx.lineWidth = fixed ? 2 : 3; ctx.stroke();
   }
 
+  function atomXFor(r, q, movingRadius) {
+    const eqX = q.sx(q.p.r0);
+    if (r >= q.p.r0) return q.sx(r);
+    /* r₀보다 가까운 구간은 짧게 압축해 전자구름이 서로 겹치는 모습으로 보인다.
+       퍼텐셜의 실제 위치는 곡선 위 주황 점이 별도로 보여 준다. */
+    const compression = (q.p.r0 - r) / (q.p.r0 - q.rMin);
+    return eqX - compression * movingRadius * .9;
+  }
+
   function draw() {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W(), H());
@@ -552,7 +561,7 @@
     let started = false;
     for (let i = 0; i <= 280; i++) {
       const r = rMin + (rMax - rMin) * i / 280, u = U(r);
-      const px = sx(r), py = sy(Math.max(uMin, Math.min(uMax, u)));
+      const px = sx(r), py = sy(Math.max(uMin, u));
       started ? ctx.lineTo(px, py) : ctx.moveTo(px, py); started = true;
     }
     ctx.stroke();
@@ -568,10 +577,13 @@
     /* 고정 원자는 최저점 바로 왼쪽에 둔다. 움직이는 원자가 r₀에 도착하면
        두 원의 가장자리가 맞닿아 안정한 결합 상태가 눈으로도 보인다. */
     const fixedX = eqX - fixedRadius - movingRadius + 2, fixedY = eqY;
-    const rawMovingX = sx(S.r);
-    const rawMovingY = sy(Math.max(uMin, Math.min(uMax, U(S.r))));
-    const movingX = Math.max(movingRadius + 4, Math.min(W() - movingRadius - 4, rawMovingX));
-    const movingY = Math.max(movingRadius + 4, Math.min(H() - movingRadius - 4, rawMovingY));
+    const energyX = sx(S.r);
+    const energyY = Math.max(pad.t, Math.min(pad.t + h, sy(Math.max(uMin, U(S.r)))));
+    const movingX = Math.max(movingRadius + 4, Math.min(W() - movingRadius - 4, atomXFor(S.r, q, movingRadius)));
+    const movingY = fixedY;
+    ctx.strokeStyle = 'rgba(255,179,92,.42)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(energyX, energyY); ctx.lineTo(movingX, movingY); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#ffb35c'; ctx.beginPath(); ctx.arc(energyX, energyY, 6, 0, Math.PI * 2); ctx.fill();
     if (!broken) {
       ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(fixedX, fixedY); ctx.lineTo(movingX, movingY); ctx.stroke();
@@ -675,11 +687,17 @@
   function pointerR(clientX) {
     const rect = canvas.getBoundingClientRect(), q = geometry();
     const cx = (clientX - rect.left) * W() / rect.width;
+    const movingRadius = Math.min(28, q.p.rb * .72), eqX = q.sx(q.p.r0);
+    if (cx < eqX) {
+      const compression = Math.min(1, (eqX - cx) / (movingRadius * .9));
+      return q.p.r0 - compression * (q.p.r0 - q.rMin);
+    }
     return Math.max(q.rMin, Math.min(q.rMax, q.rMin + (cx - q.pad.l) / q.w * (q.rMax - q.rMin)));
   }
   const onDown = (e) => {
     const q = geometry(), point = canvasPoint(e);
-    const atomX = q.sx(S.r), atomY = q.sy(Math.max(q.uMin, U(S.r)));
+    const movingRadius = Math.min(28, q.p.rb * .72);
+    const atomX = atomXFor(S.r, q, movingRadius), atomY = q.sy(-q.p.De);
     if (Math.hypot(point.x - atomX, point.y - atomY) > 46) return;
     dragging = true; broken = false;
     canvas.style.cursor = 'grabbing';
