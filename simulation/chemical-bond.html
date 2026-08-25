@@ -52,24 +52,7 @@
   border-radius: var(--rounded-lg);
   overflow: hidden;
 }
-#canvas { display: block; width: 100%; height: auto; }
-.stage-visual { position: relative; }
-.bond-graph-overlay {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  z-index: 2;
-  width: min(52%, 520px);
-  padding: 10px 10px 6px;
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 12px;
-  background: rgba(10,18,31,.82);
-  box-shadow: 0 10px 28px rgba(0,0,0,.28);
-  backdrop-filter: blur(5px);
-  pointer-events: none;
-}
-.bond-graph-title { margin: 0 0 2px 8px; color: #fff; font-size: 13px; font-weight: 700; }
-.bond-graph-caption { margin: 0 8px 2px; color: rgba(255,255,255,.7); font-size: 10.5px; line-height: 1.35; }
+#canvas { display: block; width: 100%; height: auto; cursor: grab; }
 
 .stage-foot {
   display: flex;
@@ -166,7 +149,6 @@
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
 
-#bond-graph { display: block; width: 100%; height: 230px; }
 /* 원자 조합 선택 — 라디오처럼 쓰지만 버튼이라 터치가 편하다 */
 .pairs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .pairs button {
@@ -179,11 +161,6 @@
 }
 .pairs button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .bond-tag { margin-top: 6px; font-size: 11.5px; color: var(--muted); line-height: 1.4; word-break: keep-all; }
-@media (max-width: 700px) {
-  .bond-graph-overlay { right: 8px; bottom: 8px; width: calc(100% - 16px); padding: 7px 7px 3px; }
-  .bond-graph-caption { display: none; }
-  #bond-graph { height: 125px; }
-}
 </style>
 </head>
 <body>
@@ -342,18 +319,11 @@
   <div class="layout">
     <div class="side-panels">
       <div class="stage">
-        <div class="stage-visual">
-          <canvas id="canvas" aria-label="두 원자 사이의 결합"></canvas>
-          <div class="bond-graph-overlay" aria-labelledby="bond-graph-title">
-            <h2 class="bond-graph-title" id="bond-graph-title">거리–퍼텐셜 에너지 그래프</h2>
-            <p class="bond-graph-caption">주황 점은 현재 원자 거리이며, 곡선의 최저점이 안정한 결합 길이입니다.</p>
-            <canvas id="bond-graph" aria-label="원자 사이 거리에 따른 퍼텐셜 에너지 그래프"></canvas>
-          </div>
-        </div>
+        <canvas id="canvas" aria-label="고정 원자와 움직이는 원자가 표시된 거리-퍼텐셜 에너지 그래프"></canvas>
         <div class="stage-foot">
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">결합 길이로</button>
-          <span class="share-said" id="stage-said">원자를 드래그해 보세요</span>
+          <span class="share-said" id="stage-said">그래프 위의 움직이는 원자를 드래그해 보세요</span>
         </div>
       </div>
     </div>
@@ -535,170 +505,85 @@
     el('dist-out').textContent = Math.round(S.r) + ' pm';
   }
 
-  // ── 무대 그리기 ──
-  function px(r) {
-    // 거리(pm)를 화면 좌표로. 400 pm 이 화면 폭의 78% 가 되게 맞춘다.
-    return r / maxR() * W() * 0.78;
+  // ── 그래프 위 원자 무대 ──
+  function geometry() {
+    const p = S.pair;
+    const pad = { l: W() < 600 ? 54 : 76, r: W() < 600 ? 18 : 34, t: 46, b: 58 };
+    const rMin = minR(), rMax = maxR();
+    const uMin = -p.De * 1.16, uMax = p.De * 0.82;
+    const w = W() - pad.l - pad.r, h = H() - pad.t - pad.b;
+    return {
+      p, pad, rMin, rMax, uMin, uMax, w, h,
+      sx: (r) => pad.l + (r - rMin) / (rMax - rMin) * w,
+      sy: (u) => pad.t + (uMax - u) / (uMax - uMin) * h
+    };
+  }
+
+  function drawAtom(x, y, radius, color, fixed) {
+    const grd = ctx.createRadialGradient(x - radius * .3, y - radius * .3, radius * .1, x, y, radius);
+    grd.addColorStop(0, '#fff'); grd.addColorStop(.35, color); grd.addColorStop(1, color);
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = fixed ? '#fff' : '#ffb35c'; ctx.lineWidth = fixed ? 2 : 3; ctx.stroke();
   }
 
   function draw() {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W(), H());
-    const cy = H() / 2;
-    const gap = px(S.r);
-    const x1 = W() / 2 - gap / 2, x2 = W() / 2 + gap / 2;
-    const p = S.pair;
+    const q = geometry(), { p, pad, rMin, rMax, uMin, uMax, w, h, sx, sy } = q;
 
-    // 결합 — 가까울수록 진하게. 끊어지면 사라진다.
-    if (!broken) {
-      const strength = Math.max(0, 1 - Math.abs(S.r - p.r0) / (p.r0 * 1.6));
-      ctx.strokeStyle = `rgba(255,255,255,${0.08 + strength * 0.5})`;
-      ctx.lineWidth = 2 + strength * 5;
-      ctx.beginPath(); ctx.moveTo(x1, cy); ctx.lineTo(x2, cy); ctx.stroke();
-    }
-
-    /* 결합 길이 기준선 — 원자가 '있어야 할 자리' 를 표시한다.
-       지금 위치(x1, x2)와 나란히 놓아야 얼마나 벗어났는지 보인다.
-       화면 중앙 기준으로 그리면 원자와 어긋나 보여서 무슨 선인지 알 수 없다. */
-    const eqHalf = px(p.r0) / 2;
-    const ex1 = W() / 2 - eqHalf, ex2 = W() / 2 + eqHalf;
-    ctx.strokeStyle = 'rgba(255,255,255,.25)';
-    ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(ex1, cy - 58); ctx.lineTo(ex1, cy + 58);
-    ctx.moveTo(ex2, cy - 58); ctx.lineTo(ex2, cy + 58);
-    ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.font = '12px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(`결합 길이 ${p.r0} pm`, W() / 2, cy - 68);
-
-    // 원자
-    const atom = (x, r, color) => {
-      const grd = ctx.createRadialGradient(x - r * 0.3, cy - r * 0.3, r * 0.1, x, cy, r);
-      grd.addColorStop(0, '#ffffff');
-      grd.addColorStop(0.35, color);
-      grd.addColorStop(1, color);
-      ctx.fillStyle = grd;
-      ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1;
-      ctx.stroke();
-    };
-    atom(x1, p.ra, p.ca);
-    atom(x2, p.rb, p.cb);
-
-    // 힘의 방향 — 화살표로 보여준다. 이게 이 화면의 핵심이다.
-    const f = F(S.r);
-    if (Math.abs(f) > 0.004 && !broken) {
-      const dir = f > 0 ? 1 : -1;          // 양수면 밀어냄
-      const len = Math.min(46, Math.abs(f) * 120 + 12);
-      ctx.strokeStyle = f > 0 ? '#ff9d9d' : '#8fd0ff';
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.lineWidth = 2.5;
-      [[x1, -dir], [x2, dir]].forEach(([x, d]) => {
-        const from = x + d * (p.ra + 8), to = from + d * len;
-        ctx.beginPath(); ctx.moveTo(from, cy); ctx.lineTo(to, cy); ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(to + d * 7, cy);
-        ctx.lineTo(to - d * 3, cy - 5);
-        ctx.lineTo(to - d * 3, cy + 5);
-        ctx.closePath(); ctx.fill();
-      });
-      ctx.fillStyle = 'rgba(255,255,255,.75)';
-      ctx.fillText(f > 0 ? '밀어내는 중' : '끌어당기는 중', W() / 2, cy + 84);
-    }
-
-    if (broken) {
-      ctx.fillStyle = '#ff9d9d';
-      ctx.font = '600 14px system-ui';
-      ctx.fillText('결합이 끊어졌습니다', W() / 2, cy + 84);
-    }
-
-    ctx.fillStyle = '#9a9a9a';
-    ctx.font = '12px system-ui'; ctx.textAlign = 'left';
-    ctx.fillText(p.label, 14, H() - 14);
-  }
-
-  // ── 퍼텐셜 곡선 ──
-  const graph = el('bond-graph');
-  const g = graph.getContext('2d');
-
-  function drawGraph() {
-    const gw = graph.width / DPR, gh = graph.height / DPR;
-    g.setTransform(DPR, 0, 0, DPR, 0, 0);
-    g.clearRect(0, 0, gw, gh);
-
-    const pad = { l: 62, r: 20, t: 24, b: 44 };
-    const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
-    const p = S.pair;
-
-    const rMin = 0.6 * p.r0, rMax = 3.2 * p.r0;
-    const uMin = -p.De * 1.15, uMax = p.De * 0.85;
-    const sx = (r) => x + (r - rMin) / (rMax - rMin) * w;
-    const sy = (u) => y + (uMax - u) / (uMax - uMin) * h;
-
-    // 눈금
-    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1;
-    g.font = '12px system-ui'; g.fillStyle = 'rgba(255,255,255,.7)'; g.textAlign = 'right';
+    ctx.font = `${W() < 600 ? 10 : 12}px system-ui`;
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(255,255,255,.68)'; ctx.textAlign = 'right';
     for (let i = 0; i <= 4; i++) {
-      const u = uMax - (uMax - uMin) * i / 4;
-      const py = sy(u);
-      g.beginPath(); g.moveTo(x, py); g.lineTo(x + w, py); g.stroke();
-      g.fillText(u.toFixed(1), x - 9, py + 4);
+      const u = uMax - (uMax - uMin) * i / 4, py = sy(u);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(pad.l + w, py); ctx.stroke();
+      ctx.fillText(u.toFixed(1), pad.l - 8, py + 4);
     }
-    g.textAlign = 'center';
+    ctx.textAlign = 'center';
     for (let i = 0; i <= 5; i++) {
-      const r = rMin + (rMax - rMin) * i / 5;
-      const pxx = sx(r);
-      g.beginPath(); g.moveTo(pxx, y); g.lineTo(pxx, y + h); g.stroke();
-      g.fillText(Math.round(r), pxx, y + h + 18);
+      const r = rMin + (rMax - rMin) * i / 5, px = sx(r);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, pad.t + h); ctx.stroke();
+      ctx.fillText(Math.round(r), px, pad.t + h + 18);
     }
 
-    // U = 0 기준선
-    g.strokeStyle = 'rgba(255,255,255,.3)';
-    g.beginPath(); g.moveTo(x, sy(0)); g.lineTo(x + w, sy(0)); g.stroke();
-
-    // 곡선
-    g.strokeStyle = '#7cc4ff'; g.lineWidth = 2.4;
-    g.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.beginPath(); ctx.moveTo(pad.l, sy(0)); ctx.lineTo(pad.l + w, sy(0)); ctx.stroke();
+    ctx.strokeStyle = '#7cc4ff'; ctx.lineWidth = 3; ctx.beginPath();
     let started = false;
-    for (let i = 0; i <= 260; i++) {
-      const r = rMin + (rMax - rMin) * i / 260;
-      const u = U(r);
+    for (let i = 0; i <= 280; i++) {
+      const r = rMin + (rMax - rMin) * i / 280, u = U(r);
       if (u > uMax) { started = false; continue; }
-      const pxx = sx(r), pyy = sy(Math.max(uMin, u));
-      started ? g.lineTo(pxx, pyy) : g.moveTo(pxx, pyy);
-      started = true;
+      const px = sx(r), py = sy(Math.max(uMin, u));
+      started ? ctx.lineTo(px, py) : ctx.moveTo(px, py); started = true;
     }
-    g.stroke();
+    ctx.stroke();
 
-    // 최저점 — 결합 길이
-    g.strokeStyle = 'rgba(255,255,255,.4)'; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(sx(p.r0), y); g.lineTo(sx(p.r0), y + h); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = 'rgba(255,255,255,.85)'; g.textAlign = 'center';
-    g.fillText(`r₀ = ${p.r0} pm`, sx(p.r0), y - 8);
+    const eqX = sx(p.r0), eqY = sy(-p.De);
+    ctx.strokeStyle = 'rgba(156,232,160,.75)'; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(eqX, pad.t); ctx.lineTo(eqX, pad.t + h); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#9ce8a0'; ctx.textAlign = 'center';
+    ctx.fillText(`바닥 상태 · r₀ = ${p.r0} pm`, eqX, pad.t + 14);
 
-    // 결합 에너지 깊이
-    g.strokeStyle = 'rgba(156,224,160,.8)'; g.lineWidth = 1.6;
-    const dx = sx(p.r0) + 26;
-    g.beginPath(); g.moveTo(dx, sy(0)); g.lineTo(dx, sy(-p.De)); g.stroke();
-    g.fillStyle = '#9ce8a0'; g.textAlign = 'left';
-    g.fillText(`Dₑ = ${p.De} eV`, dx + 7, sy(-p.De / 2) + 4);
+    const fixedX = pad.l + 3, fixedY = sy(0);
+    const movingX = sx(S.r), movingY = sy(Math.max(uMin, U(S.r)));
+    drawAtom(fixedX, fixedY, Math.min(25, p.ra * .72), p.ca, true);
+    drawAtom(movingX, movingY, Math.min(28, p.rb * .72), p.cb, false);
+    ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.font = `600 ${W() < 600 ? 10 : 12}px system-ui`;
+    ctx.textAlign = 'left'; ctx.fillText('고정 원자', fixedX + 18, fixedY - 22);
+    ctx.textAlign = 'center'; ctx.fillText(dragging ? '이동 중' : '움직이는 원자', movingX, movingY - Math.min(28, p.rb * .72) - 10);
 
-    // 지금 위치
-    if (S.r >= rMin && S.r <= rMax) {
-      const u = Math.max(uMin, U(S.r));
-      g.fillStyle = '#ffb35c';
-      g.beginPath(); g.arc(sx(S.r), sy(u), 6, 0, Math.PI * 2); g.fill();
+    if (!dragging && Math.abs(S.r - p.r0) >= 3 && !broken) {
+      const dir = S.r > p.r0 ? -1 : 1, from = movingX + dir * 30, to = from + dir * 38;
+      ctx.strokeStyle = S.r > p.r0 ? '#8fd0ff' : '#ff9d9d'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(from, movingY); ctx.lineTo(to, movingY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(to, movingY); ctx.lineTo(to - dir * 8, movingY - 5); ctx.lineTo(to - dir * 8, movingY + 5); ctx.closePath(); ctx.fill();
     }
 
-    // 축 이름
-    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + h); g.lineTo(x + w, y + h); g.stroke();
-    g.fillStyle = 'rgba(255,255,255,.8)'; g.textAlign = 'center';
-    g.fillText('원자 사이 거리 r (pm)', x + w / 2, gh - 10);
-    g.save(); g.translate(16, y + h / 2); g.rotate(-Math.PI / 2);
-    g.fillText('퍼텐셜 에너지 U (eV)', 0, 0); g.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.58)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + h); ctx.lineTo(pad.l + w, pad.t + h); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.font = `${W() < 600 ? 10 : 12}px system-ui`; ctx.textAlign = 'center';
+    ctx.fillText('원자 사이 거리 r (pm)', pad.l + w / 2, H() - 10);
+    ctx.save(); ctx.translate(15, pad.t + h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('퍼텐셜 에너지 U (eV)', 0, 0); ctx.restore();
   }
 
   // ── 측정값 ──
@@ -716,6 +601,7 @@
     } else if (Math.abs(S.r - p.r0) < 3) {
       state = '안정';
       note = '힘이 균형을 이룬 상태입니다. 여기가 에너지가 가장 낮은 지점이라 원자가 이 거리를 유지합니다.';
+      if (!dragging) el('stage-said').textContent = '그래프의 바닥 상태에 도착했습니다';
     } else if (S.r < p.r0) {
       state = '반발';
       note = '전자껍질이 겹치려 해서 밀어냅니다. 놓으면 결합 길이로 밀려납니다.';
@@ -773,18 +659,23 @@
 
   /* 캔버스에서 직접 끌기 — 슬라이더보다 이쪽이 직관적이다.
      "당겼다 놓으면 돌아온다" 를 몸으로 느끼게 하는 게 목적이다. */
-  function pointerR(clientX) {
+  function canvasPoint(e) {
     const rect = canvas.getBoundingClientRect();
-    const cx = (clientX - rect.left) * (canvas.clientWidth / rect.width);
-    const half = Math.abs(cx - canvas.clientWidth / 2);
-    const r = half * 2 / (canvas.clientWidth * 0.78) * maxR();
-    return Math.max(minR(), Math.min(maxR(), r));
+    return { x: (e.clientX - rect.left) * W() / rect.width, y: (e.clientY - rect.top) * H() / rect.height };
+  }
+  function pointerR(clientX) {
+    const rect = canvas.getBoundingClientRect(), q = geometry();
+    const cx = (clientX - rect.left) * W() / rect.width;
+    return Math.max(q.rMin, Math.min(q.rMax, q.rMin + (cx - q.pad.l) / q.w * (q.rMax - q.rMin)));
   }
   const onDown = (e) => {
+    const q = geometry(), point = canvasPoint(e);
+    const atomX = q.sx(S.r), atomY = q.sy(Math.max(q.uMin, U(S.r)));
+    if (Math.hypot(point.x - atomX, point.y - atomY) > 46) return;
     dragging = true; broken = false;
+    canvas.style.cursor = 'grabbing';
     canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
-    S.r = pointerR(e.clientX);
-    el('stage-said').textContent = '놓으면 결합 길이로 돌아갑니다';
+    el('stage-said').textContent = '손을 놓으면 그래프의 바닥 상태로 돌아갑니다';
   };
   const onMove = (e) => {
     if (!dragging) return;
@@ -795,7 +686,10 @@
   const onUp = () => {
     if (!dragging) return;
     dragging = false; v = 0;
-    el('stage-said').textContent = '원자를 드래그해 보세요';
+    canvas.style.cursor = 'grab';
+    running = true;
+    el('toggle').textContent = '일시정지';
+    el('stage-said').textContent = '바닥 상태로 돌아가는 중입니다';
   };
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
@@ -854,19 +748,17 @@
     acc += Math.min(0.25, t - last);   // 탭 복귀 시 밀린 시간 폭주 방지
     last = t;
     if (running) { while (acc >= DT) { step(DT); acc -= DT; } } else { acc = 0; }
-    draw(); drawGraph(); readout();
+    draw(); readout();
     requestAnimationFrame(frame);
   }
 
   function resize() {
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
+    const canvasH = w < 600 ? Math.max(280, Math.round(w * 0.78)) : Math.round(w * 0.52);
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.52) * DPR;
-    canvas.style.height = Math.round(w * 0.52) + 'px';
-    const gw = graph.clientWidth || 900;
-    graph.width = gw * DPR;
-    graph.height = (graph.clientHeight || 230) * DPR;
+    canvas.height = canvasH * DPR;
+    canvas.style.height = canvasH + 'px';
   }
 
   applyQuery();
