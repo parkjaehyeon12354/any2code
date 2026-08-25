@@ -208,7 +208,7 @@ test('DB 실패가 기존 사용자를 가입 화면에 가두지 않는다', ()
 
 test('화면 가드는 캐시가 아니라 서버 응답을 믿는다', () => {
   /* sessionStorage 를 손대는 것만으로 가입 절차를 건너뛸 수 있으면 안 된다. */
-  const src = readRoot('nav-user.js');
+  const src = readRoot('assets/js/nav-user.js');
   assert.ok(/user && user\.onboarded === false/.test(src),
     'Session.refresh() 의 결과(user)로 판정해야 한다');
   assert.ok(!/drawn\.onboarded/.test(src),
@@ -217,7 +217,7 @@ test('화면 가드는 캐시가 아니라 서버 응답을 믿는다', () => {
 
 test('약관·정책 문서는 가드에서 제외된다', () => {
   // 동의하려면 읽을 수 있어야 한다. 여기서 되돌리면 무한 루프다.
-  const src = readRoot('nav-user.js');
+  const src = readRoot('assets/js/nav-user.js');
   const list = src.match(/var free = \[([^\]]+)\]/);
   assert.ok(list, '제외 목록이 있어야 한다');
   for (const p of ['/welcome', '/terms', '/privacy']) {
