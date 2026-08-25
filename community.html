@@ -460,10 +460,10 @@
 (function () {
   // 과목별 공간. 색은 훑을 때의 보조 신호일 뿐, 이름 텍스트가 항상 함께 나온다.
   const SUBJECTS = {
-    physics: { name: '물리학',   color: '#2f4bd6' },
-    chem:    { name: '화학',     color: '#c2410c' },
-    bio:     { name: '생명과학', color: '#167a63' },
-    earth:   { name: '지구과학', color: '#b45309' }
+    physics: { name: '물리학',   color: 'var(--subject-physics)' },
+    chem:    { name: '화학',     color: 'var(--subject-chem)' },
+    bio:     { name: '생명과학', color: 'var(--subject-bio)' },
+    earth:   { name: '지구과학', color: 'var(--subject-earth)' }
   };
 
   let POSTS = [];           // GET /api/posts 로 채운다

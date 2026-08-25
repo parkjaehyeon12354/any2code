@@ -399,11 +399,11 @@
         <div class="panel-body">
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="pressure">검은 개체의 생존율</label>
+              <label for="pressure">검은 개체가 살아남을 확률</label>
               <output id="pressure-out">50%</output>
             </div>
             <input type="range" id="pressure" min="5" max="95" step="1" value="50">
-            <span class="hint">숲이 어두우면 검은 개체가 유리합니다. 50%면 어느 쪽도 유리하지 않습니다.</span>
+            <span class="hint">숲이 어두우면 검은 개체가 유리합니다. 50%면 어느 쪽도 유리하지 않습니다. <strong>흰 개체는 나머지 확률로 살아남습니다</strong> — 70%로 두면 흰 개체는 30%입니다.</span>
           </div>
           <div class="ctrl">
             <div class="ctrl-top">
@@ -558,8 +558,12 @@
       return Math.random() < (black ? pB : 1 - pB);
     });
 
-    // 전멸하면 볼 것이 없다. 최소한을 남긴다.
-    const parents = survivors.length >= 2 ? survivors : pop.slice(0, 2);
+    /* 전멸하면 볼 것이 없다.
+
+     ⚠ 예전에는 pop.slice(0, 2) 로 원래 집단에서 아무나 둘을 꺼냈는데,
+     그러면 방금 일어난 선택이 통째로 무시된다. 살아남은 개체가 하나라도
+     있으면 그것만으로 다음 세대를 채운다 — 선택 결과가 유지된다. */
+    const parents = survivors.length ? survivors : pop.slice(0, 1);
 
     // ② 무작위 교배로 다음 세대를 채운다
     const next = [];

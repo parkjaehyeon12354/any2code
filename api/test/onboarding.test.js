@@ -248,11 +248,48 @@ test('판 경계 판정이 밀도 차이를 따른다', () => {
   // 해양판이 대륙판보다 무겁다 → 해양판이 들어간다
   assert.strictEqual(run('ocean', 'cont', 'convergent'), 'left', '해양판(왼쪽)이 들어가야 한다');
   assert.strictEqual(run('cont', 'ocean', 'convergent'), 'right', '해양판(오른쪽)이 들어가야 한다');
+  /* 해양 + 해양도 섭입한다 — 나이가 많아 차갑고 무거워진 쪽이 들어간다(일본, 마리아나).
+
+     ⚠ 예전에는 밀도가 같다고 null 을 돌려줘서 대륙충돌 그림이 그려졌다.
+     그런데 landform() 은 "해구 + 호상 열도" 라고 말해서, 오른쪽 패널과
+     화면이 정반대인 상태였다. 설명과 그림이 어긋나면 학생이 틀리게 배운다. */
+  assert.ok(run('ocean', 'ocean', 'convergent') !== null,
+    '해양판끼리도 섭입이 일어나야 한다(호상 열도)');
   // 대륙 + 대륙 → 아무도 안 들어간다. 솟아서 습곡 산맥이 된다.
   assert.strictEqual(run('cont', 'cont', 'convergent'), null, '대륙끼리는 섭입이 없어야 한다');
   // 발산·보존 경계에는 섭입이 없다
   assert.strictEqual(run('ocean', 'cont', 'divergent'), null, '발산 경계에 섭입이 있으면 안 된다');
   assert.strictEqual(run('ocean', 'cont', 'transform'), null, '보존 경계에 섭입이 있으면 안 된다');
+});
+
+test('판구조론 — 섭입 판정과 화면 지형 설명이 어긋나지 않는다', () => {
+  /* 오른쪽 패널이 "해구" 라고 하는데 그림에는 해구가 없으면 학생이 혼란스럽다.
+     실제로 그런 상태였다. 둘을 함께 꺼내 대조한다. */
+  const html = readRoot('simulation/plate-tectonics.html');
+  const kinds = html.match(/const KINDS = \{[\s\S]*?\n  \};/);
+  const subFn = html.match(/function subducting\(\)[\s\S]*?\n  \}/);
+  const landFn = html.match(/function landform\(\)[\s\S]*?\n  \}/);
+  assert.ok(kinds && subFn && landFn, '필요한 함수를 찾을 수 없다');
+
+  const run = (left, right) => new Function('S', `
+    ${kinds[0]}
+    const L = () => KINDS[S.left], R = () => KINDS[S.right];
+    ${subFn[0]}
+    ${landFn[0]}
+    return { sub: subducting(), land: landform() };
+  `)({ left, right, bnd: 'convergent' });
+
+  for (const [l, r] of [['ocean', 'cont'], ['ocean', 'ocean'], ['cont', 'cont']]) {
+    const { sub, land } = run(l, r);
+    const saysTrench = land.name.includes('해구');
+    assert.strictEqual(sub !== null, saysTrench,
+      `${l}+${r}: 섭입=${sub} 인데 지형은 "${land.name}" — 그림과 설명이 어긋난다`);
+    // 섭입이 있으면 진원이 깊어져야 한다(베니오프대)
+    if (sub !== null) {
+      assert.ok(land.depth.includes('700'),
+        `${l}+${r}: 섭입대인데 지진 깊이가 "${land.depth}" 다`);
+    }
+  }
 });
 
 test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {

@@ -267,7 +267,7 @@
         <div class="panel-body">
           <dl class="read">
             <div><dt>자석의 운동</dt><dd id="r-motion">가까워지는 중</dd></div>
-            <div><dt>자기선속 변화율 dΦ/dt</dt><dd id="r-flux">0.00 /s</dd></div>
+            <div><dt>자기선속 변화율 dΦ/dt</dt><dd id="r-flux">0.00 Wb/s</dd></div>
             <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
             <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
           </dl>
@@ -392,7 +392,7 @@
     // 위치 변화가 없으면 자기선속도 변하지 않는다. 잔류 보간값까지 제거해
     // 솔레노이드 바로 앞에서 멈춘 경우에도 전류가 흐르는 것처럼 보이지 않게 한다.
     if(near==='멈춤'){state.fluxRate=0;state.emf=0;}
-    el('r-motion').textContent=near;el('r-flux').textContent=(state.fluxRate>0?'+':'')+state.fluxRate.toFixed(3)+' /s';
+    el('r-motion').textContent=near;el('r-flux').textContent=(state.fluxRate>0?'+':'')+state.fluxRate.toFixed(3)+' Wb/s';
     const emf=state.emf;el('r-emf').textContent=Math.abs(emf)<.0005?'0.000 V':(emf>0?'+':'')+emf.toFixed(3)+' V';
     const current=Math.abs(emf)<.0005?'흐르지 않음':emf>0?'반시계 방향':'시계 방향';el('r-direction').textContent=current;
     el('r-direction').className=Math.abs(emf)<.0005?'zero':emf>0?'positive':'negative';

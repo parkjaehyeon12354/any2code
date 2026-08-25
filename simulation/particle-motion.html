@@ -405,7 +405,7 @@
   </div>
 
   <section class="analysis-panel" aria-labelledby="kmt-graph-title">
-    <div class="analysis-head"><h2 id="kmt-graph-title">속력 분포</h2><p>막대는 지금 이 순간 각 속력 구간에 있는 입자 수이고, 선은 맥스웰–볼츠만 분포입니다. 세로 점선이 평균 속력입니다.</p></div>
+    <div class="analysis-head"><h2 id="kmt-graph-title">속력 분포</h2><p>막대는 지금 이 순간 각 속력 구간에 있는 입자 수이고, 선은 맥스웰–볼츠만 분포입니다. 세로 점선이 평균 속력입니다. <strong>이 화면은 2차원 평면 모형이라 분포식이 f(v) ∝ v·exp(−v²/2a²)입니다</strong> — 교과서의 3차원 분포 f(v) ∝ v²·exp(−mv²/2kT)와 봉우리 모양이 조금 다릅니다. 온도가 오르면 봉우리가 오른쪽으로 옮겨가며 낮고 넓어진다는 성질은 3차원과 같습니다.</p></div>
     <div class="graph-wrap"><canvas id="speed-graph" aria-label="입자 속력 분포 그래프"></canvas></div>
   </section>
 
@@ -414,7 +414,7 @@
     <div class="formula-box">
       <p class="formula-main">½mv̄² = (3/2)kT, &nbsp;&nbsp; v<sub>rms</sub> = √(3kT/m)</p>
       <p>온도는 입자의 <strong>평균 운동에너지</strong>입니다. 온도를 두 배로 올려도 속력이 두 배가 되지는 않습니다 — 제곱근이 붙어 있어 약 1.41배가 됩니다. 슬라이더로 300 K에서 600 K로 올려 평균 속력을 직접 비교해 보세요.</p>
-      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>한 변이 L인 정육면체에 질량 m인 입자가 x축으로 v<sub>x</sub>로 움직인다고 합시다. 벽에 부딪혀 되튈 때 운동량 변화는 2mv<sub>x</sub>이고, 왕복에 걸리는 시간은 2L/v<sub>x</sub>입니다. 따라서 이 입자가 벽에 주는 평균 힘은 mv<sub>x</sub>²/L입니다.</p><p>입자 N개에 대해 더하고 면적 L²로 나누면 P = Nm⟨v<sub>x</sub>²⟩/L³이 됩니다. 방향이 특별할 이유가 없으므로 ⟨v<sub>x</sub>²⟩ = ⟨v²⟩/3이고, PV = (1/3)Nm⟨v²⟩입니다.</p><p>이것을 이상기체 상태방정식 PV = NkT와 견주면 (1/3)m⟨v²⟩ = kT, 즉 <strong>½m⟨v²⟩ = (3/2)kT</strong>를 얻습니다. 온도가 곧 평균 운동에너지라는 뜻입니다. 여기서 v<sub>rms</sub> = √(⟨v²⟩) = √(3kT/m)이 나옵니다.</p><p>같은 온도에서 질량이 크면 속력이 작아지는 것도 이 식에서 바로 보입니다. 수소(2 u)와 산소(32 u)는 질량이 16배 차이나므로 속력은 √16 = 4배 차이가 납니다.</p></div></details>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>한 변이 L인 정육면체에 질량 m인 입자가 x축으로 v<sub>x</sub>로 움직인다고 합시다. 벽에 부딪혀 되튈 때 운동량 변화는 2mv<sub>x</sub>이고, 왕복에 걸리는 시간은 2L/v<sub>x</sub>입니다. 따라서 이 입자가 벽에 주는 평균 힘은 mv<sub>x</sub>²/L입니다.</p><p>입자 N개에 대해 더하고 면적 L²로 나누면 P = Nm⟨v<sub>x</sub>²⟩/L³이 됩니다. 방향이 특별할 이유가 없으므로 ⟨v<sub>x</sub>²⟩ = ⟨v²⟩/3이고, PV = (1/3)Nm⟨v²⟩입니다.</p><p>이것을 이상기체 상태방정식 PV = NkT와 견주면 (1/3)m⟨v²⟩ = kT, 즉 <strong>½m⟨v²⟩ = (3/2)kT</strong>를 얻습니다. 온도가 곧 평균 운동에너지라는 뜻입니다. 여기서 v<sub>rms</sub> = √(⟨v²⟩) = √(3kT/m)이 나옵니다.</p><p>같은 온도에서 질량이 크면 속력이 작아지는 것도 이 식에서 바로 보입니다. 수소(2 u)와 산소(32 u)는 질량이 16배 차이나므로, <strong>같은 온도에서 수소가 산소보다 √16 = 4배 빠릅니다</strong>.</p></div></details>
     </div>
   </section>
 </main>

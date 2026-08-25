@@ -32,6 +32,12 @@
   --badge-ok-bg: rgba(61, 125, 81, .12);   --badge-ok-fg: #2f6640;
   --badge-bad-bg: rgba(189, 59, 59, .1);   --badge-bad-fg: #9c3030;
   --badge-wait-bg: rgba(217, 119, 6, .14); --badge-wait-fg: #8a5c08;
+  /* 과목 식별색 — 커뮤니티 글머리 점, 태그에 쓴다.
+     UI 요소라 배경 대비 3:1 이상이어야 한다. 라이트 값은 4.7~6.8:1. */
+  --subject-physics: #2f4bd6;
+  --subject-chem:    #c2410c;
+  --subject-bio:     #167a63;
+  --subject-earth:   #b45309;
   --warn-fg: #8a5c08;                      /* 본문 속 주의 문구 */
 
   /* Typography — 디스플레이는 Noto Serif KR 700 (한글+라틴을 한 서체가 커버,
@@ -94,6 +100,9 @@
     --badge-ok-bg: rgba(255, 255, 255, .10); --badge-ok-fg: #e6e6e6;
     --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;
     --badge-wait-bg: rgba(232, 165, 60, .16); --badge-wait-fg: #f0bc72;
+  /* 다크에서는 파랑이 배경에 묻힌다 — #2f4bd6 은 2.54:1 로 3:1 미달이었다.
+     밝은 파랑으로 올려 5.6:1 을 확보한다. 나머지는 다크에서도 3.3:1 이상이라 유지. */
+  --subject-physics: #6b8cff;
     --warn-fg: #f0bc72;
   }
 }
@@ -121,6 +130,9 @@
   --badge-ok-bg: rgba(255, 255, 255, .10); --badge-ok-fg: #e6e6e6;
   --badge-bad-bg: rgba(255, 138, 138, .14); --badge-bad-fg: #ff9d9d;
   --badge-wait-bg: rgba(232, 165, 60, .16); --badge-wait-fg: #f0bc72;
+  /* 다크에서는 파랑이 배경에 묻힌다 — #2f4bd6 은 2.54:1 로 3:1 미달이었다.
+     밝은 파랑으로 올려 5.6:1 을 확보한다. 나머지는 다크에서도 3.3:1 이상이라 유지. */
+  --subject-physics: #6b8cff;
   --warn-fg: #f0bc72;
 }
 

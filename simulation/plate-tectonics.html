@@ -521,9 +521,21 @@
      밀도가 큰 쪽이 들어간다. 같으면(대륙+대륙) 아무도 안 들어가고 솟는다. */
   function subducting() {
     if (S.bnd !== 'convergent') return null;
-    const a = L().density, b = R().density;
-    if (Math.abs(a - b) < 0.01) return null;        // 같은 종류 — 충돌
-    return a > b ? 'left' : 'right';
+    const a = L(), b = R();
+
+    /* 밀도가 다르면 무거운 쪽이 들어간다. */
+    if (Math.abs(a.density - b.density) > 0.01) return a.density > b.density ? 'left' : 'right';
+
+    /* 같은 밀도 — 여기서 갈린다.
+
+       ⚠ 예전에는 무조건 null(충돌)을 돌려줬다. 그러면 해양판끼리도 대륙충돌
+       그림이 나와서, 오른쪽 패널은 "해구 + 호상 열도" 라는데 화면에는 해구도
+       화산도 없는 습곡 산맥이 그려졌다. 설명과 그림이 정반대였다.
+
+       실제로는 해양판끼리 만나면 나이가 많아 차갑고 무거워진 쪽이 들어간다
+       (일본 열도, 마리아나 해구). 대륙판끼리만 아무도 못 들어가고 솟는다. */
+    if (a.id === 'ocean') return 'left';   // 왼쪽을 더 오래된 판으로 본다
+    return null;                            // 대륙 + 대륙 → 습곡 산맥
   }
 
   /* 지금 조건에서 생기는 지형 */
@@ -544,17 +556,17 @@
     if (S.bnd === 'transform') {
       return { name: '변환 단층', where: '산안드레아스 단층',
                why: '지각이 생기지도 사라지지도 않습니다. 쌓인 힘이 한꺼번에 풀리며 얕은 지진이 자주 납니다.',
-               volcano: '없음', depth: '얕음 (0~20 km)' };
+               volcano: '거의 없음', depth: '얕음 (0~20 km)' };
     }
 
     // 수렴 경계 — 밀도로 갈린다
     if (both('ocean', 'cont'))
-      return { name: '해구 + 습곡산맥 + 화산', where: '안데스 산맥, 페루-칠레 해구',
+      return { name: '해구 + 화산호', where: '안데스 산맥, 페루-칠레 해구',
                why: '무거운 해양판이 가벼운 대륙판 밑으로 들어갑니다. 들어가는 자리가 해구, 판이 끌고 간 물이 마그마를 만들어 대륙 쪽에 화산이 생깁니다.',
                volcano: '있음 (안산암질)', depth: '깊어짐 (0~700 km)' };
     if (a.id === 'ocean' && b.id === 'ocean')
       return { name: '해구 + 호상 열도', where: '일본 열도, 마리아나 해구',
-               why: '더 오래되고 차가운 판이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 섬들이 활처럼 늘어섭니다.',
+               why: '둘 다 해양판이면 나이가 많아 차갑고 무거워진 쪽이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 섬들이 활처럼 늘어섭니다.',
                volcano: '있음', depth: '깊어짐 (0~700 km)' };
     return { name: '습곡 산맥', where: '히말라야 산맥',
              why: '둘 다 가벼워 어느 쪽도 맨틀에 가라앉지 못합니다. 그래서 부딪힌 자리가 위로 솟습니다. 히말라야는 지금도 자라고 있습니다.',
@@ -905,9 +917,16 @@
   // ── 측정값 ──
   function readout() {
     const lf = landform();
-    // 실제 판 이동 속도는 연 수 cm 다
-    el('r-speed').textContent = (S.bnd === 'transform' ? 5.5 : S.bnd === 'divergent' ? 4.0 : 7.0).toFixed(1) + ' cm/년';
-    el('r-time').textContent = Math.round(t * 12) + '만 년';
+    /* 이동 속도와 경과 시간을 실제로 연결한다.
+
+       ⚠ 예전에는 속도가 하드코딩 상수였고 경과는 t*12 라, 학생이
+       "속도 × 시간 = 거리" 로 검산하면 화면의 지형 변화와 전혀 안 맞았다.
+       이제 경과 시간에서 누적 이동 거리를 계산해 함께 보여준다. */
+    const cmPerYear = S.bnd === 'transform' ? 5.5 : S.bnd === 'divergent' ? 4.0 : 7.0;
+    const manyears = t * 12;                      // 화면 1초 ≈ 12만 년
+    const km = cmPerYear * manyears * 10000 / 100000;   // cm/년 × 년 → km
+    el('r-speed').textContent = cmPerYear.toFixed(1) + ' cm/년';
+    el('r-time').textContent = Math.round(manyears) + '만 년 (약 ' + Math.round(km) + ' km 이동)';
     el('r-relief').textContent = lf.name.split(' + ')[0];
     el('r-depth').textContent = lf.depth;
     el('r-volcano').textContent = lf.volcano;
