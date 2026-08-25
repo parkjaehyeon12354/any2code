@@ -564,13 +564,21 @@
     ctx.fillStyle = '#9ce8a0'; ctx.textAlign = 'center';
     ctx.fillText(`바닥 상태 · r₀ = ${p.r0} pm`, eqX, pad.t + 14);
 
-    const fixedX = pad.l + 3, fixedY = sy(0);
+    const fixedRadius = Math.min(25, p.ra * .72);
+    const movingRadius = Math.min(28, p.rb * .72);
+    /* 고정 원자는 최저점 바로 왼쪽에 둔다. 움직이는 원자가 r₀에 도착하면
+       두 원의 가장자리가 맞닿아 안정한 결합 상태가 눈으로도 보인다. */
+    const fixedX = eqX - fixedRadius - movingRadius + 2, fixedY = eqY;
     const movingX = sx(S.r), movingY = sy(Math.max(uMin, U(S.r)));
-    drawAtom(fixedX, fixedY, Math.min(25, p.ra * .72), p.ca, true);
-    drawAtom(movingX, movingY, Math.min(28, p.rb * .72), p.cb, false);
+    if (!broken) {
+      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(fixedX, fixedY); ctx.lineTo(movingX, movingY); ctx.stroke();
+    }
+    drawAtom(fixedX, fixedY, fixedRadius, p.ca, true);
+    drawAtom(movingX, movingY, movingRadius, p.cb, false);
     ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.font = `600 ${W() < 600 ? 10 : 12}px system-ui`;
     ctx.textAlign = 'left'; ctx.fillText('고정 원자', fixedX + 18, fixedY - 22);
-    ctx.textAlign = 'center'; ctx.fillText(dragging ? '이동 중' : '움직이는 원자', movingX, movingY - Math.min(28, p.rb * .72) - 10);
+    ctx.textAlign = 'center'; ctx.fillText(dragging ? '이동 중' : '움직이는 원자', movingX, movingY - movingRadius - 10);
 
     if (!dragging && Math.abs(S.r - p.r0) >= 3 && !broken) {
       const dir = S.r > p.r0 ? -1 : 1, from = movingX + dir * 30, to = from + dir * 38;
