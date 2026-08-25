@@ -30,31 +30,31 @@
     },
     {
       "route": "/research",
-      "rewrite": "/research.html"
+      "rewrite": "/research/index.html"
     },
     {
       "route": "/research/topics",
-      "rewrite": "/research-topics.html"
+      "rewrite": "/research/topics.html"
     },
     {
       "route": "/research/hypothesis",
-      "rewrite": "/research-hypothesis.html"
+      "rewrite": "/research/hypothesis.html"
     },
     {
       "route": "/research/experiment",
-      "rewrite": "/research-experiment.html"
+      "rewrite": "/research/experiment.html"
     },
     {
       "route": "/research/record",
-      "rewrite": "/research-record.html"
+      "rewrite": "/research/record.html"
     },
     {
       "route": "/research/report",
-      "rewrite": "/research-report.html"
+      "rewrite": "/research/report.html"
     },
     {
       "route": "/research/examples",
-      "rewrite": "/research-examples.html"
+      "rewrite": "/research/examples.html"
     },
     {
       "route": "/science",
