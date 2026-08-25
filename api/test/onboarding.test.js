@@ -10,25 +10,41 @@ const fs = require('fs');
 const path = require('path');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
-const readRoot = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
+/* 저장소 루트의 프론트엔드 파일을 읽는다.
 
-/* 프론트엔드 파일을 이름으로 찾는다.
+   ⚠ 경로를 그대로 붙이지 않고 후보를 순서대로 본다.
 
-   경로를 하드코딩하면 파일이 옮겨질 때마다 테스트가 ENOENT 로 깨진다.
-   실제로 겪었다 — assets/ 폴더로 정리하면서 nav-user.js 를 참조하던 검사 두 개가
-   무너져 배포가 두 번 막혔다(32836034697, 32836870198). 테스트가 잡아야 할 것은
-   "파일이 어디 있는가" 가 아니라 "그 안의 로직이 맞는가" 다.
+   파일이 옮겨지면 ENOENT 로 깨지기 때문이다. 실제로 겪었다 — assets/ 폴더로
+   정리하면서 nav-user.js 를 참조하던 검사 두 개가 무너져 배포가 두 번 막혔다
+   (32836034697, 32836870198). 정작 검사하려던 로직은 멀쩡했는데, 파일 위치만
+   바뀌어도 빨간불이 켜지는 구조였다.
 
-   후보 경로를 순서대로 보고 먼저 있는 것을 쓴다. 다 없으면 그건 진짜 문제이므로
-   어디를 찾았는지 알려주며 실패시킨다. */
-function readAsset(name) {
-  const roots = ['assets/js', 'assets/css', 'assets', ''];
-  for (const r of roots) {
-    const p = path.join(__dirname, '../..', r, name);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
+   테스트가 확인해야 할 것은 "파일이 어디 있는가" 가 아니라 "그 안의 로직이
+   맞는가" 다. 그래서 이름으로 찾는다.
+
+   다 없으면 그건 진짜 문제이므로 어디를 찾았는지 알려주며 실패한다. */
+const ROOTS = ['', 'assets/js', 'assets/css', 'assets', 'pages'];
+
+function readRoot(name) {
+  // 경로가 붙어 있으면(simulation/index.html) 그대로도 한 번 본다
+  for (const r of ROOTS) {
+    const full = path.join(__dirname, '../..', r, name);
+    if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
   }
-  throw new Error(`${name} 를 찾을 수 없습니다. 찾아본 곳: ${roots.map((r) => r || '(루트)').join(', ')}`);
+  // 폴더가 바뀐 경우 — 파일 이름만 떼어 다시 찾는다
+  const base = path.basename(name);
+  if (base !== name) {
+    for (const r of ROOTS) {
+      const full = path.join(__dirname, '../..', r, base);
+      if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
+    }
+  }
+  throw new Error(
+    `${name} 를 찾을 수 없습니다. 찾아본 곳: ` +
+    ROOTS.map((r) => r || '(루트)').join(', ')
+  );
 }
+
 
 test('화학 시뮬레이션 두 개가 드롭다운에 연결돼 있다', () => {
   /* 시뮬레이션을 만들어놓고 링크를 안 걸면 아무도 못 찾는다.
@@ -226,7 +242,7 @@ test('DB 실패가 기존 사용자를 가입 화면에 가두지 않는다', ()
 
 test('화면 가드는 캐시가 아니라 서버 응답을 믿는다', () => {
   /* sessionStorage 를 손대는 것만으로 가입 절차를 건너뛸 수 있으면 안 된다. */
-  const src = readAsset('nav-user.js');
+  const src = readRoot('assets/js/nav-user.js');
   assert.ok(/user && user\.onboarded === false/.test(src),
     'Session.refresh() 의 결과(user)로 판정해야 한다');
   assert.ok(!/drawn\.onboarded/.test(src),
@@ -235,7 +251,7 @@ test('화면 가드는 캐시가 아니라 서버 응답을 믿는다', () => {
 
 test('약관·정책 문서는 가드에서 제외된다', () => {
   // 동의하려면 읽을 수 있어야 한다. 여기서 되돌리면 무한 루프다.
-  const src = readAsset('nav-user.js');
+  const src = readRoot('assets/js/nav-user.js');
   const list = src.match(/var free = \[([^\]]+)\]/);
   assert.ok(list, '제외 목록이 있어야 한다');
   for (const p of ['/welcome', '/terms', '/privacy']) {
