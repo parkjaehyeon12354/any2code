@@ -577,7 +577,6 @@
     drawAtom(fixedX, fixedY, fixedRadius, p.ca, true);
     drawAtom(movingX, movingY, movingRadius, p.cb, false);
     ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.font = `600 ${W() < 600 ? 10 : 12}px system-ui`;
-    ctx.textAlign = 'left'; ctx.fillText('고정 원자', fixedX + 18, fixedY - 22);
     ctx.textAlign = 'center'; ctx.fillText(dragging ? '이동 중' : '움직이는 원자', movingX, movingY - movingRadius - 10);
 
     if (!dragging && Math.abs(S.r - p.r0) >= 3 && !broken) {
