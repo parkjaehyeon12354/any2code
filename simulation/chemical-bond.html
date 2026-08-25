@@ -508,7 +508,7 @@
   // ── 그래프 위 원자 무대 ──
   function geometry() {
     const p = S.pair;
-    const pad = { l: W() < 600 ? 54 : 76, r: W() < 600 ? 18 : 34, t: 46, b: 58 };
+    const pad = { l: W() < 600 ? 42 : 54, r: 8, t: 38, b: 52 };
     const rMin = minR(), rMax = maxR();
     const uMin = -p.De * 1.16, uMax = p.De * 0.82;
     const w = W() - pad.l - pad.r, h = H() - pad.t - pad.b;
@@ -552,8 +552,7 @@
     let started = false;
     for (let i = 0; i <= 280; i++) {
       const r = rMin + (rMax - rMin) * i / 280, u = U(r);
-      if (u > uMax) { started = false; continue; }
-      const px = sx(r), py = sy(Math.max(uMin, u));
+      const px = sx(r), py = sy(Math.max(uMin, Math.min(uMax, u)));
       started ? ctx.lineTo(px, py) : ctx.moveTo(px, py); started = true;
     }
     ctx.stroke();
@@ -569,7 +568,10 @@
     /* 고정 원자는 최저점 바로 왼쪽에 둔다. 움직이는 원자가 r₀에 도착하면
        두 원의 가장자리가 맞닿아 안정한 결합 상태가 눈으로도 보인다. */
     const fixedX = eqX - fixedRadius - movingRadius + 2, fixedY = eqY;
-    const movingX = sx(S.r), movingY = sy(Math.max(uMin, U(S.r)));
+    const rawMovingX = sx(S.r);
+    const rawMovingY = sy(Math.max(uMin, Math.min(uMax, U(S.r))));
+    const movingX = Math.max(movingRadius + 4, Math.min(W() - movingRadius - 4, rawMovingX));
+    const movingY = Math.max(movingRadius + 4, Math.min(H() - movingRadius - 4, rawMovingY));
     if (!broken) {
       ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(fixedX, fixedY); ctx.lineTo(movingX, movingY); ctx.stroke();
