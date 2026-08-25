@@ -39,7 +39,7 @@
 
 /* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
 .layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
-.side-panels { display: grid; grid-template-columns: 1fr; gap: var(--sp-md); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
 .side-panels .panel { margin-bottom: 0; }
 .side-panels .panel:last-child { grid-column: auto; }
 
@@ -69,25 +69,25 @@
   background: var(--canvas);
   border: 1px solid var(--hairline);
   border-radius: var(--rounded-lg);
-  margin-bottom: var(--sp-lg);
+  margin-bottom: 10px;
   overflow: hidden;
 }
-.panel-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
 .panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
-.panel-body { padding: var(--sp-lg); }
+.panel-body { padding: 10px 16px; }
 
-.ctrl { margin-bottom: var(--sp-lg); }
+.ctrl { margin-bottom: 6px; }
 .ctrl:last-child { margin-bottom: 0; }
-.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 8px; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
 .ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .ctrl input[type="range"] {
   width: 100%;
-  height: 44px;                 /* 모바일 터치 타깃 하한 */
+  height: 30px;
   accent-color: var(--primary-active);
   cursor: pointer;
 }
-.ctrl .hint { display: block; margin-top: 2px; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
 
 /* 측정값 — 이 화면의 결론이 여기 있다 */
 .read { font-size: 13.5px; }
