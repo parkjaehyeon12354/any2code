@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="원자를 무작위로 붕괴시켜 반감기가 개별 수명이 아니라 집단 통계임을 확인하는 시뮬레이션">
-<title>방사능 — Ans2Quest</title>
+<title>개체와 생태계 — Ans2Quest</title>
+<meta name="description" content="천적을 없애면 그 종이 번성할까요? 포식자와 피식자는 서로를 밀고 당기며 끝없이 도는 고리를 이룹니다. 포식자 피크가 언제나 한 박자 늦는 이유를 직접 확인해 보세요.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script src="/assets/js/theme.js"></script>
 <style>
 /* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
 .sim {
@@ -266,8 +266,6 @@
 </style>
 </head>
 <body>
-
-<!-- ── Top Nav ── -->
 <header class="top-nav" id="top-nav">
   <div class="nav-inner">
     <a href="/" class="nav-brand">
@@ -418,31 +416,34 @@
 
 
 
+
+
 <main class="container sim">
-  <p class="crumb"><a href="/">홈</a> · 화학 · 방사능</p>
+  <p class="crumb"><a href="/">홈</a> · 생명과학 · 개체와 생태계</p>
 
   <div class="head">
-    <h1>방사능</h1>
-    <p>반감기가 두 번 지나면 <strong>다 없어질까요?</strong> 아닙니다 — <strong>1/4 이 남습니다.</strong>
-    절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이니까요.
-    더 중요한 건 <strong>어느 원자가 언제 터질지는 아무도 모른다</strong>는 점입니다.
-    원자 수를 줄여 보세요 — 곡선이 들쭉날쭉해집니다.</p>
+    <h1>개체와 생태계</h1>
+    <p>늑대를 없애면 사슴이 <strong>계속 늘어날까요?</strong> 아닙니다.
+    포식자가 늘면 피식자가 줄고, 그래서 <strong>포식자도 굶어 줄고</strong>,
+    그러면 피식자가 다시 회복됩니다.
+    <strong>끝나지 않고 도는 고리</strong>입니다 —
+    포식자 피크는 언제나 피식자 피크보다 <strong>한 박자 늦게</strong> 옵니다.</p>
   </div>
 
   <div class="layout">
     <div class="side-panels">
       <div class="stage">
-        <canvas id="canvas" aria-label="무작위로 붕괴하는 방사성 원자들"></canvas>
+        <canvas id="canvas" aria-label="초원에서 피식자와 포식자의 수가 번갈아 오르내리는 모습"></canvas>
         <div class="stage-foot">
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
-          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
       <div class="legend">
-        <span><i style="background:#7bdff2"></i>아직 남은 원자</span>
-        <span><i style="background:#ffd166"></i>지금 붕괴하는 중</span>
-        <span><i style="background:#4a5464"></i>이미 붕괴한 자리</span>
+        <span><i style="background:#7bdff2"></i>피식자 (초식동물)</span>
+        <span><i style="background:#f4a261"></i>포식자 (육식동물)</span>
+        <span><i style="background:#ffd166"></i>사냥이 일어난 순간</span>
       </div>
     </div>
 
@@ -452,46 +453,46 @@
         <div class="panel-body">
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="natoms">원자 수</label>
-              <output id="natoms-out">400개</output>
+              <label for="pred0">포식자 수</label>
+              <output id="pred0-out">25 마리</output>
             </div>
-            <input type="range" id="natoms" min="10" max="2000" step="10" value="400">
-            <span class="hint"><strong>20개로 줄여 보세요.</strong> 곡선이 계단처럼 들쭉날쭉해집니다.
-            2000개로 늘리면 매끄러워집니다 — <strong>반감기는 개별 원자의 수명이 아니라
-            집단의 통계</strong>이기 때문입니다.</span>
+            <input type="range" id="pred0" min="0" max="60" step="1" value="25">
+            <span class="hint"><strong>0 으로 내려 보세요.</strong> 천적이 사라지면
+            피식자가 끝없이 불어납니다 — 현실에서는 결국 먹이가 바닥나 무너집니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="half">반감기</label>
-              <output id="half-out">6.0초</output>
+              <label for="prey0">피식자 수</label>
+              <output id="prey0-out">25 마리</output>
             </div>
-            <input type="range" id="half" min="2" max="20" step="0.5" value="6">
-            <span class="hint">화면에서만 쓰는 시간입니다. 실제 핵종은 아래 상황 버튼에서 볼 수 있습니다.</span>
+            <input type="range" id="prey0" min="2" max="60" step="1" value="25">
+            <span class="hint">시작 마릿수입니다. 어디서 시작하든 같은 고리를 돕니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="speed">재생 속도</label>
-              <output id="speed-out">1.0배</output>
+              <label for="attack">사냥 성공률</label>
+              <output id="attack-out">0.020</output>
             </div>
-            <input type="range" id="speed" min="0.25" max="4" step="0.25" value="1">
+            <input type="range" id="attack" min="0.008" max="0.05" step="0.001" value="0.02">
+            <span class="hint">포식자 한 마리가 얼마나 잘 잡는가. 올리면 진동이 사나워집니다.</span>
           </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>실제 핵종으로 보기</h2></div>
+        <div class="panel-head"><h2>상황 고르기</h2></div>
         <div class="panel-body">
           <div class="chips" id="presets">
-            <button type="button" data-n="400" data-h="6" data-iso="c14" aria-pressed="true">
-              탄소-14<small>5,730년 · 연대 측정</small></button>
-            <button type="button" data-n="400" data-h="6" data-iso="i131">
-              요오드-131<small>8.02일 · 의료용</small></button>
-            <button type="button" data-n="400" data-h="6" data-iso="cs137">
-              세슘-137<small>30.17년 · 원전 사고</small></button>
-            <button type="button" data-n="20" data-h="6" data-iso="c14">
-              원자 20개만<small>들쭉날쭉해집니다</small></button>
+            <button type="button" data-n="25" data-p="25" data-a="0.02" aria-pressed="true">
+              평범한 초원<small>고리가 도는 기본 모습</small></button>
+            <button type="button" data-n="25" data-p="50" data-a="0.02">
+              늑대를 풀었다<small>포식자 급증 → 먹이 급감 → 늑대도 굶음</small></button>
+            <button type="button" data-n="25" data-p="0" data-a="0.02">
+              천적을 없앴다<small>정말 계속 늘어날까</small></button>
+            <button type="button" data-n="25" data-p="25" data-a="0.045">
+              사냥꾼이 유능하다<small>진폭이 커지고 붕괴가 아슬아슬</small></button>
           </div>
         </div>
       </div>
@@ -500,22 +501,22 @@
         <div class="panel-head"><h2>측정</h2></div>
         <div class="panel-body">
           <dl class="read">
-            <div><dt>남은 원자</dt><dd id="r-alive">—</dd></div>
-            <div><dt>지난 반감기 횟수</dt><dd id="r-halves">—</dd></div>
-            <div><dt>이론값 (1/2)ⁿ</dt><dd id="r-theory">—</dd></div>
-            <div><dt>실제 남은 비율</dt><dd id="r-actual">—</dd></div>
-            <div><dt>이론과의 차이</dt><dd id="r-gap" class="gap">—</dd></div>
+            <div><dt>피식자 N</dt><dd id="r-n">—</dd></div>
+            <div><dt>포식자 P</dt><dd id="r-p">—</dd></div>
+            <div><dt>한 바퀴 도는 시간</dt><dd id="r-period">—</dd></div>
+            <div><dt>포식자가 뒤따르는 간격</dt><dd id="r-lag">—</dd></div>
+            <div><dt>지난 사냥</dt><dd id="r-kills" class="gap">—</dd></div>
           </dl>
           <p class="note" id="note"></p>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>반감기가 지날 때마다</h2></div>
+        <div class="panel-head"><h2>균형점</h2></div>
         <div class="panel-body">
           <div class="stat-row">
-            <dl class="stat"><dt>2회 지나면</dt><dd id="s-two">25%</dd></dl>
-            <dl class="stat"><dt>10회 지나도</dt><dd id="s-ten">0.098%</dd></dl>
+            <dl class="stat"><dt>피식자가 멈추는 수</dt><dd id="s-nstar">—</dd></dl>
+            <dl class="stat"><dt>포식자가 멈추는 수</dt><dd id="s-pstar">—</dd></dl>
           </div>
           <div class="verdict" id="verdict"></div>
         </div>
@@ -537,19 +538,20 @@
   </div>
 
   <section class="analysis-panel" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">개별 원자는 무작위, 집단은 규칙적</h2><p>위쪽은 원자 <strong>여덟 개를 골라</strong> 각각 언제 터졌는지 표시한 것입니다 — 아무 규칙이 없습니다. 아래쪽은 <strong>전체 집단</strong>이고, 가로축은 시간이 아니라 <strong>지나간 반감기 횟수</strong>입니다. 개별은 예측할 수 없지만 집단은 (1/2)ⁿ 을 따릅니다. 원자 수를 줄이면 점들이 회색 이론선에서 벗어납니다.</p></div>
-    <div class="graph-wrap"><canvas id="decay-graph" aria-label="개별 원자의 붕괴 시점과 집단의 감소"></canvas></div>
+    <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>
+    <div class="graph-wrap"><canvas id="phase-graph" aria-label="피식자와 포식자 수를 두 축으로 한 궤적"></canvas></div>
   </section>
 
   <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">반감기는 예언이 아니라 통계다</h2><p>동전 던지기와 같은 원리입니다.</p></div>
+    <div class="analysis-head"><h2 id="formula-title">두 줄이면 끝난다</h2><p>이 복잡한 고리가 딱 두 식에서 나옵니다.</p></div>
     <div class="formula-box">
-      <p class="formula-main">N = N₀ · (1/2)ⁿ &nbsp;&nbsp;(n = 지난 반감기 횟수) &nbsp;&nbsp;|&nbsp;&nbsp; N = N₀ · e<sup>−λt</sup> &nbsp;&nbsp;|&nbsp;&nbsp; λ = ln2 ÷ T½</p>
-      <p>반감기는 <strong>절반씩 곱해 나가는</strong> 것입니다. 두 번 지나면 ½ × ½ = ¼ 이 남고, 세 번이면 ⅛ 입니다. 아무리 여러 번 지나도 <strong>0 이 되지는 않습니다</strong> — 다만 아주 작아질 뿐입니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>개별 원자는 나이를 먹지 않습니다.</strong> 방금 만들어진 원자든 100만 년 된 원자든, 앞으로 1초 안에 붕괴할 확률이 <strong>완전히 똑같습니다</strong>. 원자에는 시계도 수명도 없습니다. 어느 것이 언제 터질지는 원리적으로 예측할 수 없고, 이것은 측정 기술의 한계가 아니라 자연의 근본 성질입니다.</p><p><strong>그런데 집단은 놀랍도록 규칙적입니다.</strong> 원자 하나하나는 완전히 무작위인데, 수억 개를 모아 놓으면 정확히 지수 곡선을 따라 줄어듭니다. 동전 하나를 던지면 앞뒤를 알 수 없지만 만 번 던지면 거의 정확히 절반이 앞면인 것과 같습니다. 이것을 <strong>큰 수의 법칙</strong>이라 합니다. 위 화면에서 원자 수를 20개로 줄이면 곡선이 들쭉날쭉해지는 것이 그 증거입니다.</p><p><strong>반감기는 아무것도 바꿀 수 없습니다.</strong> 화학 반응은 온도를 올리거나 촉매를 넣으면 빨라지지만, 핵붕괴는 그런 것에 전혀 반응하지 않습니다. 원자핵 안에서 일어나는 일이라 바깥의 온도·압력·화학 결합 상태와 무관하기 때문입니다. 그래서 방사성 폐기물은 <strong>기다리는 것 말고는 방법이 없습니다.</strong> 세슘-137 이 1000분의 1 로 줄려면 반감기 10번, 약 302년이 걸립니다.</p><p><strong>탄소 연대 측정에는 한계가 있습니다.</strong> 탄소-14 의 반감기는 5730년입니다. 5만 년이 지나면 처음의 0.24% 밖에 남지 않아 측정이 사실상 불가능해집니다. 그래서 공룡 화석(6600만 년)은 탄소로 잴 수 없습니다 — 반감기가 1만 번 넘게 지나 남은 것이 없기 때문입니다. 공룡 화석에는 우라늄-납처럼 반감기가 수십억 년인 방법을 씁니다.</p><p><strong>방사능과 방사선은 다른 말입니다.</strong> 방사능은 원자핵이 붕괴하며 방사선을 내는 <strong>성질이나 능력</strong>이고, 방사선은 그때 실제로 <strong>튀어나오는 것</strong>(알파선·베타선·감마선)입니다. "이 물질은 방사능이 있다"는 맞는 말이지만 "방사능이 날아온다"는 어색합니다. 날아오는 것은 방사선입니다.</p></div></details>
+      <p class="formula-main">dN/dt = <strong>rN</strong> − <strong>aNP</strong> &nbsp;&nbsp;|&nbsp;&nbsp; dP/dt = <strong>eaNP</strong> − <strong>mP</strong></p>
+      <p>피식자는 스스로 <strong>늘고(rN)</strong> 잡아먹혀 <strong>줄어듭니다(aNP)</strong>. 포식자는 먹은 만큼 <strong>늘고(eaNP)</strong> 저절로 <strong>죽습니다(mP)</strong>. 둘 다 멈추는 지점이 균형점인데, <strong>피식자 수는 포식자 쪽 상수로만</strong>, <strong>포식자 수는 피식자 쪽 상수로만</strong> 정해집니다 — 서로 엇갈려 있습니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>한 방향으로만 읽으면 틀립니다.</strong> &quot;포식자가 늘면 피식자가 준다&quot;까지는 맞습니다. 그런데 거기서 멈추면 안 됩니다. 피식자가 줄면 포식자는 먹을 게 없어 굶어 죽고, 포식자가 줄면 피식자는 다시 늘어납니다. 원인과 결과가 <strong>고리를 이루어</strong> 서로를 밀고 당깁니다.</p><p><strong>포식자는 항상 한 박자 늦습니다.</strong> 피식자가 가장 많은 순간에 포식자가 가장 많은 게 아닙니다. 먹이가 넘쳐야 새끼를 많이 낳고, 그 새끼가 자라야 수가 늘기 때문에 <strong>시간이 걸립니다.</strong> 이 화면에서는 한 바퀴의 <strong>5분의 1</strong> 만큼 뒤처집니다. 실제 캐나다 숲의 눈신토끼와 스라소니 모피 거래 기록에서도 <strong>약 10년 주기</strong>로 같은 어긋남이 관찰됐습니다.</p><p><strong>천적을 없애면 어떻게 될까요.</strong> 이 모형에서는 피식자가 끝없이 늘어납니다. 하지만 현실에는 먹을 풀의 양이라는 한계가 있습니다. 1900년대 초 미국 카이밥 고원에서 사슴을 보호하려 늑대와 퓨마를 없앴더니, 사슴이 4천 마리에서 10만 마리까지 폭증했다가 <strong>풀이 바닥나 굶어 죽으며 도로 1만 마리로 무너졌습니다.</strong> 포식자는 피식자의 적이면서 동시에 <strong>개체수를 지켜주는 장치</strong>였던 셈입니다.</p><p><strong>균형점이 엇갈려 있는 게 이상합니다.</strong> 피식자가 멈추는 수는 포식자의 사망률과 사냥 성공률로 정해지고, 포식자가 멈추는 수는 피식자의 번식률로 정해집니다. 그래서 <strong>피식자에게 좋은 일(번식률 상승)을 해주면 정작 늘어나는 건 포식자</strong>입니다. 생태계에 손을 대기 어려운 이유가 여기 있습니다 — 직관과 결과가 자주 어긋납니다.</p></div></details>
     </div>
   </section>
 </main>
+
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>
@@ -559,71 +561,108 @@
 (function () {
   const el = (id) => document.getElementById(id);
 
-  /* ── 방사능: 반감기는 예언이 아니라 통계다 ──
+  /* ── 개체와 생태계: 천적을 없애면 정말 번성할까 ──
 
-     "반감기가 두 번 지나면 다 없어진다" 와
-     "개별 원자는 수명이 정해져 있다" 를 함께 겨냥한다.
+     로트카-볼테라. 설계는 Solar 4 Pro, 검증은 직접 계산으로 대조했다.
+       dN/dt = rN − aNP
+       dP/dt = eaNP − mP
+     균형점 N* = m/(ea), P* = r/a
 
-     핵심은 원자마다 '남은 수명 바' 를 절대 그리지 않는 것이다(Solar 지적).
-     그걸 그리는 순간 "원자에 시계가 있다" 는 오개념이 오히려 굳는다.
-     대신 매 순간 같은 확률로 독립 판정한다 — 원자는 나이를 먹지 않는다.
+     ⚠ Solar 는 로지스틱 항 rN(1−N/K) 을 넣자고 했고 검증값 6건은 전부 정확했다.
+        그런데 그 상수(r=.5 K=100 a=.08)로 돌려 보니 5초 만에 N 이 40→0.26 으로
+        붕괴하고 진동이 감쇠해, 정작 보여줄 '주기'가 화면에서 사라졌다.
+        숫자는 맞지만 화면이 죽는다. 순수 LV(K 없음)로 바꿨다.
+     확인한 값: N*=13.33, P*=25, 주기 32.17, 포식자 지연 6.43(=주기의 0.200배) */
 
-     그래프도 화학 반응의 시간-농도 곡선과 겹치지 않게
-     '개별 원자 붕괴 시점(무작위 점)' 과 '집단 비율(반감기 횟수 축)' 을 나눠 그린다.
+  const r = 0.5;    // 피식자 번식률
+  const e = 0.3;    // 먹은 것이 새끼가 되는 비율
+  const m = 0.08;   // 포식자 자연사망률
 
-     검증(직접 계산): (1/2)^n → 1회 50%, 2회 25%, 3회 12.5%, 10회 0.098%.
-     통계 요동 √(Np(1−p))/Np: N=20 → 22.4%, N=2000 → 2.2%. */
-
-  const ISO = {
-    c14:  { name: '탄소-14',    half: 5730,  unit: '년', note: '연대 측정에 씁니다' },
-    i131: { name: '요오드-131', half: 8.02,  unit: '일', note: '갑상선 치료에 씁니다' },
-    cs137:{ name: '세슘-137',   half: 30.17, unit: '년', note: '원전 사고 때 문제가 됩니다' }
-  };
-
-  const S = { natoms: 400, half: 6, speed: 1, iso: 'c14' };
+  const S = { prey0: 25, pred0: 25, attack: 0.02 };
+  let N = 25, P = 25, t = 0;
   let running = true;
-  let t = 0;                    // 화면 시간 (초)
-  let atoms = [];               // {x, y, alive, deadAt, flash}
-  let tracked = [];             // 개별 추적용 원자 8개의 index
-  let samples = [];             // {n(반감기 횟수), frac}
+  let trail = [];          // 위상평면 궤적
+  let kills = 0, killFlash = [];
+  let peaksN = [], peaksP = [];
+  let prevN = 0, prevP = 0, prevdN = 0, prevdP = 0;
 
   const canvas = el('canvas');
   const ctx = canvas.getContext('2d');
-  const graph = el('decay-graph');
+  const graph = el('phase-graph');
   const gctx = graph.getContext('2d');
   let DPR = 1;
 
-  const halves = () => t / S.half;                    // 지난 반감기 횟수
-  const theory = () => Math.pow(0.5, halves());
-  const aliveCount = () => atoms.filter((a) => a.alive).length;
-  const actualFrac = () => atoms.length ? aliveCount() / atoms.length : 0;
+  const nStar = () => m / (e * S.attack);
+  const pStar = () => r / S.attack;
 
-  function seed() {
-    atoms = [];
-    for (let i = 0; i < S.natoms; i++) {
-      atoms.push({ x: Math.random(), y: Math.random(), alive: true, deadAt: null, flash: 0 });
-    }
-    // 개별 추적 8개 — 골고루 흩어진 것으로
-    tracked = [];
-    const step = Math.max(1, Math.floor(S.natoms / 8));
-    for (let i = 0; i < 8 && i * step < S.natoms; i++) tracked.push(i * step);
-    t = 0;
-    samples = [{ n: 0, frac: 1 }];
+  function reseed() {
+    N = S.prey0; P = S.pred0; t = 0;
+    trail = []; kills = 0; killFlash = [];
+    peaksN = []; peaksP = [];
+    prevN = N; prevP = P; prevdN = 0; prevdP = 0;
+    seedDots();
   }
 
-  /* 붕괴 판정 — 원자는 나이를 먹지 않는다.
-     dt 동안 붕괴할 확률은 1 − (1/2)^(dt/T½) 로, 지금까지 얼마나 살았든 똑같다.
-     이게 "메모리가 없다" 는 뜻이고, 반감기가 통계인 이유다. */
-  function decayStep(dt) {
-    const pDecay = 1 - Math.pow(0.5, dt / S.half);
-    atoms.forEach((a) => {
-      if (!a.alive) { if (a.flash > 0) a.flash = Math.max(0, a.flash - dt * 2.4); return; }
-      if (Math.random() < pDecay) {
-        a.alive = false;
-        a.deadAt = t;
-        a.flash = 1;
-      }
-    });
+  // 화면의 점들 — 실제 마릿수와 별개로 위치만 관리한다
+  let dots = [];
+  function seedDots() {
+    dots = [];
+    for (let i = 0; i < 90; i++) {
+      dots.push({
+        x: Math.random(), y: Math.random(),
+        vx: (Math.random() - 0.5), vy: (Math.random() - 0.5),
+        kind: i < 45 ? 'N' : 'P'
+      });
+    }
+  }
+
+  function step(dt) {
+    const a = S.attack;
+    const dN = r * N - a * N * P;
+    const dP = e * a * N * P - m * P;
+
+    // 피크 감지 — 기울기 부호가 +에서 −로 바뀌는 순간
+    if (prevdN > 0 && dN <= 0 && t > 1) peaksN.push(t);
+    if (prevdP > 0 && dP <= 0 && t > 1) peaksP.push(t);
+    if (peaksN.length > 6) peaksN.shift();
+    if (peaksP.length > 6) peaksP.shift();
+
+    prevdN = dN; prevdP = dP;
+    N = Math.max(0, N + dN * dt);
+    P = Math.max(0, P + dP * dt);
+    t += dt;
+
+    // 사냥 사건 — aNP 에 비례
+    const rate = a * N * P;
+    let ev = rate * dt * 0.8;
+    let whole = Math.floor(ev);
+    if (Math.random() < ev - whole) whole++;
+    for (let k = 0; k < Math.min(whole, 4); k++) {
+      kills++;
+      killFlash.push({ x: Math.random(), y: Math.random(), life: 1 });
+    }
+    if (killFlash.length > 24) killFlash.splice(0, killFlash.length - 24);
+
+    trail.push({ n: N, p: P });
+    if (trail.length > 3000) trail.shift();
+  }
+
+  function period() {
+    if (peaksN.length < 2) return 0;
+    return peaksN[peaksN.length - 1] - peaksN[peaksN.length - 2];
+  }
+  function lag() {
+    if (!peaksN.length) return 0;
+    const lastN = peaksN[peaksN.length - 1];
+    const after = peaksP.filter((x) => x > lastN);
+    if (after.length) return after[0] - lastN;
+    // 아직 안 왔으면 직전 쌍으로
+    for (let i = peaksN.length - 2; i >= 0; i--) {
+      const nn = peaksN[i];
+      const aa = peaksP.filter((x) => x > nn);
+      if (aa.length) return aa[0] - nn;
+    }
+    return 0;
   }
 
   // ── 무대 ──
@@ -631,71 +670,76 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = canvas.width / DPR, h = canvas.height / DPR;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f141c';
+
+    // 초원 — 피식자가 많으면 풀이 짧아진다(뜯어먹힘)
+    const graze = Math.min(1, N / 60);
+    ctx.fillStyle = `rgb(${Math.round(22 + 10 * graze)}, ${Math.round(38 - 12 * graze)}, ${Math.round(28 - 6 * graze)})`;
     ctx.fillRect(0, 0, w, h);
 
-    const pad = 14, top = 44;
+    const pad = 14, top = 56;
     const iw = w - pad * 2, ih = h - top - pad - 22;
 
-    // 원자 — 크기는 개수에 맞춰 조절
-    const r = Math.max(1.8, Math.min(7, 90 / Math.sqrt(S.natoms)));
-    atoms.forEach((a) => {
-      const px = pad + a.x * iw, py = top + a.y * ih;
-      if (a.alive) {
+    // 실제 마릿수만큼만 점을 보여준다 — 수가 눈에 보여야 한다
+    const showN = Math.min(45, Math.round(N * 45 / 60));
+    const showP = Math.min(45, Math.round(P * 45 / 60));
+
+    killFlash.forEach((f) => {
+      if (f.life <= 0) return;
+      ctx.fillStyle = `rgba(255,209,102,${f.life * 0.55})`;
+      ctx.beginPath();
+      ctx.arc(pad + f.x * iw, top + f.y * ih, 16 * (1.4 - f.life), 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    let ni = 0, pi = 0;
+    dots.forEach((d) => {
+      const px = pad + d.x * iw, py = top + d.y * ih;
+      if (d.kind === 'N') {
+        if (ni++ >= showN) return;
         ctx.fillStyle = '#7bdff2';
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
       } else {
-        if (a.flash > 0) {
-          ctx.strokeStyle = `rgba(255,209,102,${a.flash})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(px, py, r + (1 - a.flash) * 16, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.fillStyle = `rgba(255,209,102,${a.flash * 0.9})`;
-          ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-        } else {
-          ctx.fillStyle = 'rgba(74,84,100,.55)';
-          ctx.beginPath(); ctx.arc(px, py, r * 0.72, 0, Math.PI * 2); ctx.fill();
-        }
+        if (pi++ >= showP) return;
+        ctx.fillStyle = '#f4a261';
+        ctx.beginPath();
+        ctx.moveTo(px, py - 7); ctx.lineTo(px + 6.5, py + 5); ctx.lineTo(px - 6.5, py + 5);
+        ctx.closePath(); ctx.fill();
       }
     });
 
-    // 상단 진행 막대
-    const barY = 16, barH = 16;
-    const frac = actualFrac();
-    ctx.fillStyle = 'rgba(255,255,255,.08)';
-    ctx.fillRect(pad, barY, iw, barH);
-    ctx.fillStyle = '#7bdff2';
-    ctx.fillRect(pad, barY, iw * frac, barH);
-    // 반감기 눈금
-    for (let k = 1; k <= 4; k++) {
-      const x = pad + iw * Math.pow(0.5, k);
-      ctx.strokeStyle = 'rgba(255,255,255,.45)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x, barY); ctx.lineTo(x, barY + barH); ctx.stroke();
-      ctx.font = '9.5px ui-sans-serif, system-ui';
-      ctx.fillStyle = 'rgba(255,255,255,.5)';
-      ctx.textAlign = 'center';
-      ctx.fillText(k + '회', x, barY - 3);
-    }
-    ctx.font = '700 12px ui-sans-serif, system-ui';
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${aliveCount()} / ${atoms.length} 남음`, pad + 5, barY + 12);
+    // 상단 막대 — 두 수를 나란히
+    const barY = 18, barH = 12;
+    const drawBar = (val, color, label, yy) => {
+      const bw = Math.min(1, val / 60) * (iw - 120);
+      ctx.fillStyle = 'rgba(255,255,255,.12)';
+      ctx.fillRect(pad + 96, yy, iw - 120, barH);
+      ctx.fillStyle = color;
+      ctx.fillRect(pad + 96, yy, bw, barH);
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.font = '600 11.5px ui-sans-serif, system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, pad, yy + 10);
+      ctx.fillText(val.toFixed(1), pad + 96 + (iw - 120) + 8, yy + 10);
+    };
+    drawBar(N, '#7bdff2', '피식자', barY - 4);
+    drawBar(P, '#f4a261', '포식자', barY + 14);
 
     // 하단
-    const iso = ISO[S.iso];
     ctx.textAlign = 'center';
-    ctx.font = '600 12px ui-sans-serif, system-ui';
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.fillText(
-      `${iso.name} · 반감기 ${iso.half.toLocaleString()}${iso.unit} · ` +
-      `지금 ${halves().toFixed(2)} 번 지남`,
-      w / 2, h - 8
-    );
+    ctx.font = '600 12.5px ui-sans-serif, system-ui';
+    if (S.pred0 === 0) {
+      ctx.fillStyle = '#ffd166';
+      ctx.fillText('천적이 없습니다 — 피식자가 끝없이 불어납니다', w / 2, h - 8);
+    } else if (N < 3) {
+      ctx.fillStyle = '#ffb4a2';
+      ctx.fillText('피식자가 거의 사라졌습니다 — 이제 포식자가 굶습니다', w / 2, h - 8);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,.6)';
+      ctx.fillText(`${t.toFixed(0)}년째 · 피식자 ${N.toFixed(0)} · 포식자 ${P.toFixed(0)}`, w / 2, h - 8);
+    }
   }
 
-  // ── 그래프: 개별 vs 집단 ──
+  // ── 위상평면 그래프 ──
   function drawGraph() {
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
@@ -703,177 +747,154 @@
     gctx.fillStyle = '#f7f7f5';
     gctx.fillRect(0, 0, w, h);
 
-    const pad = { l: 58, r: 20, t: 18, b: 36 };
-    const NMAX = 5;                                  // 반감기 5회까지
-    const gw = w - pad.l - pad.r;
-    const topH = h * 0.30, botH = h - pad.t - pad.b - topH - 16;
-    const X = (n) => pad.l + Math.min(1, n / NMAX) * gw;
+    const pad = { l: 62, r: 26, t: 22, b: 42 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
 
-    // ── 위: 개별 원자 8개가 언제 터졌나 ──
-    gctx.font = '600 11.5px ui-sans-serif, system-ui';
-    gctx.fillStyle = '#5a6472';
-    gctx.textAlign = 'left';
-    gctx.fillText('원자 여덟 개를 따라가 보면 — 아무 규칙이 없습니다', pad.l, pad.t + 10);
+    let maxN = 60, maxP = 60;
+    trail.forEach((q) => { maxN = Math.max(maxN, q.n); maxP = Math.max(maxP, q.p); });
+    maxN *= 1.08; maxP *= 1.08;
 
-    tracked.forEach((idx, row) => {
-      const y = pad.t + 20 + row * (topH - 20) / 8;
-      const a = atoms[idx];
-      // 살아있는 구간
-      const endN = a && !a.alive ? a.deadAt / S.half : Math.min(NMAX, halves());
-      gctx.strokeStyle = 'rgba(123,223,242,.85)';
-      gctx.lineWidth = 2.4;
-      gctx.beginPath();
-      gctx.moveTo(X(0), y);
-      gctx.lineTo(X(Math.min(NMAX, endN)), y);
-      gctx.stroke();
-      // 붕괴 시점
-      if (a && !a.alive && a.deadAt / S.half <= NMAX) {
-        const bx = X(a.deadAt / S.half);
-        gctx.fillStyle = '#e0a03a';
-        gctx.beginPath(); gctx.arc(bx, y, 4, 0, Math.PI * 2); gctx.fill();
-      }
-    });
-
-    // ── 아래: 집단 비율 (반감기 횟수 축) ──
-    const by0 = pad.t + topH + 16;
-    const Y = (f) => by0 + botH - f * botH;
+    const X = (n) => pad.l + Math.min(1, n / maxN) * gw;
+    const Y = (p) => pad.t + gh - Math.min(1, p / maxP) * gh;
 
     gctx.strokeStyle = 'rgba(128,128,128,.2)';
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
     gctx.fillStyle = 'rgba(110,110,110,.95)';
     gctx.textAlign = 'center';
-    for (let n = 0; n <= NMAX; n++) {
-      gctx.beginPath(); gctx.moveTo(X(n), by0); gctx.lineTo(X(n), by0 + botH); gctx.stroke();
-      gctx.fillText(n + '회', X(n), h - 16);
+    for (let i = 0; i <= 4; i++) {
+      const n = maxN * i / 4;
+      gctx.beginPath(); gctx.moveTo(X(n), pad.t); gctx.lineTo(X(n), pad.t + gh); gctx.stroke();
+      gctx.fillText(n.toFixed(0), X(n), h - 18);
     }
-    gctx.fillText('지나간 반감기 횟수', pad.l + gw / 2, h - 3);
+    gctx.fillText('피식자 수 →', pad.l + gw / 2, h - 4);
     gctx.textAlign = 'right';
-    [[1, '100%'], [0.5, '50%'], [0.25, '25%'], [0.125, '12.5%'], [0, '0']].forEach(([f, lab]) => {
-      gctx.beginPath(); gctx.moveTo(pad.l, Y(f)); gctx.lineTo(pad.l + gw, Y(f)); gctx.stroke();
-      gctx.fillText(lab, pad.l - 8, Y(f) + 4);
-    });
-
-    // 이론 곡선 (1/2)^n
-    gctx.beginPath();
-    for (let i = 0; i <= 150; i++) {
-      const n = i / 150 * NMAX;
-      const xx = X(n), yy = Y(Math.pow(0.5, n));
-      i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+    for (let i = 0; i <= 4; i++) {
+      const p = maxP * i / 4;
+      gctx.beginPath(); gctx.moveTo(pad.l, Y(p)); gctx.lineTo(pad.l + gw, Y(p)); gctx.stroke();
+      gctx.fillText(p.toFixed(0), pad.l - 8, Y(p) + 4);
     }
-    gctx.strokeStyle = 'rgba(120,120,130,.8)';
-    gctx.lineWidth = 2;
-    gctx.setLineDash([6, 4]); gctx.stroke(); gctx.setLineDash([]);
+    gctx.save();
+    gctx.translate(16, pad.t + gh / 2); gctx.rotate(-Math.PI / 2);
+    gctx.textAlign = 'center'; gctx.fillText('포식자 수 →', 0, 0);
+    gctx.restore();
 
-    // 실제 관측점
-    gctx.beginPath();
-    let started = false;
-    samples.forEach((s) => {
-      if (s.n > NMAX) return;
-      const xx = X(s.n), yy = Y(s.frac);
-      started ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
-      started = true;
-    });
-    gctx.strokeStyle = '#2a9d8f'; gctx.lineWidth = 2.6; gctx.stroke();
-
-    // 반감기 지점 표시
-    for (let n = 1; n <= 3; n++) {
-      const yy = Y(Math.pow(0.5, n));
-      gctx.fillStyle = 'rgba(90,100,114,.9)';
-      gctx.textAlign = 'left';
-      gctx.font = '11px ui-sans-serif, system-ui';
-      gctx.fillText(`${n}회 → ${(Math.pow(0.5, n) * 100).toFixed(n > 2 ? 1 : 0)}%`, X(n) + 5, yy - 5);
-    }
-
+    // 균형점
+    const ns = nStar(), ps = pStar();
+    gctx.setLineDash([4, 4]);
+    gctx.strokeStyle = 'rgba(29,120,112,.45)';
+    gctx.beginPath(); gctx.moveTo(X(ns), pad.t); gctx.lineTo(X(ns), pad.t + gh); gctx.stroke();
+    gctx.beginPath(); gctx.moveTo(pad.l, Y(ps)); gctx.lineTo(pad.l + gw, Y(ps)); gctx.stroke();
+    gctx.setLineDash([]);
     gctx.fillStyle = '#1d7870';
+    gctx.beginPath(); gctx.arc(X(ns), Y(ps), 5, 0, Math.PI * 2); gctx.fill();
     gctx.textAlign = 'left';
     gctx.font = '600 11.5px ui-sans-serif, system-ui';
-    gctx.fillText('집단 전체 — 원자가 많을수록 회색 이론선에 붙습니다', pad.l + 6, by0 + 14);
+    gctx.fillText(`균형점 (${ns.toFixed(1)}, ${ps.toFixed(1)})`, X(ns) + 8, Y(ps) - 8);
+
+    // 궤적
+    if (trail.length > 1) {
+      gctx.beginPath();
+      trail.forEach((q, i) => {
+        const xx = X(q.n), yy = Y(q.p);
+        i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+      });
+      gctx.strokeStyle = 'rgba(192,57,43,.5)';
+      gctx.lineWidth = 1.8;
+      gctx.stroke();
+    }
+
+    // 도는 방향
+    if (trail.length > 40) {
+      const q1 = trail[trail.length - 30], q2 = trail[trail.length - 1];
+      const ang = Math.atan2(Y(q2.p) - Y(q1.p), X(q2.n) - X(q1.n));
+      const hx = X(q2.n), hy = Y(q2.p);
+      gctx.fillStyle = '#c0392b';
+      gctx.beginPath();
+      gctx.moveTo(hx + Math.cos(ang) * 9, hy + Math.sin(ang) * 9);
+      gctx.lineTo(hx + Math.cos(ang + 2.5) * 8, hy + Math.sin(ang + 2.5) * 8);
+      gctx.lineTo(hx + Math.cos(ang - 2.5) * 8, hy + Math.sin(ang - 2.5) * 8);
+      gctx.closePath(); gctx.fill();
+    }
+
+    // 현재 위치
+    gctx.beginPath(); gctx.arc(X(N), Y(P), 6.5, 0, Math.PI * 2);
+    gctx.fillStyle = '#111'; gctx.fill();
+    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.4; gctx.stroke();
+
+    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.font = '11.5px ui-sans-serif, system-ui';
+    gctx.textAlign = 'left';
+    gctx.fillText('점이 지나간 자리 — 닫히면 영원히 반복된다는 뜻입니다', pad.l + 10, pad.t + 16);
   }
 
   // ── 수치 ──
   function readout() {
-    const n = halves();
-    const th = theory(), ac = actualFrac();
-    const iso = ISO[S.iso];
+    el('r-n').textContent = N.toFixed(1) + ' 마리';
+    el('r-p').textContent = P.toFixed(1) + ' 마리';
+    const T = period(), L = lag();
+    el('r-period').textContent = T ? T.toFixed(1) + ' 년' : '재는 중…';
+    el('r-lag').textContent = L ? `${L.toFixed(1)} 년 (${T ? (L / T).toFixed(2) : '–'} 주기)` : '재는 중…';
+    el('r-kills').textContent = kills.toLocaleString() + ' 번';
 
-    el('r-alive').textContent = aliveCount().toLocaleString() + ' / ' + atoms.length.toLocaleString() + '개';
-    el('r-halves').textContent = n.toFixed(2) + '회 (' +
-      (n * iso.half).toLocaleString(undefined, { maximumFractionDigits: 1 }) + iso.unit + ')';
-    el('r-theory').textContent = (th * 100).toFixed(2) + '%';
-    el('r-actual').textContent = (ac * 100).toFixed(2) + '%';
-    const gap = Math.abs(ac - th) * 100;
-    el('r-gap').textContent = gap.toFixed(2) + '%p';
-
-    // 통계 요동의 이론적 크기 √(Np(1−p))/N
-    const sd = atoms.length ? Math.sqrt(atoms.length * th * (1 - th)) / atoms.length * 100 : 0;
+    el('s-nstar').textContent = nStar().toFixed(1);
+    el('s-pstar').textContent = pStar().toFixed(1);
 
     const v = el('verdict');
-    if (n < 0.1) {
+    if (S.pred0 === 0) {
+      v.className = 'verdict warn';
+      v.innerHTML = '포식자가 없으니 피식자는 <strong>지수적으로 계속 늘어납니다.</strong> ' +
+        '그런데 현실에는 풀의 양이라는 한계가 있습니다 — ' +
+        '<strong>카이밥 고원의 사슴은 4천에서 10만까지 늘었다가 굶어 죽으며 1만으로 무너졌습니다.</strong>';
+    } else if (T && L) {
       v.className = 'verdict';
-      v.innerHTML = `${iso.name} 원자 <strong>${atoms.length.toLocaleString()}개</strong>로 시작합니다. ` +
-        `반감기는 <strong>${iso.half.toLocaleString()}${iso.unit}</strong> 입니다. 재생을 눌러 보세요.`;
-    } else if (atoms.length <= 60) {
-      v.className = 'verdict warn';
-      v.innerHTML = `원자가 <strong>${atoms.length}개</strong>뿐이라 실제값이 이론에서 ` +
-        `<strong>${gap.toFixed(1)}%p</strong> 벗어나 있습니다(예상 흔들림 ${sd.toFixed(1)}%p). ` +
-        '개별 원자가 언제 터질지는 <strong>정말로 무작위</strong>이기 때문입니다. ' +
-        '원자 수를 늘리면 이 흔들림이 사라집니다.';
-    } else if (n >= 1.9) {
-      v.className = 'verdict warn';
-      v.innerHTML = `반감기가 <strong>${Math.floor(n)}번</strong> 지났는데도 ` +
-        `<strong>${(ac * 100).toFixed(1)}%</strong> 가 남아 있습니다. ` +
-        '절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이라 ' +
-        '두 번이면 1/4, 세 번이면 1/8 입니다. 0 이 되지는 않습니다.';
+      v.innerHTML = `한 바퀴에 <strong>${T.toFixed(1)}년</strong>, ` +
+        `포식자 피크는 피식자 피크보다 <strong>${L.toFixed(1)}년 뒤에</strong> 옵니다 — ` +
+        `주기의 <strong>${(L / T).toFixed(2)}배</strong>입니다. ` +
+        '이 어긋남이 &quot;포식자가 늘면 먹이가 줄고 끝&quot;이 아니라는 증거입니다.';
     } else {
       v.className = 'verdict';
-      v.innerHTML = `반감기 <strong>${n.toFixed(2)}번</strong> 경과. ` +
-        `이론 ${(th * 100).toFixed(1)}% 대비 실제 <strong>${(ac * 100).toFixed(1)}%</strong> ` +
-        `(차이 ${gap.toFixed(2)}%p). 원자가 많을수록 이론에 딱 붙습니다.`;
+      v.innerHTML = '피크를 두 번 지나면 주기와 지연을 재서 보여드립니다. ' +
+        '<strong>포식자 곡선이 피식자 곡선을 뒤쫓는 모습</strong>을 지켜보세요.';
     }
 
     el('note').textContent =
-      `원자 ${atoms.length.toLocaleString()}개일 때 통계적으로 예상되는 흔들림은 약 ${sd.toFixed(2)}%p 입니다. ` +
-      `원자 수를 100배 늘리면 흔들림은 1/10 로 줄어듭니다 — 큰 수의 법칙입니다.`;
+      `번식률 r=${r}, 사냥 성공률 a=${S.attack.toFixed(3)}, 전환효율 e=${e}, 사망률 m=${m}. ` +
+      `균형점은 N*=m/(ea)=${nStar().toFixed(2)}, P*=r/a=${pStar().toFixed(1)} — ` +
+      `피식자 수가 포식자 쪽 상수로, 포식자 수가 피식자 쪽 상수로 정해집니다.`;
   }
 
   // ── 입력 ──
   const labels = {
-    natoms: (v) => Number(v).toLocaleString() + '개',
-    half: (v) => Number(v).toFixed(1) + '초',
-    speed: (v) => Number(v).toFixed(2) + '배'
+    prey0: (v) => Number(v) + ' 마리',
+    pred0: (v) => Number(v) + ' 마리',
+    attack: (v) => Number(v).toFixed(3)
   };
-
-  ['natoms', 'half', 'speed'].forEach((k) => {
+  ['prey0', 'pred0', 'attack'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
       el(k + '-out').textContent = labels[k](input.value);
-      if (k !== 'speed') seed();
-      syncPresets();
-      readout();
+      reseed(); syncPresets(); readout();
     });
   });
 
   const presetBox = el('presets');
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
-      S.natoms = Number(b.dataset.n);
-      S.half = Number(b.dataset.h);
-      S.iso = b.dataset.iso;
-      ['natoms', 'half'].forEach((k) => {
-        el(k).value = S[k];
-        el(k + '-out').textContent = labels[k](S[k]);
+      S.prey0 = Number(b.dataset.n); S.pred0 = Number(b.dataset.p); S.attack = Number(b.dataset.a);
+      ['prey0', 'pred0', 'attack'].forEach((k) => {
+        el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
       });
-      seed(); syncPresets(); readout();
+      reseed(); syncPresets(); readout();
     });
   });
-
   function syncPresets() {
     presetBox.querySelectorAll('button').forEach((b) => {
       b.setAttribute('aria-pressed', String(
-        Number(b.dataset.n) === S.natoms && b.dataset.iso === S.iso
-      ));
+        Number(b.dataset.n) === S.prey0 &&
+        Number(b.dataset.p) === S.pred0 &&
+        Math.abs(Number(b.dataset.a) - S.attack) < 1e-9));
     });
   }
 
@@ -882,12 +903,11 @@
     el('toggle').textContent = running ? '일시정지' : '이어서';
   });
   el('reset').addEventListener('click', () => {
-    S.natoms = 400; S.half = 6; S.speed = 1; S.iso = 'c14';
-    ['natoms', 'half', 'speed'].forEach((k) => {
-      el(k).value = S[k];
-      el(k + '-out').textContent = labels[k](S[k]);
+    S.prey0 = 25; S.pred0 = 25; S.attack = 0.02;
+    ['prey0', 'pred0', 'attack'].forEach((k) => {
+      el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
     });
-    seed(); syncPresets(); readout();
+    reseed(); syncPresets(); readout();
   });
 
   el('share').addEventListener('click', async () => {
@@ -895,7 +915,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ n: S.natoms, h: S.half, iso: S.iso });
+      const q = new URLSearchParams({ n: S.prey0, p: S.pred0, a: S.attack });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -906,36 +926,39 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    [['n', 'natoms'], ['h', 'half']].forEach(([key, id]) => {
-      const v = Number(q.get(key));
-      if (q.get(key) === null || !Number.isFinite(v)) return;
+    const map = { n: 'prey0', p: 'pred0', a: 'attack' };
+    Object.entries(map).forEach(([key, id]) => {
+      const raw = q.get(key);
+      if (raw === null) return;
+      const v = Number(raw);
+      if (!Number.isFinite(v)) return;
       const input = el(id);
       const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
       S[id] = c; input.value = c;
       el(id + '-out').textContent = labels[id](c);
     });
-    if (ISO[q.get('iso')]) S.iso = q.get('iso');
-    syncPresets();
   }
 
-  // ── 루프 ──
   let last = 0;
-  let sampleAt = 0;
   function frame(ts) {
     const now = ts / 1000;
     if (!last) last = now;
-    const dt = Math.min(0.1, now - last) * S.speed;
+    const dt = Math.min(0.05, now - last);
     last = now;
 
-    if (running && halves() < 5.2) {
-      t += dt;
-      decayStep(dt);
-      // 관측점 기록 — 반감기 0.05 회마다
-      if (halves() - sampleAt > 0.05) {
-        samples.push({ n: halves(), frac: actualFrac() });
-        sampleAt = halves();
-        if (samples.length > 400) samples.shift();
-      }
+    if (running) {
+      // 한 프레임에 여러 번 적분 — 부드럽고 정확하게
+      /* 6배속. 2.2 배로는 주기 한 바퀴(32년)에 30초가 걸려 학생이 못 기다린다.
+         sub=8 로 잘게 쪼개 적분하므로 배속을 올려도 궤적이 뭉개지지 않는다. */
+      const sub = 8, h = dt * 6 / sub;
+      for (let i = 0; i < sub; i++) step(h);
+      dots.forEach((d) => {
+        d.x += d.vx * dt * 0.05; d.y += d.vy * dt * 0.05;
+        if (d.x < 0 || d.x > 1) { d.vx = -d.vx; d.x = Math.max(0, Math.min(1, d.x)); }
+        if (d.y < 0 || d.y > 1) { d.vy = -d.vy; d.y = Math.max(0, Math.min(1, d.y)); }
+      });
+      killFlash.forEach((f) => { f.life -= dt * 1.6; });
+      killFlash = killFlash.filter((f) => f.life > 0);
       readout();
     }
     draw(); drawGraph();
@@ -950,11 +973,12 @@
     canvas.style.height = Math.round(w * 0.5) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
-    graph.height = 400 * DPR;
+    graph.height = 380 * DPR;
   }
 
   applyQuery();
-  seed();
+  reseed();
+  syncPresets();
   readout();
   resize();
   window.addEventListener('resize', resize);

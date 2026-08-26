@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="원자를 무작위로 붕괴시켜 반감기가 개별 수명이 아니라 집단 통계임을 확인하는 시뮬레이션">
-<title>방사능 — Ans2Quest</title>
+<title>대사와 효소 — Ans2Quest</title>
+<meta name="description" content="온도를 올리면 효소 반응이 계속 빨라질까요? 55°C 까지 올려 보면 25°C 와 속도가 같아집니다. 아레니우스와 변성이 반대로 당기는 모습을 직접 확인해 보세요.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script src="/assets/js/theme.js"></script>
 <style>
 /* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
 .sim {
@@ -266,8 +266,6 @@
 </style>
 </head>
 <body>
-
-<!-- ── Top Nav ── -->
 <header class="top-nav" id="top-nav">
   <div class="nav-inner">
     <a href="/" class="nav-brand">
@@ -418,31 +416,34 @@
 
 
 
+
+
 <main class="container sim">
-  <p class="crumb"><a href="/">홈</a> · 화학 · 방사능</p>
+  <p class="crumb"><a href="/">홈</a> · 생명과학 · 대사와 효소</p>
 
   <div class="head">
-    <h1>방사능</h1>
-    <p>반감기가 두 번 지나면 <strong>다 없어질까요?</strong> 아닙니다 — <strong>1/4 이 남습니다.</strong>
-    절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이니까요.
-    더 중요한 건 <strong>어느 원자가 언제 터질지는 아무도 모른다</strong>는 점입니다.
-    원자 수를 줄여 보세요 — 곡선이 들쭉날쭉해집니다.</p>
+    <h1>대사와 효소</h1>
+    <p>온도를 올리면 반응이 <strong>계속 빨라질까요?</strong> 화학에서는 그렇습니다.
+    그런데 효소는 <strong>어느 지점부터 거꾸로 느려집니다</strong> —
+    단백질이 열에 풀려버리기 때문입니다.
+    온도 슬라이더를 <strong>55°C 까지</strong> 올려 보세요. 25°C 와 속도가 거의 같습니다.</p>
   </div>
 
   <div class="layout">
     <div class="side-panels">
       <div class="stage">
-        <canvas id="canvas" aria-label="무작위로 붕괴하는 방사성 원자들"></canvas>
+        <canvas id="canvas" aria-label="효소가 기질을 생성물로 바꾸는 모습과 고온에서의 변성"></canvas>
         <div class="stage-foot">
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
-          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
       <div class="legend">
-        <span><i style="background:#7bdff2"></i>아직 남은 원자</span>
-        <span><i style="background:#ffd166"></i>지금 붕괴하는 중</span>
-        <span><i style="background:#4a5464"></i>이미 붕괴한 자리</span>
+        <span><i style="background:#f4a261"></i>효소 (정상)</span>
+        <span><i style="background:#8a8f98"></i>변성된 효소</span>
+        <span><i style="background:#7bdff2"></i>기질</span>
+        <span><i style="background:#a8dadc"></i>생성물</span>
       </div>
     </div>
 
@@ -452,46 +453,47 @@
         <div class="panel-body">
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="natoms">원자 수</label>
-              <output id="natoms-out">400개</output>
+              <label for="temp">온도</label>
+              <output id="temp-out">25 °C</output>
             </div>
-            <input type="range" id="natoms" min="10" max="2000" step="10" value="400">
-            <span class="hint"><strong>20개로 줄여 보세요.</strong> 곡선이 계단처럼 들쭉날쭉해집니다.
-            2000개로 늘리면 매끄러워집니다 — <strong>반감기는 개별 원자의 수명이 아니라
-            집단의 통계</strong>이기 때문입니다.</span>
+            <input type="range" id="temp" min="0" max="80" step="1" value="25">
+            <span class="hint"><strong>45°C 까지는 예상대로 빨라집니다.</strong> 그 뒤부터
+            거꾸로 떨어지고, <strong>55°C 에서는 25°C 와 속도가 같아집니다</strong> —
+            30도나 올렸는데 제자리입니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="half">반감기</label>
-              <output id="half-out">6.0초</output>
+              <label for="sub">기질 농도 [S]</label>
+              <output id="sub-out">4.0 mM</output>
             </div>
-            <input type="range" id="half" min="2" max="20" step="0.5" value="6">
-            <span class="hint">화면에서만 쓰는 시간입니다. 실제 핵종은 아래 상황 버튼에서 볼 수 있습니다.</span>
+            <input type="range" id="sub" min="0.2" max="20" step="0.2" value="4">
+            <span class="hint">아무리 넣어도 최대 속도(V<sub>max</sub>)를 넘지 못합니다 — 효소가 이미 꽉 찼기 때문입니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="speed">재생 속도</label>
-              <output id="speed-out">1.0배</output>
+              <label for="enz">효소 농도 [E]</label>
+              <output id="enz-out">1.0 µM</output>
             </div>
-            <input type="range" id="speed" min="0.25" max="4" step="0.25" value="1">
+            <input type="range" id="enz" min="0.2" max="2" step="0.1" value="1">
+            <span class="hint">이건 넣는 만큼 그대로 빨라집니다. 기질과 다릅니다.</span>
           </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>실제 핵종으로 보기</h2></div>
+        <div class="panel-head"><h2>상황 고르기</h2></div>
         <div class="panel-body">
           <div class="chips" id="presets">
-            <button type="button" data-n="400" data-h="6" data-iso="c14" aria-pressed="true">
-              탄소-14<small>5,730년 · 연대 측정</small></button>
-            <button type="button" data-n="400" data-h="6" data-iso="i131">
-              요오드-131<small>8.02일 · 의료용</small></button>
-            <button type="button" data-n="400" data-h="6" data-iso="cs137">
-              세슘-137<small>30.17년 · 원전 사고</small></button>
-            <button type="button" data-n="20" data-h="6" data-iso="c14">
-              원자 20개만<small>들쭉날쭉해집니다</small></button>
+            <button type="button" data-t="40" data-s="20" data-e="1" aria-pressed="true">
+              최적온도 찾기<small>기질 충분 · 온도만 조절</small></button>
+            <button type="button" data-t="37" data-s="4" data-e="1">
+              우리 몸 37°C<small>체온에서의 대사</small></button>
+            <button type="button" data-t="4" data-s="4" data-e="1">
+              냉장 보관 4°C<small>느려질 뿐, 망가지진 않음</small></button>
+            <button type="button" data-t="70" data-s="20" data-e="1">
+              끓인 효소 70°C<small>기질이 넘쳐도 소용없음</small></button>
           </div>
         </div>
       </div>
@@ -500,22 +502,22 @@
         <div class="panel-head"><h2>측정</h2></div>
         <div class="panel-body">
           <dl class="read">
-            <div><dt>남은 원자</dt><dd id="r-alive">—</dd></div>
-            <div><dt>지난 반감기 횟수</dt><dd id="r-halves">—</dd></div>
-            <div><dt>이론값 (1/2)ⁿ</dt><dd id="r-theory">—</dd></div>
-            <div><dt>실제 남은 비율</dt><dd id="r-actual">—</dd></div>
-            <div><dt>이론과의 차이</dt><dd id="r-gap" class="gap">—</dd></div>
+            <div><dt>반응 속도 v</dt><dd id="r-v">—</dd></div>
+            <div><dt>이 온도의 V<sub>max</sub></dt><dd id="r-vmax">—</dd></div>
+            <div><dt>살아있는 효소</dt><dd id="r-alive">—</dd></div>
+            <div><dt>기질 포화도</dt><dd id="r-sat">—</dd></div>
+            <div><dt>최적 온도</dt><dd id="r-opt" class="gap">—</dd></div>
           </dl>
           <p class="note" id="note"></p>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>반감기가 지날 때마다</h2></div>
+        <div class="panel-head"><h2>열에 풀리지 않는다면</h2></div>
         <div class="panel-body">
           <div class="stat-row">
-            <dl class="stat"><dt>2회 지나면</dt><dd id="s-two">25%</dd></dl>
-            <dl class="stat"><dt>10회 지나도</dt><dd id="s-ten">0.098%</dd></dl>
+            <dl class="stat"><dt>실제 속도</dt><dd id="s-real">—</dd></dl>
+            <dl class="stat"><dt>변성이 없다면</dt><dd id="s-ideal">—</dd></dl>
           </div>
           <div class="verdict" id="verdict"></div>
         </div>
@@ -537,19 +539,20 @@
   </div>
 
   <section class="analysis-panel" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">개별 원자는 무작위, 집단은 규칙적</h2><p>위쪽은 원자 <strong>여덟 개를 골라</strong> 각각 언제 터졌는지 표시한 것입니다 — 아무 규칙이 없습니다. 아래쪽은 <strong>전체 집단</strong>이고, 가로축은 시간이 아니라 <strong>지나간 반감기 횟수</strong>입니다. 개별은 예측할 수 없지만 집단은 (1/2)ⁿ 을 따릅니다. 원자 수를 줄이면 점들이 회색 이론선에서 벗어납니다.</p></div>
-    <div class="graph-wrap"><canvas id="decay-graph" aria-label="개별 원자의 붕괴 시점과 집단의 감소"></canvas></div>
+    <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
+    <div class="graph-wrap"><canvas id="temp-graph" aria-label="온도에 따른 반응 속도"></canvas></div>
   </section>
 
   <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">반감기는 예언이 아니라 통계다</h2><p>동전 던지기와 같은 원리입니다.</p></div>
+    <div class="analysis-head"><h2 id="formula-title">두 힘이 반대로 당긴다</h2><p>빨라지려는 힘과 망가지려는 힘의 곱입니다.</p></div>
     <div class="formula-box">
-      <p class="formula-main">N = N₀ · (1/2)ⁿ &nbsp;&nbsp;(n = 지난 반감기 횟수) &nbsp;&nbsp;|&nbsp;&nbsp; N = N₀ · e<sup>−λt</sup> &nbsp;&nbsp;|&nbsp;&nbsp; λ = ln2 ÷ T½</p>
-      <p>반감기는 <strong>절반씩 곱해 나가는</strong> 것입니다. 두 번 지나면 ½ × ½ = ¼ 이 남고, 세 번이면 ⅛ 입니다. 아무리 여러 번 지나도 <strong>0 이 되지는 않습니다</strong> — 다만 아주 작아질 뿐입니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>개별 원자는 나이를 먹지 않습니다.</strong> 방금 만들어진 원자든 100만 년 된 원자든, 앞으로 1초 안에 붕괴할 확률이 <strong>완전히 똑같습니다</strong>. 원자에는 시계도 수명도 없습니다. 어느 것이 언제 터질지는 원리적으로 예측할 수 없고, 이것은 측정 기술의 한계가 아니라 자연의 근본 성질입니다.</p><p><strong>그런데 집단은 놀랍도록 규칙적입니다.</strong> 원자 하나하나는 완전히 무작위인데, 수억 개를 모아 놓으면 정확히 지수 곡선을 따라 줄어듭니다. 동전 하나를 던지면 앞뒤를 알 수 없지만 만 번 던지면 거의 정확히 절반이 앞면인 것과 같습니다. 이것을 <strong>큰 수의 법칙</strong>이라 합니다. 위 화면에서 원자 수를 20개로 줄이면 곡선이 들쭉날쭉해지는 것이 그 증거입니다.</p><p><strong>반감기는 아무것도 바꿀 수 없습니다.</strong> 화학 반응은 온도를 올리거나 촉매를 넣으면 빨라지지만, 핵붕괴는 그런 것에 전혀 반응하지 않습니다. 원자핵 안에서 일어나는 일이라 바깥의 온도·압력·화학 결합 상태와 무관하기 때문입니다. 그래서 방사성 폐기물은 <strong>기다리는 것 말고는 방법이 없습니다.</strong> 세슘-137 이 1000분의 1 로 줄려면 반감기 10번, 약 302년이 걸립니다.</p><p><strong>탄소 연대 측정에는 한계가 있습니다.</strong> 탄소-14 의 반감기는 5730년입니다. 5만 년이 지나면 처음의 0.24% 밖에 남지 않아 측정이 사실상 불가능해집니다. 그래서 공룡 화석(6600만 년)은 탄소로 잴 수 없습니다 — 반감기가 1만 번 넘게 지나 남은 것이 없기 때문입니다. 공룡 화석에는 우라늄-납처럼 반감기가 수십억 년인 방법을 씁니다.</p><p><strong>방사능과 방사선은 다른 말입니다.</strong> 방사능은 원자핵이 붕괴하며 방사선을 내는 <strong>성질이나 능력</strong>이고, 방사선은 그때 실제로 <strong>튀어나오는 것</strong>(알파선·베타선·감마선)입니다. "이 물질은 방사능이 있다"는 맞는 말이지만 "방사능이 날아온다"는 어색합니다. 날아오는 것은 방사선입니다.</p></div></details>
+      <p class="formula-main">v = k<sub>cat</sub> · A(T) · f(T) · [E] · [S] ÷ (K<sub>m</sub> + [S]) &nbsp;&nbsp;|&nbsp;&nbsp; A(T) = e<sup>(Ea/R)(1/298 − 1/T)</sup> &nbsp;&nbsp;|&nbsp;&nbsp; f(T) = 1 ÷ (1 + e<sup>(T−50)/3</sup>)</p>
+      <p><strong>A(T)</strong> 는 온도가 오를수록 커집니다 — 분자가 빨리 움직여 더 자주 부딪히니까요. <strong>f(T)</strong> 는 아직 안 풀린 효소의 비율이라 온도가 오를수록 작아집니다. 둘을 곱하면 <strong>중간 어딘가에서 최댓값</strong>이 생기고, 그 지점이 최적 온도입니다. 여기서는 <strong>45.4°C</strong> 입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>화학 반응은 온도를 올리면 끝까지 빨라집니다.</strong> 대략 10°C 마다 두 배씩 빨라진다는 경험칙이 있을 정도입니다. 분자가 빠르게 움직여 충돌이 잦아지고, 넘어야 할 에너지 언덕을 넘는 분자도 많아지기 때문입니다. 효소도 이 효과를 그대로 갖고 있습니다 — 45°C 까지는 정확히 그렇게 빨라집니다.</p><p><strong>그런데 효소는 단백질입니다.</strong> 단백질은 실이 접혀 만들어진 입체 구조이고, 그 모양이 정확해야 기질이 딱 들어맞습니다. 열은 이 접힘을 풀어버립니다. 한 번 풀린 효소는 기질을 붙잡지 못하고, <strong>대부분 다시 접히지도 않습니다.</strong> 달걀 흰자가 익으면 다시 투명해지지 않는 것과 같은 일입니다.</p><p><strong>최적 온도는 두 곡선이 만나는 타협점입니다.</strong> 빨라지려는 힘과 망가지려는 힘의 곱이 최대가 되는 지점이라, <strong>절반이 변성되는 온도(50°C)보다 항상 낮습니다.</strong> 여기서는 45.4°C 입니다. 이 균형점은 생물마다 다릅니다 — 온천에 사는 세균의 효소는 80°C 에서도 멀쩡합니다.</p><p><strong>기질을 아무리 넣어도 한계가 있습니다.</strong> 효소 하나가 한 번에 처리할 수 있는 양이 정해져 있어서, 기질이 넘치면 효소가 전부 &quot;작업 중&quot; 상태가 됩니다. 그때 속도가 V<sub>max</sub> 입니다. 반대로 <strong>효소를 두 배 넣으면 속도도 정확히 두 배</strong>가 됩니다 — 일하는 사람이 늘어난 것이니까요. 기질과 효소가 전혀 다르게 작동하는 이유입니다.</p><p><strong>이 원리가 실제로 쓰입니다.</strong> 코로나 검사에 쓰인 PCR 은 DNA 를 95°C 로 가열하는 과정이 있는데, 보통 효소라면 즉시 죽습니다. 그래서 온천 세균에서 뽑은 열에 강한 효소를 씁니다. 김치가 냉장고에서 천천히 익는 것, 열이 나면 몸이 축 처지는 것, 세제에 효소가 들어가도 뜨거운 물에 빨면 효과가 떨어지는 것 — 전부 같은 두 곡선의 이야기입니다.</p></div></details>
     </div>
   </section>
 </main>
+
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>
@@ -559,71 +562,70 @@
 (function () {
   const el = (id) => document.getElementById(id);
 
-  /* ── 방사능: 반감기는 예언이 아니라 통계다 ──
+  /* ── 대사와 효소: 온도를 올리면 계속 빨라질까 ──
 
-     "반감기가 두 번 지나면 다 없어진다" 와
-     "개별 원자는 수명이 정해져 있다" 를 함께 겨냥한다.
+     화학에서 배운 "온도↑ = 속도↑" 가 효소에서는 어느 지점부터 뒤집힌다.
+     단백질이 열에 풀려(변성) 일을 못 하게 되기 때문이다.
 
-     핵심은 원자마다 '남은 수명 바' 를 절대 그리지 않는 것이다(Solar 지적).
-     그걸 그리는 순간 "원자에 시계가 있다" 는 오개념이 오히려 굳는다.
-     대신 매 순간 같은 확률로 독립 판정한다 — 원자는 나이를 먹지 않는다.
+     설계는 Kimi K3, 검증은 직접 계산으로 대조했다.
+       v = kcat · A(T) · f(T) · [E] · [S]/(Km+[S])
+       A(T) = exp((Ea/R)(1/298 − 1/(T+273)))   ← 아레니우스, 계속 상승
+       f(T) = 1/(1 + exp((T−50)/3))            ← 남아있는 정상 효소 비율
+     확인한 값: 25°C·S=4 → 66.65 / S=Km=2 → 49.99(=Vmax/2) / 45°C·S=20 → 272.08
+                65°C·S=20 → 6.63 / [E] 2배 → 정확히 2배 / 최적온도 45.41°C
 
-     그래프도 화학 반응의 시간-농도 곡선과 겹치지 않게
-     '개별 원자 붕괴 시점(무작위 점)' 과 '집단 비율(반감기 횟수 축)' 을 나눠 그린다.
+     ⚠ K3 가 "55°C 에서 변성 없다면 633" 이라 했는데 실제로는 575.8 이다.
+        A(55)=6.3333 을 과대평가했다. 화면에는 계산값을 쓴다. */
 
-     검증(직접 계산): (1/2)^n → 1회 50%, 2회 25%, 3회 12.5%, 10회 0.098%.
-     통계 요동 √(Np(1−p))/Np: N=20 → 22.4%, N=2000 → 2.2%. */
+  const Km = 2.0;        // mM
+  const KCAT25 = 100;    // s⁻¹ (25°C 기준)
+  const EA_R = 50000 / 8.314;   // Ea/R = 6013.95 K
+  const T_HALF = 50;     // 절반이 변성되는 온도 (°C)
+  const D_STEEP = 3;     // 변성이 얼마나 급한가
 
-  const ISO = {
-    c14:  { name: '탄소-14',    half: 5730,  unit: '년', note: '연대 측정에 씁니다' },
-    i131: { name: '요오드-131', half: 8.02,  unit: '일', note: '갑상선 치료에 씁니다' },
-    cs137:{ name: '세슘-137',   half: 30.17, unit: '년', note: '원전 사고 때 문제가 됩니다' }
-  };
-
-  const S = { natoms: 400, half: 6, speed: 1, iso: 'c14' };
+  const S = { temp: 25, sub: 4, enz: 1 };
   let running = true;
-  let t = 0;                    // 화면 시간 (초)
-  let atoms = [];               // {x, y, alive, deadAt, flash}
-  let tracked = [];             // 개별 추적용 원자 8개의 index
-  let samples = [];             // {n(반감기 횟수), frac}
+  let anim = 0;
+  let molecules = [];
 
   const canvas = el('canvas');
   const ctx = canvas.getContext('2d');
-  const graph = el('decay-graph');
+  const graph = el('temp-graph');
   const gctx = graph.getContext('2d');
   let DPR = 1;
 
-  const halves = () => t / S.half;                    // 지난 반감기 횟수
-  const theory = () => Math.pow(0.5, halves());
-  const aliveCount = () => atoms.filter((a) => a.alive).length;
-  const actualFrac = () => atoms.length ? aliveCount() / atoms.length : 0;
+  const arrhenius = (T) => Math.exp(EA_R * (1 / 298 - 1 / (T + 273)));
+  const intact = (T) => 1 / (1 + Math.exp((T - T_HALF) / D_STEEP));
+  const vmaxAt = (T) => KCAT25 * arrhenius(T) * intact(T) * S.enz;
+  const rateAt = (T, sub) => vmaxAt(T) * sub / (Km + sub);
+  // 변성이 없다고 가정한 속도 — 학생이 머릿속에 그리는 선
+  const idealAt = (T, sub) => KCAT25 * arrhenius(T) * S.enz * sub / (Km + sub);
 
-  function seed() {
-    atoms = [];
-    for (let i = 0; i < S.natoms; i++) {
-      atoms.push({ x: Math.random(), y: Math.random(), alive: true, deadAt: null, flash: 0 });
+  const rate = () => rateAt(S.temp, S.sub);
+  const ideal = () => idealAt(S.temp, S.sub);
+
+  // 최적 온도 — 두 곡선의 곱이 최대인 지점. 0.05°C 간격이면 충분하다.
+  function optimalTemp() {
+    let bestT = 0, bestV = -1;
+    for (let T = 0; T <= 80; T += 0.05) {
+      const v = rateAt(T, S.sub);
+      if (v > bestV) { bestV = v; bestT = T; }
     }
-    // 개별 추적 8개 — 골고루 흩어진 것으로
-    tracked = [];
-    const step = Math.max(1, Math.floor(S.natoms / 8));
-    for (let i = 0; i < 8 && i * step < S.natoms; i++) tracked.push(i * step);
-    t = 0;
-    samples = [{ n: 0, frac: 1 }];
+    return bestT;
   }
 
-  /* 붕괴 판정 — 원자는 나이를 먹지 않는다.
-     dt 동안 붕괴할 확률은 1 − (1/2)^(dt/T½) 로, 지금까지 얼마나 살았든 똑같다.
-     이게 "메모리가 없다" 는 뜻이고, 반감기가 통계인 이유다. */
-  function decayStep(dt) {
-    const pDecay = 1 - Math.pow(0.5, dt / S.half);
-    atoms.forEach((a) => {
-      if (!a.alive) { if (a.flash > 0) a.flash = Math.max(0, a.flash - dt * 2.4); return; }
-      if (Math.random() < pDecay) {
-        a.alive = false;
-        a.deadAt = t;
-        a.flash = 1;
-      }
-    });
+  const N = 44;
+  function seed() {
+    molecules = [];
+    for (let i = 0; i < N; i++) {
+      molecules.push({
+        x: Math.random(), y: Math.random(),
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        kind: i < 10 ? 'E' : 'S',   // 효소 10, 나머지 기질
+        busy: 0, flash: 0
+      });
+    }
   }
 
   // ── 무대 ──
@@ -631,71 +633,102 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = canvas.width / DPR, h = canvas.height / DPR;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0f141c';
+
+    // 온도가 높을수록 배경이 붉게 — 위험 신호
+    const heat = Math.max(0, Math.min(1, (S.temp - 40) / 40));
+    ctx.fillStyle = `rgb(${Math.round(15 + 34 * heat)}, ${Math.round(20 - 4 * heat)}, ${Math.round(28 - 8 * heat)})`;
     ctx.fillRect(0, 0, w, h);
 
-    const pad = 14, top = 44;
-    const iw = w - pad * 2, ih = h - top - pad - 22;
+    const f = intact(S.temp);
+    const pad = 14, top = 52;
+    const iw = w - pad * 2, ih = h - top - pad - 20;
 
-    // 원자 — 크기는 개수에 맞춰 조절
-    const r = Math.max(1.8, Math.min(7, 90 / Math.sqrt(S.natoms)));
-    atoms.forEach((a) => {
-      const px = pad + a.x * iw, py = top + a.y * ih;
-      if (a.alive) {
-        ctx.fillStyle = '#7bdff2';
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-      } else {
-        if (a.flash > 0) {
-          ctx.strokeStyle = `rgba(255,209,102,${a.flash})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(px, py, r + (1 - a.flash) * 16, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.fillStyle = `rgba(255,209,102,${a.flash * 0.9})`;
-          ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-        } else {
-          ctx.fillStyle = 'rgba(74,84,100,.55)';
-          ctx.beginPath(); ctx.arc(px, py, r * 0.72, 0, Math.PI * 2); ctx.fill();
+    // 분자
+    const speedScale = 0.4 + arrhenius(S.temp) * 0.28;
+    molecules.forEach((m, i) => {
+      const px = pad + m.x * iw, py = top + m.y * ih;
+      if (m.kind === 'E') {
+        // 효소 — 변성 여부는 f(T) 비율만큼
+        const denatured = (i / 10) >= f;
+        if (m.flash > 0) {
+          ctx.fillStyle = `rgba(255,209,102,${m.flash * 0.5})`;
+          ctx.beginPath(); ctx.arc(px, py, 20, 0, Math.PI * 2); ctx.fill();
         }
+        ctx.fillStyle = denatured ? '#8a8f98' : '#f4a261';
+        if (denatured) {
+          // 풀린 단백질 — 구불구불한 실
+          ctx.strokeStyle = '#8a8f98';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          for (let k = 0; k <= 12; k++) {
+            const t = k / 12;
+            const xx = px - 11 + t * 22;
+            const yy = py + Math.sin(t * Math.PI * 3 + i) * 5;
+            k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy);
+          }
+          ctx.stroke();
+        } else {
+          // 정상 효소 — 기질이 들어갈 홈이 있는 덩어리
+          ctx.beginPath(); ctx.arc(px, py, 10, 0.6, Math.PI * 2 - 0.6); ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = m.busy > 0 ? '#a8dadc' : '#7bdff2';
+        ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
       }
     });
 
-    // 상단 진행 막대
-    const barY = 16, barH = 16;
-    const frac = actualFrac();
-    ctx.fillStyle = 'rgba(255,255,255,.08)';
-    ctx.fillRect(pad, barY, iw, barH);
-    ctx.fillStyle = '#7bdff2';
-    ctx.fillRect(pad, barY, iw * frac, barH);
-    // 반감기 눈금
-    for (let k = 1; k <= 4; k++) {
-      const x = pad + iw * Math.pow(0.5, k);
-      ctx.strokeStyle = 'rgba(255,255,255,.45)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x, barY); ctx.lineTo(x, barY + barH); ctx.stroke();
-      ctx.font = '9.5px ui-sans-serif, system-ui';
-      ctx.fillStyle = 'rgba(255,255,255,.5)';
-      ctx.textAlign = 'center';
-      ctx.fillText(k + '회', x, barY - 3);
+    // 상단 온도 막대
+    const barY = 16, barH = 18, barX = pad, barW = iw;
+    for (let i = 0; i < barW; i++) {
+      const T = i / barW * 80;
+      const v = rateAt(T, S.sub);
+      const peak = rateAt(optT, S.sub);
+      const t = peak > 0 ? v / peak : 0;
+      ctx.fillStyle = `rgba(${Math.round(120 + 135 * t)}, ${Math.round(60 + 130 * t)}, ${Math.round(70 + 30 * t)}, .9)`;
+      ctx.fillRect(barX + i, barY, 1, barH);
     }
-    ctx.font = '700 12px ui-sans-serif, system-ui';
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${aliveCount()} / ${atoms.length} 남음`, pad + 5, barY + 12);
+    ctx.strokeStyle = 'rgba(255,255,255,.28)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
 
-    // 하단
-    const iso = ISO[S.iso];
+    // 최적온도 눈금
+    const ox = barX + optT / 80 * barW;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,.8)';
+    ctx.beginPath(); ctx.moveTo(ox, barY - 4); ctx.lineTo(ox, barY + barH + 4); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '10px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
     ctx.textAlign = 'center';
-    ctx.font = '600 12px ui-sans-serif, system-ui';
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.fillText(
-      `${iso.name} · 반감기 ${iso.half.toLocaleString()}${iso.unit} · ` +
-      `지금 ${halves().toFixed(2)} 번 지남`,
-      w / 2, h - 8
-    );
+    ctx.fillText('최적 ' + optT.toFixed(1) + '°C', ox, barY - 6);
+
+    // 현재 온도 바늘
+    const tx = barX + S.temp / 80 * barW;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(tx, barY + barH + 2);
+    ctx.lineTo(tx - 5, barY + barH + 11);
+    ctx.lineTo(tx + 5, barY + barH + 11);
+    ctx.closePath(); ctx.fill();
+
+    // 하단 안내
+    ctx.textAlign = 'center';
+    ctx.font = '600 12.5px ui-sans-serif, system-ui';
+    if (f < 0.1) {
+      ctx.fillStyle = '#ffb4a2';
+      ctx.fillText('효소가 거의 다 풀렸습니다 — 기질을 아무리 넣어도 소용없습니다', w / 2, h - 8);
+    } else if (S.temp > optT + 3) {
+      ctx.fillStyle = '#ffb4a2';
+      ctx.fillText(`${S.temp}°C — 최적온도를 넘겨 거꾸로 느려지는 중입니다`, w / 2, h - 8);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,.62)';
+      ctx.fillText(`${S.temp}°C · 살아있는 효소 ${(f * 100).toFixed(1)}%`, w / 2, h - 8);
+    }
   }
 
-  // ── 그래프: 개별 vs 집단 ──
+  let optT = 45.4;
+
+  // ── 그래프 ──
   function drawGraph() {
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
@@ -703,176 +736,157 @@
     gctx.fillStyle = '#f7f7f5';
     gctx.fillRect(0, 0, w, h);
 
-    const pad = { l: 58, r: 20, t: 18, b: 36 };
-    const NMAX = 5;                                  // 반감기 5회까지
-    const gw = w - pad.l - pad.r;
-    const topH = h * 0.30, botH = h - pad.t - pad.b - topH - 16;
-    const X = (n) => pad.l + Math.min(1, n / NMAX) * gw;
+    const pad = { l: 60, r: 24, t: 22, b: 40 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
 
-    // ── 위: 개별 원자 8개가 언제 터졌나 ──
-    gctx.font = '600 11.5px ui-sans-serif, system-ui';
-    gctx.fillStyle = '#5a6472';
-    gctx.textAlign = 'left';
-    gctx.fillText('원자 여덟 개를 따라가 보면 — 아무 규칙이 없습니다', pad.l, pad.t + 10);
+    // 세로 눈금은 '변성 없다면' 곡선의 최댓값에 맞춘다 — 갈라짐이 보여야 한다
+    let vTop = 0;
+    for (let T = 0; T <= 80; T += 1) vTop = Math.max(vTop, idealAt(T, S.sub));
+    vTop *= 1.05;
 
-    tracked.forEach((idx, row) => {
-      const y = pad.t + 20 + row * (topH - 20) / 8;
-      const a = atoms[idx];
-      // 살아있는 구간
-      const endN = a && !a.alive ? a.deadAt / S.half : Math.min(NMAX, halves());
-      gctx.strokeStyle = 'rgba(123,223,242,.85)';
-      gctx.lineWidth = 2.4;
-      gctx.beginPath();
-      gctx.moveTo(X(0), y);
-      gctx.lineTo(X(Math.min(NMAX, endN)), y);
-      gctx.stroke();
-      // 붕괴 시점
-      if (a && !a.alive && a.deadAt / S.half <= NMAX) {
-        const bx = X(a.deadAt / S.half);
-        gctx.fillStyle = '#e0a03a';
-        gctx.beginPath(); gctx.arc(bx, y, 4, 0, Math.PI * 2); gctx.fill();
-      }
-    });
-
-    // ── 아래: 집단 비율 (반감기 횟수 축) ──
-    const by0 = pad.t + topH + 16;
-    const Y = (f) => by0 + botH - f * botH;
+    const X = (T) => pad.l + T / 80 * gw;
+    const Y = (v) => pad.t + gh - Math.min(1, v / vTop) * gh;
 
     gctx.strokeStyle = 'rgba(128,128,128,.2)';
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
     gctx.fillStyle = 'rgba(110,110,110,.95)';
     gctx.textAlign = 'center';
-    for (let n = 0; n <= NMAX; n++) {
-      gctx.beginPath(); gctx.moveTo(X(n), by0); gctx.lineTo(X(n), by0 + botH); gctx.stroke();
-      gctx.fillText(n + '회', X(n), h - 16);
+    for (let T = 0; T <= 80; T += 20) {
+      gctx.beginPath(); gctx.moveTo(X(T), pad.t); gctx.lineTo(X(T), pad.t + gh); gctx.stroke();
+      gctx.fillText(T + '°C', X(T), h - 16);
     }
-    gctx.fillText('지나간 반감기 횟수', pad.l + gw / 2, h - 3);
+    gctx.fillText('온도', pad.l + gw / 2, h - 3);
     gctx.textAlign = 'right';
-    [[1, '100%'], [0.5, '50%'], [0.25, '25%'], [0.125, '12.5%'], [0, '0']].forEach(([f, lab]) => {
-      gctx.beginPath(); gctx.moveTo(pad.l, Y(f)); gctx.lineTo(pad.l + gw, Y(f)); gctx.stroke();
-      gctx.fillText(lab, pad.l - 8, Y(f) + 4);
-    });
+    for (let i = 0; i <= 4; i++) {
+      const v = vTop * i / 4;
+      gctx.beginPath(); gctx.moveTo(pad.l, Y(v)); gctx.lineTo(pad.l + gw, Y(v)); gctx.stroke();
+      gctx.fillText(v.toFixed(0), pad.l - 8, Y(v) + 4);
+    }
 
-    // 이론 곡선 (1/2)^n
+    // 변성이 없다면 (회색 점선) — 학생이 머릿속에 그리는 선
     gctx.beginPath();
-    for (let i = 0; i <= 150; i++) {
-      const n = i / 150 * NMAX;
-      const xx = X(n), yy = Y(Math.pow(0.5, n));
+    for (let i = 0; i <= 160; i++) {
+      const T = i / 160 * 80;
+      const xx = X(T), yy = Y(idealAt(T, S.sub));
       i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
     }
-    gctx.strokeStyle = 'rgba(120,120,130,.8)';
-    gctx.lineWidth = 2;
-    gctx.setLineDash([6, 4]); gctx.stroke(); gctx.setLineDash([]);
+    gctx.strokeStyle = '#6b6b76'; gctx.lineWidth = 2;
+    gctx.setLineDash([7, 5]); gctx.stroke(); gctx.setLineDash([]);
 
-    // 실제 관측점
+    // 실제 효소 (빨간 실선)
     gctx.beginPath();
-    let started = false;
-    samples.forEach((s) => {
-      if (s.n > NMAX) return;
-      const xx = X(s.n), yy = Y(s.frac);
-      started ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
-      started = true;
-    });
-    gctx.strokeStyle = '#2a9d8f'; gctx.lineWidth = 2.6; gctx.stroke();
-
-    // 반감기 지점 표시
-    for (let n = 1; n <= 3; n++) {
-      const yy = Y(Math.pow(0.5, n));
-      gctx.fillStyle = 'rgba(90,100,114,.9)';
-      gctx.textAlign = 'left';
-      gctx.font = '11px ui-sans-serif, system-ui';
-      gctx.fillText(`${n}회 → ${(Math.pow(0.5, n) * 100).toFixed(n > 2 ? 1 : 0)}%`, X(n) + 5, yy - 5);
+    for (let i = 0; i <= 160; i++) {
+      const T = i / 160 * 80;
+      const xx = X(T), yy = Y(rateAt(T, S.sub));
+      i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
     }
+    gctx.strokeStyle = '#c0392b'; gctx.lineWidth = 3; gctx.stroke();
 
-    gctx.fillStyle = '#1d7870';
-    gctx.textAlign = 'left';
+    // 최적 온도
+    gctx.setLineDash([4, 4]);
+    gctx.strokeStyle = 'rgba(29,120,112,.7)'; gctx.lineWidth = 1.6;
+    gctx.beginPath();
+    gctx.moveTo(X(optT), Y(0)); gctx.lineTo(X(optT), Y(rateAt(optT, S.sub)));
+    gctx.stroke(); gctx.setLineDash([]);
+    gctx.fillStyle = '#1d7870'; gctx.textAlign = 'left';
     gctx.font = '600 11.5px ui-sans-serif, system-ui';
-    gctx.fillText('집단 전체 — 원자가 많을수록 회색 이론선에 붙습니다', pad.l + 6, by0 + 14);
+    gctx.fillText(`최적 ${optT.toFixed(1)}°C — 여기서 꺾입니다`, X(optT) + 6, Y(rateAt(optT, S.sub)) - 8);
+
+    // 범례
+    gctx.fillStyle = '#c0392b';
+    gctx.fillText('실제 효소', pad.l + 10, pad.t + 16);
+    gctx.fillStyle = '#6b6b76';
+    gctx.fillText('열에 안 풀린다면 — 끝까지 올라갑니다', pad.l + 10, pad.t + 33);
+
+    // 현재 위치
+    gctx.beginPath(); gctx.arc(X(S.temp), Y(rate()), 6, 0, Math.PI * 2);
+    gctx.fillStyle = '#111'; gctx.fill();
+    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.4; gctx.stroke();
   }
 
   // ── 수치 ──
   function readout() {
-    const n = halves();
-    const th = theory(), ac = actualFrac();
-    const iso = ISO[S.iso];
+    optT = optimalTemp();
+    const v = rate(), iv = ideal(), f = intact(S.temp);
+    const sat = S.sub / (Km + S.sub);
 
-    el('r-alive').textContent = aliveCount().toLocaleString() + ' / ' + atoms.length.toLocaleString() + '개';
-    el('r-halves').textContent = n.toFixed(2) + '회 (' +
-      (n * iso.half).toLocaleString(undefined, { maximumFractionDigits: 1 }) + iso.unit + ')';
-    el('r-theory').textContent = (th * 100).toFixed(2) + '%';
-    el('r-actual').textContent = (ac * 100).toFixed(2) + '%';
-    const gap = Math.abs(ac - th) * 100;
-    el('r-gap').textContent = gap.toFixed(2) + '%p';
+    el('r-v').textContent = v.toFixed(2) + ' µM/s';
+    el('r-vmax').textContent = vmaxAt(S.temp).toFixed(2) + ' µM/s';
+    el('r-alive').textContent = (f * 100).toFixed(1) + ' %';
+    el('r-sat').textContent = (sat * 100).toFixed(1) + ' %';
+    el('r-opt').textContent = optT.toFixed(1) + ' °C';
 
-    // 통계 요동의 이론적 크기 √(Np(1−p))/N
-    const sd = atoms.length ? Math.sqrt(atoms.length * th * (1 - th)) / atoms.length * 100 : 0;
+    el('s-real').textContent = v.toFixed(1);
+    const si = el('s-ideal');
+    si.textContent = iv.toFixed(1);
+    si.className = iv > v * 1.15 ? 'up' : '';
 
-    const v = el('verdict');
-    if (n < 0.1) {
-      v.className = 'verdict';
-      v.innerHTML = `${iso.name} 원자 <strong>${atoms.length.toLocaleString()}개</strong>로 시작합니다. ` +
-        `반감기는 <strong>${iso.half.toLocaleString()}${iso.unit}</strong> 입니다. 재생을 눌러 보세요.`;
-    } else if (atoms.length <= 60) {
-      v.className = 'verdict warn';
-      v.innerHTML = `원자가 <strong>${atoms.length}개</strong>뿐이라 실제값이 이론에서 ` +
-        `<strong>${gap.toFixed(1)}%p</strong> 벗어나 있습니다(예상 흔들림 ${sd.toFixed(1)}%p). ` +
-        '개별 원자가 언제 터질지는 <strong>정말로 무작위</strong>이기 때문입니다. ' +
-        '원자 수를 늘리면 이 흔들림이 사라집니다.';
-    } else if (n >= 1.9) {
-      v.className = 'verdict warn';
-      v.innerHTML = `반감기가 <strong>${Math.floor(n)}번</strong> 지났는데도 ` +
-        `<strong>${(ac * 100).toFixed(1)}%</strong> 가 남아 있습니다. ` +
-        '절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이라 ' +
-        '두 번이면 1/4, 세 번이면 1/8 입니다. 0 이 되지는 않습니다.';
+    const verdict = el('verdict');
+    if (f < 0.1) {
+      verdict.className = 'verdict warn';
+      verdict.innerHTML = `<strong>${S.temp}°C</strong> 에서 효소의 ` +
+        `<strong>${(100 - f * 100).toFixed(1)}%</strong> 가 풀려버렸습니다. ` +
+        `속도가 <strong>${v.toFixed(1)}</strong> 까지 떨어졌는데, ` +
+        '<strong>기질을 아무리 넣어도 회복되지 않습니다</strong> — 일할 효소가 없으니까요.';
+    } else if (S.temp > optT + 2) {
+      verdict.className = 'verdict warn';
+      verdict.innerHTML = `최적온도 <strong>${optT.toFixed(1)}°C</strong> 를 넘겼습니다. ` +
+        `열에 안 풀린다면 <strong>${iv.toFixed(0)}</strong> 이 나와야 하는데 실제로는 ` +
+        `<strong>${v.toFixed(0)}</strong> 입니다 — <strong>${(iv / v).toFixed(1)}배</strong> 손해입니다. ` +
+        '온도를 올릴수록 더 벌어집니다.';
+    } else if (S.sub >= 12) {
+      verdict.className = 'verdict';
+      verdict.innerHTML = `기질이 충분해 포화도가 <strong>${(sat * 100).toFixed(0)}%</strong> 입니다. ` +
+        `여기서 기질을 더 넣어도 <strong>V<sub>max</sub> ${vmaxAt(S.temp).toFixed(0)}</strong> 을 못 넘습니다. ` +
+        '대신 <strong>온도를 올려 보세요</strong> — 어디까지 빨라지는지.';
     } else {
-      v.className = 'verdict';
-      v.innerHTML = `반감기 <strong>${n.toFixed(2)}번</strong> 경과. ` +
-        `이론 ${(th * 100).toFixed(1)}% 대비 실제 <strong>${(ac * 100).toFixed(1)}%</strong> ` +
-        `(차이 ${gap.toFixed(2)}%p). 원자가 많을수록 이론에 딱 붙습니다.`;
+      verdict.className = 'verdict';
+      verdict.innerHTML = `현재 <strong>${v.toFixed(1)} µM/s</strong>. ` +
+        `살아있는 효소가 <strong>${(f * 100).toFixed(0)}%</strong> 라 아직 손해가 거의 없습니다. ` +
+        `온도를 <strong>55°C</strong> 로 올려 보세요 — 25°C 와 속도가 같아집니다.`;
     }
 
     el('note').textContent =
-      `원자 ${atoms.length.toLocaleString()}개일 때 통계적으로 예상되는 흔들림은 약 ${sd.toFixed(2)}%p 입니다. ` +
-      `원자 수를 100배 늘리면 흔들림은 1/10 로 줄어듭니다 — 큰 수의 법칙입니다.`;
+      `K\u2098 = ${Km} mM (반쯤 찼을 때의 농도), 절반이 변성되는 온도 ${T_HALF}°C. ` +
+      `지금 살아있는 효소 비율 ${(f * 100).toFixed(1)}% × 아레니우스 ${arrhenius(S.temp).toFixed(2)}배 ` +
+      `= 유효 V\u2098\u2090\u2093 ${vmaxAt(S.temp).toFixed(1)}.`;
   }
 
   // ── 입력 ──
   const labels = {
-    natoms: (v) => Number(v).toLocaleString() + '개',
-    half: (v) => Number(v).toFixed(1) + '초',
-    speed: (v) => Number(v).toFixed(2) + '배'
+    temp: (v) => Number(v) + ' °C',
+    sub: (v) => Number(v).toFixed(1) + ' mM',
+    enz: (v) => Number(v).toFixed(1) + ' µM'
   };
 
-  ['natoms', 'half', 'speed'].forEach((k) => {
+  ['temp', 'sub', 'enz'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
       el(k + '-out').textContent = labels[k](input.value);
-      if (k !== 'speed') seed();
-      syncPresets();
-      readout();
+      syncPresets(); readout();
     });
   });
 
   const presetBox = el('presets');
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
-      S.natoms = Number(b.dataset.n);
-      S.half = Number(b.dataset.h);
-      S.iso = b.dataset.iso;
-      ['natoms', 'half'].forEach((k) => {
+      S.temp = Number(b.dataset.t); S.sub = Number(b.dataset.s); S.enz = Number(b.dataset.e);
+      ['temp', 'sub', 'enz'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
-      seed(); syncPresets(); readout();
+      syncPresets(); readout();
     });
   });
 
   function syncPresets() {
     presetBox.querySelectorAll('button').forEach((b) => {
       b.setAttribute('aria-pressed', String(
-        Number(b.dataset.n) === S.natoms && b.dataset.iso === S.iso
+        Number(b.dataset.t) === S.temp &&
+        Math.abs(Number(b.dataset.s) - S.sub) < 1e-9 &&
+        Math.abs(Number(b.dataset.e) - S.enz) < 1e-9
       ));
     });
   }
@@ -882,8 +896,8 @@
     el('toggle').textContent = running ? '일시정지' : '이어서';
   });
   el('reset').addEventListener('click', () => {
-    S.natoms = 400; S.half = 6; S.speed = 1; S.iso = 'c14';
-    ['natoms', 'half', 'speed'].forEach((k) => {
+    S.temp = 25; S.sub = 4; S.enz = 1;
+    ['temp', 'sub', 'enz'].forEach((k) => {
       el(k).value = S[k];
       el(k + '-out').textContent = labels[k](S[k]);
     });
@@ -895,7 +909,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ n: S.natoms, h: S.half, iso: S.iso });
+      const q = new URLSearchParams({ t: S.temp, s: S.sub, e: S.enz });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -906,7 +920,8 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    [['n', 'natoms'], ['h', 'half']].forEach(([key, id]) => {
+    const map = { t: 'temp', s: 'sub', e: 'enz' };
+    Object.entries(map).forEach(([key, id]) => {
       const v = Number(q.get(key));
       if (q.get(key) === null || !Number.isFinite(v)) return;
       const input = el(id);
@@ -914,27 +929,42 @@
       S[id] = c; input.value = c;
       el(id + '-out').textContent = labels[id](c);
     });
-    if (ISO[q.get('iso')]) S.iso = q.get('iso');
     syncPresets();
   }
 
   // ── 루프 ──
   let last = 0;
-  let sampleAt = 0;
   function frame(ts) {
     const now = ts / 1000;
     if (!last) last = now;
-    const dt = Math.min(0.1, now - last) * S.speed;
+    const dt = Math.min(0.1, now - last);
     last = now;
 
-    if (running && halves() < 5.2) {
-      t += dt;
-      decayStep(dt);
-      // 관측점 기록 — 반감기 0.05 회마다
-      if (halves() - sampleAt > 0.05) {
-        samples.push({ n: halves(), frac: actualFrac() });
-        sampleAt = halves();
-        if (samples.length > 400) samples.shift();
+    if (running) {
+      anim = now;
+      const f = intact(S.temp);
+      const speed = (0.35 + arrhenius(S.temp) * 0.22);
+      molecules.forEach((m, i) => {
+        // 변성된 효소는 거의 안 움직인다
+        const denatured = m.kind === 'E' && (i / 10) >= f;
+        const sp = denatured ? 0.08 : speed;
+        m.x += m.vx * dt * sp; m.y += m.vy * dt * sp;
+        if (m.x < 0 || m.x > 1) { m.vx = -m.vx; m.x = Math.max(0, Math.min(1, m.x)); }
+        if (m.y < 0 || m.y > 1) { m.vy = -m.vy; m.y = Math.max(0, Math.min(1, m.y)); }
+        if (m.flash > 0) m.flash = Math.max(0, m.flash - dt * 2.5);
+        if (m.busy > 0) m.busy = Math.max(0, m.busy - dt);
+      });
+      // 반응 속도에 비례해 기질을 생성물로 — 눈에 보이는 사건
+      const events = rate() / 300 * dt * 26;
+      let whole = Math.floor(events);
+      if (Math.random() < events - whole) whole++;
+      for (let k = 0; k < whole; k++) {
+        const enzymes = molecules.filter((m, i) => m.kind === 'E' && (i / 10) < f);
+        const subs = molecules.filter((m) => m.kind === 'S' && m.busy <= 0);
+        if (!enzymes.length || !subs.length) break;
+        const e2 = enzymes[(Math.random() * enzymes.length) | 0];
+        const s2 = subs[(Math.random() * subs.length) | 0];
+        e2.flash = 1; s2.busy = 1.1;
       }
       readout();
     }
@@ -950,7 +980,7 @@
     canvas.style.height = Math.round(w * 0.5) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
-    graph.height = 400 * DPR;
+    graph.height = 360 * DPR;
   }
 
   applyQuery();

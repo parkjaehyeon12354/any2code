@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>신경과 자극전달 — Ans2Quest</title>
+<meta name="description" content="세게 누르면 신호도 세게 갈까요? 활동전위는 항상 똑같은 크기로만 일어납니다. 자극 세기는 크기가 아니라 빈도로 전달된다는 실무율을 직접 확인해 보세요.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 소기관 목록 — 누르면 무대에서 강조된다 */
+.organelles { display: grid; gap: 6px; }
+.organelles button {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.organelles button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.organelles button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.organelles .dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.organelles .plant-only {
+  margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  background: var(--badge-wait-bg); color: var(--badge-wait-fg); font-weight: 600;
+}
+.organelles button[aria-pressed="true"] .plant-only { background: rgba(255,255,255,.22); color: inherit; }
+
+/* 동물/식물 전환 */
+.cell-kind { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.cell-kind button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.cell-kind button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.cell-kind button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.fact { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+        border: 1px solid var(--hairline); border-radius: 9px;
+        font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.fact strong { color: var(--ink); }
+.fact .job { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* 도시(위도) 고르기 */
+.cities { display: grid; gap: 5px; }
+.cities button {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.cities button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.cities button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cities .lat { font-size: 11.5px; opacity: .7; }
+
+.preset-row { display: flex; gap: 6px; margin-top: 10px; }
+.preset-row button {
+  flex: 1; height: 34px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer;
+}
+.preset-row button:hover { color: var(--ink); }
+.preset-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.season-now { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+              border: 1px solid var(--hairline); border-radius: 9px;
+              font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.season-now strong { color: var(--ink); }
+.season-now .sub { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+#daylight-graph { display: block; width: 100%; height: 360px; }
+
+/* ── 이 페이지 전용 추가 ──
+   ⚠ 변수는 styles.css 에 있는 것만 쓴다. --line/--surface/--accent 는 없다.
+      쓰면 색이 통째로 빠진 채 배포된다. */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: var(--sp-sm); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+  flex: 1 1 auto; min-width: 118px; padding: 9px 10px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft); color: var(--ink);
+  font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; line-height: 1.35;
+}
+.chips button:hover { border-color: var(--primary); }
+.chips button[aria-pressed="true"] { border-color: var(--primary); background: var(--badge-wait-bg); color: var(--badge-wait-fg); }
+.chips button small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.chips button[aria-pressed="true"] small { color: var(--badge-wait-fg); opacity: .85; }
+
+.verdict {
+  margin-top: var(--sp-md); padding: 12px 14px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  font-size: 13.5px; line-height: 1.65; color: var(--ink); word-break: keep-all;
+}
+.verdict strong { color: var(--primary); }
+.verdict.warn { border-color: var(--warn-fg); }
+
+.stat-row { display: flex; gap: var(--sp-sm); flex-wrap: wrap; margin-top: var(--sp-sm); }
+.stat {
+  flex: 1 1 118px; padding: 10px 12px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+}
+.stat dt { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+.stat dd { font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat dd.up { color: #c2410c; }
+.stat dd.down { color: #2563eb; }
+</style>
+</head>
+<body>
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <a href="/simulation/wave-interference.html">빛과 파동</a>
+            <a href="/simulation/orbital-motion.html">천체의 운동</a>
+            <a href="/simulation/thermal-gas.html">열과 통계</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <a href="/simulation/chemical-reaction.html">화학 반응</a>
+          </div>
+          <div class="mega-col">
+            <a href="/simulation/acid-base.html">산과 염기</a>
+            <a href="/simulation/electrochemistry.html">전기화학</a>
+            <a href="/simulation/radioactivity.html">방사능</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <a href="/simulation/ecology-population.html">개체와 생태계</a>
+          </div>
+          <div class="mega-col">
+            <a href="/simulation/neural-signal.html">신경과 자극전달</a>
+            <a href="/simulation/circulation-transport.html">순환과 수송</a>
+            <a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">움직이는 지구</p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">지구와 우주</p>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="/research" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a><a href="/simulation/wave-interference.html">빛과 파동</a><a href="/simulation/orbital-motion.html">천체의 운동</a><a href="/simulation/thermal-gas.html">열과 통계</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a><a href="/simulation/chemical-reaction.html">화학 반응</a><a href="/simulation/acid-base.html">산과 염기</a><a href="/simulation/electrochemistry.html">전기화학</a><a href="/simulation/radioactivity.html">방사능</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a><a href="/simulation/ecology-population.html">개체와 생태계</a><a href="/simulation/neural-signal.html">신경과 자극전달</a><a href="/simulation/circulation-transport.html">순환과 수송</a><a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+    <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <a href="/research">심화 탐구</a>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+
+
+
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 생명과학 · 신경과 자극전달</p>
+
+  <div class="head">
+    <h1>신경과 자극전달</h1>
+    <p>세게 누르면 신호도 <strong>세게 갈까요?</strong> 아닙니다.
+    활동전위는 <strong>항상 똑같은 크기</strong>로만 일어납니다 — 있거나, 없거나.
+    자극 세기 슬라이더를 끝까지 올려 보세요.
+    <strong>봉우리 높이는 1mV 도 안 변하고</strong>, 대신 <strong>더 자주</strong> 일어납니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="자극 세기에 따른 막전위 변화와 활동전위 발생"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#e63946"></i>활동전위</span>
+        <span><i style="background:#7bdff2"></i>차오르는 중</span>
+        <span><i style="background:#8a8f98"></i>불응기 (아무것도 못 함)</span>
+        <span><i style="background:#ffd166"></i>역치 −55mV</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>조건</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="stim">자극 세기</label>
+              <output id="stim-out">80 %</output>
+            </div>
+            <input type="range" id="stim" min="0" max="100" step="1" value="80">
+            <span class="hint"><strong>60% 아래로 내려 보세요.</strong> 아무리 오래 눌러도
+            봉우리가 하나도 안 생깁니다. 그리고 <strong>올려도 봉우리 높이는 그대로</strong>입니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="tref">불응기</label>
+              <output id="tref-out">5 ms</output>
+            </div>
+            <input type="range" id="tref" min="1" max="30" step="1" value="5">
+            <span class="hint">한 번 일어난 뒤 쉬는 시간. 이게 <strong>1초에 몇 번까지</strong> 가능한지를 정합니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="myelin">수초</label>
+              <output id="myelin-out">있음</output>
+            </div>
+            <input type="range" id="myelin" min="0" max="1" step="1" value="1">
+            <span class="hint">축삭을 감싼 절연층. 있으면 신호가 <strong>건너뛰며</strong> 갑니다.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>상황 고르기</h2></div>
+        <div class="panel-body">
+          <div class="chips" id="presets">
+            <button type="button" data-s="40" data-t="5" data-m="1">
+              살짝 스침<small>역치 미달 — 아무 일도 안 일어남</small></button>
+            <button type="button" data-s="65" data-t="5" data-m="1">
+              가볍게 누름<small>겨우 역치를 넘김</small></button>
+            <button type="button" data-s="80" data-t="5" data-m="1" aria-pressed="true">
+              꾹 누름<small>같은 크기, 더 자주</small></button>
+            <button type="button" data-s="100" data-t="5" data-m="1">
+              아주 세게<small>봉우리 높이를 확인해 보세요</small></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>활동전위 크기</dt><dd id="r-amp">—</dd></div>
+            <div><dt>발생 빈도</dt><dd id="r-freq">—</dd></div>
+            <div><dt>역치까지 걸리는 시간</dt><dd id="r-charge">—</dd></div>
+            <div><dt>전도 속도</dt><dd id="r-speed">—</dd></div>
+            <div><dt>지금까지 발생</dt><dd id="r-count" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>세기를 올리면</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>봉우리 높이</dt><dd id="s-amp">—</dd></dl>
+            <dl class="stat"><dt>1초당 횟수</dt><dd id="s-freq">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">세기를 올리면 무엇이 변하나</h2><p>가로축이 자극 세기입니다. <strong>빨간 선(봉우리 높이)은 완전히 평평합니다</strong> — 역치를 넘는 순간 100mV 로 튀어오르고, 그 뒤로는 아무리 세게 눌러도 그대로입니다. 반면 <strong>파란 선(1초당 횟수)은 계속 올라갑니다.</strong> 뇌는 &quot;얼마나 센가&quot;를 크기가 아니라 <strong>빈도로</strong> 읽습니다.</p></div>
+    <div class="graph-wrap"><canvas id="response-graph" aria-label="자극 세기에 따른 활동전위 크기와 빈도"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">차오르고, 터지고, 쉰다</h2><p>세 단계가 반복될 뿐입니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">빈도 = 1000 ÷ (차오르는 시간 + 불응기) &nbsp;&nbsp;|&nbsp;&nbsp; 크기 = 항상 100 mV</p>
+      <p>자극이 셀수록 막전위가 역치까지 <strong>빨리 차오릅니다.</strong> 80%면 13.9ms, 100%면 9.2ms입니다. 하지만 일단 터지면 크기는 언제나 −70mV 에서 +30mV 까지, <strong>정확히 같습니다.</strong> 그래서 세기는 오직 <strong>얼마나 자주 터지는가</strong>로만 전달됩니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>왜 항상 같은 크기일까요.</strong> 활동전위는 자극이 밀어 올리는 게 아니라, 역치를 넘는 순간 <strong>나트륨 통로가 한꺼번에 열리며 스스로 일어나는</strong> 현상입니다. 화약에 불을 붙이는 것과 같습니다 — 성냥을 세게 긋든 살살 긋든, 일단 붙으면 터지는 크기는 화약의 양이 정합니다. 그래서 <strong>실무율(all-or-none)</strong>, 전부 아니면 전무라고 부릅니다.</p><p><strong>그럼 아픈 정도는 어떻게 구분할까요.</strong> 두 가지입니다. 하나는 <strong>빈도</strong>로, 세게 누를수록 1초에 더 많은 신호가 갑니다. 다른 하나는 <strong>참여하는 신경 수</strong>인데, 약한 자극은 예민한 신경 몇 개만, 강한 자극은 둔한 신경까지 함께 반응합니다. 뇌는 이 두 정보를 합쳐 세기를 읽습니다.</p><p><strong>불응기가 상한을 만듭니다.</strong> 한 번 터진 뒤에는 나트륨 통로가 닫혀 있어 아무리 센 자극이 와도 반응하지 않습니다. 이 시간이 5ms 면 이론상 1초에 200번이 한계입니다. 불응기는 낭비가 아니라 <strong>신호가 뒤로 거꾸로 흐르지 못하게 막는 장치</strong>이기도 합니다 — 방금 지나온 자리는 쉬고 있으니 앞으로만 갈 수 있습니다.</p><p><strong>수초는 속도를 100배 올립니다.</strong> 축삭을 감싼 절연층이라 그 구간에서는 전위가 새지 않고, 신호가 마디(랑비에 결절)에서 마디로 <strong>건너뜁니다.</strong> 이걸 도약전도라 하며, 수초 없는 신경이 초속 1m 정도인 데 비해 수초가 있으면 <strong>초속 100m</strong> 까지 나옵니다. 다발성 경화증은 이 수초가 손상되는 병인데, 신호가 느려지거나 끊겨 감각과 운동에 문제가 생깁니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 신경과 자극전달: 세게 누르면 신호도 셀까 ──
+
+     설계는 Solar 4 Pro, 계산 로직은 Kimi K3, 검증은 직접 했다.
+
+     ⚠ Solar 설계는 못 썼다. 빈도 공식이 f = 1000/t_ref 라 자극 세기가
+        아예 안 들어가서, 세기를 올려도 빈도가 안 변했다. 오개념을 깨야 하는
+        화면인데 정작 결정적 슬라이더가 아무 일도 안 하는 셈이다.
+        (검증표 2·3번도 4번과 같은 공식인데 답이 달라 내적 모순이었다.)
+        표준 leaky integrate-and-fire 로 바꿨다.
+
+     ⚠ K3 코드에서 교착 버그를 잡았다. 불응기가 끝나는 순간 refLeft 가
+        정확히 0 이 아니라 3.55e-15 로 남아, 시간이 0 만큼만 흐르며
+        영원히 도는 상태가 됐다(t=34.47 에서 멈춤). 임계값 비교로 고쳤다.
+
+     확인한 값(tref=5): 61%→21.7Hz / 70%→40.9Hz / 90%→62.6Hz / 100%→70.6Hz
+                        60% 이하는 0Hz. 진폭은 언제나 100mV. */
+
+  const TAU = 10.0, VTH = 15.0, ITH = 60;
+  const V_REST = -70, V_PEAK = 30;
+
+  // ---------------------------------------------------------------
+  // 역치까지 차오르는 시간(ms)
+  //  - RC 막이 평형전위 drive 를 향해 지수 충전될 때, v=0 → VTH 도달 시간의 해석해
+  //  - I <= ITH 이면 평형전위 자체가 역치 이하라 영원히 못 넘음 → Infinity
+  //    (수식상으로도 1 - VTH/drive <= 0 이 되어 log 가 발산하므로 물리와 일치)
+  // ---------------------------------------------------------------
+  function chargeTime(I) {
+    if (I <= ITH) return Infinity;
+    var drive = VTH * I / ITH;              // 자극 세기에 비례하는 목표(평형) 탈분극량
+    return -TAU * Math.log(1 - VTH / drive);
+  }
+
+  // ---------------------------------------------------------------
+  // 발화 빈도(Hz) = 1000 / (충전시간 + 불응기)
+  //  - 이 시뮬레이션의 교육적 핵심: "세기 → 진폭"이 아니라 "세기 → 빈도" 부호화
+  // ---------------------------------------------------------------
+  function fireRate(I, tref) {
+    var tc = chargeTime(I);
+    if (!isFinite(tc)) return 0;            // 역치 미달 → 발화 없음
+    return 1000 / (tc + tref);
+  }
+
+  // 구간 보간용. 끝점 전위는 명세(-70/+30/-80/-70)와 정확히 같고,
+  // 중간 모양만 부드럽게 하기 위한 smoothstep. 순수 선형이 좋으면 smooth01(u) → u 로 교체.
+  function smooth01(u) { return u * u * (3 - 2 * u); }
+
+  // ---------------------------------------------------------------
+  // 스파이크 파형 — 실무율(all-or-none) 시연의 핵심
+  //  - 자극 세기 인자를 아예 받지 않는다: 진폭은 언제나 100mV(-70→+30)로 고정
+  //  - age: 스파이크 시작 후 경과 시간(ms)
+  // ---------------------------------------------------------------
+  function spikeVoltage(age) {
+    var V_HYPER = -80;                      // 과분극 바닥
+    if (age < 0) return V_REST;
+    if (age < 1) {                          // 0~1ms: 급상승 (-70 → +30)
+      return V_REST + (V_PEAK - V_REST) * smooth01(age);
+    }
+    if (age < 3) {                          // 1~3ms: 하강 (+30 → -80)
+      var u1 = smooth01((age - 1) / 2);
+      return V_PEAK + (V_HYPER - V_PEAK) * u1;
+    }
+    if (age < 5) {                          // 3~5ms: 회복 (-80 → -70)
+      var u2 = smooth01((age - 3) / 2);
+      return V_HYPER + (V_REST - V_HYPER) * u2;
+    }
+    return V_REST;                          // 5ms 이후: 휴지전위
+  }
+
+  // ---------------------------------------------------------------
+  // 시뮬레이션을 dt(ms) 만큼 진행
+  //  state = { t, lastSpike, spikes, phase, v }
+  //    phase: 'rest' | 'subthreshold' | 'charging' | 'refractory'
+  //    v    : 충전량 = 휴지전위 대비 탈분극(mV), 0~VTH (없어도 0으로 자동 보정)
+  //
+  //  왜 v 를 상태로 저장하나?
+  //    시뮬레이션 도중 자극 I 가 바뀌어도 "지금까지 차오른 양"을 이어서
+  //    계산하기 위해. lastSpike 시각만으로는 I 변경 시 충전 진행을 표현 못 함.
+  //
+  //  반환: 이번 구간에 새로 발생한 스파이크 시각들의 배열
+  // ---------------------------------------------------------------
+  function advance(state, I, tref, dt) {
+    var fired = [];
+    if (!state.spikes) state.spikes = [];
+    if (typeof state.v !== 'number') state.v = 0;
+
+    var remaining = dt;
+    var guard = 0;                          // 비정상 입력(tref=0 + 초강자극) 시 무한루프 방지
+
+    while (remaining > 1e-9 && guard++ < 100000) {
+
+      // 1) 불응기: 자극이 아무리 세도 충전 정지. 시간만 흘려 보낸다.
+      //    (맨 앞에 두어야 "불응기 최우선" 규칙이 어떤 자극보다 먼저 적용됨)
+      var refLeft = 0;
+      if (state.lastSpike != null) {
+        refLeft = tref - (state.t - state.lastSpike);
+        if (refLeft < 0) refLeft = 0;
+      }
+      /* ⚠ refLeft > 0 만 보면 교착에 빠진다.
+         불응기가 끝나는 순간 refLeft 가 정확히 0 이 아니라 3.55e-15 같은
+         부동소수점 잔여값으로 남는데, 그러면 아래 분기로 들어가 시간이
+         사실상 0 만큼 흐르고, remaining 은 1e-9 위라 루프가 영원히 돈다.
+         실제로 t=34.47 에서 시간이 완전히 멈췄다.
+         루프 탈출 임계값(1e-9)보다 큰 값일 때만 불응기로 취급한다. */
+      if (refLeft > 1e-9) {
+        var step = Math.min(remaining, refLeft);
+        state.t += step;
+        remaining -= step;
+        state.v = 0;                        // 불응기 동안 충전량은 리셋 유지
+        state.phase = 'refractory';
+        continue;
+      }
+
+      // 2) 역치 미달: 평형전위를 향해 지수 접근할 뿐, drive <= VTH 라서
+      //    절대 역치에 닿지 않음 → 발화 없음.
+      //    I = ITH 일 때도 VTH 에 '점근'할 뿐이라 발화 안 함
+      //    → chargeTime(ITH) = Infinity 와 정확히 대응됨
+      if (I <= ITH) {
+        var driveSub = (I > 0) ? VTH * I / ITH : 0;
+        state.v = driveSub + (state.v - driveSub) * Math.exp(-remaining / TAU);
+        state.t += remaining;
+        remaining = 0;
+        state.phase = (I > 0) ? 'subthreshold' : 'rest';
+        continue;
+      }
+
+      // 3) 역치 이상: VTH 도달 시각을 해석적으로 계산 (정확하고 루프 불필요)
+      var drive = VTH * I / ITH;
+      var tToFire;
+      if (state.v >= VTH) {
+        tToFire = 0;                        // 부동소수점 경계에서 이미 도달한 드문 경우
+      } else {
+        // v(t) = drive + (v0 - drive)·e^(-t/TAU) = VTH 를 t 에 대해 푼 식
+        tToFire = -TAU * Math.log((VTH - drive) / (state.v - drive));
+      }
+
+      if (tToFire >= remaining) {
+        // 3-a) 이번 구간 내 발화 없음 → 남은 시간만큼만 충전
+        state.v = drive + (state.v - drive) * Math.exp(-remaining / TAU);
+        state.t += remaining;
+        remaining = 0;
+        state.phase = 'charging';
+      } else {
+        // 3-b) 구간 도중 발화 → 그 시각까지 진행, 기록 후 리셋
+        state.t += tToFire;
+        remaining -= tToFire;
+        state.lastSpike = state.t;
+        state.spikes.push(state.t);
+        fired.push(state.t);
+        state.v = 0;                        // 발화 후 충전량 리셋
+                                            // (파형 자체는 spikeVoltage 가 담당)
+        state.phase = 'refractory';
+        // continue → 다음 반복에서 불응기 소진 → 재충전 → 재발화 자동 반복
+      }
+    }
+
+    return fired;
+  }
+
+  // ---------------------------------------------------------------
+  // (보조) 화면 표시용 막전위(mV)
+  //  - 스파이크 직후 5ms: spikeVoltage 파형
+  //  - 그 외: 휴지전위 + 충전량 → 역치미달 시 역치 근처까지 올라가다
+  //    멈추는 모습이 여기서 그대로 드러남
+  // ---------------------------------------------------------------
+  function displayVoltage(state) {
+    if (state.lastSpike != null) {
+      var age = state.t - state.lastSpike;
+      if (age < 5) return spikeVoltage(age);
+    }
+    return V_REST + (state.v || 0);
+  }
+
+
+  const S = { stim: 80, tref: 5, myelin: 1 };
+  let running = true;
+  let sim = { t: 0, lastSpike: null, spikes: [], phase: 'rest', v: 0 };
+  let trace = [];                  // 화면에 흐르는 막전위 기록
+  let totalSpikes = 0;
+  let travellers = [];             // 축삭을 따라가는 신호
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  const graph = el('response-graph');
+  const gctx = graph.getContext('2d');
+  let DPR = 1;
+
+  const conduction = () => (S.myelin ? 100 : 1);   // m/s
+
+  function reset() {
+    sim = { t: 0, lastSpike: null, spikes: [], phase: 'rest', v: 0 };
+    trace = []; totalSpikes = 0; travellers = [];
+  }
+
+  // ── 무대: 위는 막전위 파형, 아래는 축삭 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const w = canvas.width / DPR, h = canvas.height / DPR;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#141a20';
+    ctx.fillRect(0, 0, w, h);
+
+    const pad = 16;
+    const traceH = h * 0.6;
+    const axonY = traceH + (h - traceH) / 2 + 6;
+
+    // 전위 → 픽셀
+    const VMIN = -90, VMAX = 40;
+    const Y = (v) => pad + 14 + (VMAX - v) / (VMAX - VMIN) * (traceH - pad - 30);
+
+    // 역치선과 휴지선
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(255,209,102,.65)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(pad, Y(-55)); ctx.lineTo(w - pad, Y(-55)); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath(); ctx.moveTo(pad, Y(-70)); ctx.lineTo(w - pad, Y(-70)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '10.5px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,209,102,.9)';
+    ctx.fillText('역치 −55mV', pad + 4, Y(-55) - 5);
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    ctx.fillText('휴지 −70mV', pad + 4, Y(-70) + 13);
+    ctx.fillText('+30mV', pad + 4, Y(30) + 4);
+
+    // 막전위 파형
+    if (trace.length > 1) {
+      const tw = w - pad * 2;
+      ctx.beginPath();
+      trace.forEach((pt, i) => {
+        const x = pad + (i / (trace.length - 1)) * tw;
+        i ? ctx.lineTo(x, Y(pt.v)) : ctx.moveTo(x, Y(pt.v));
+      });
+      ctx.strokeStyle = '#7bdff2';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 봉우리에 점 — 높이가 전부 같다는 걸 보여준다
+      trace.forEach((pt, i) => {
+        if (!pt.peak) return;
+        const x = pad + (i / (trace.length - 1)) * tw;
+        ctx.fillStyle = '#e63946';
+        ctx.beginPath(); ctx.arc(x, Y(30), 3.4, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    // 불응기 표시
+    if (sim.phase === 'refractory') {
+      ctx.fillStyle = 'rgba(138,143,152,.2)';
+      ctx.fillRect(w - pad - 90, pad + 10, 86, 20);
+      ctx.fillStyle = '#c9ccd2';
+      ctx.font = '600 11px ui-sans-serif, system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('불응기 — 못 함', w - pad - 47, pad + 24);
+    }
+
+    // 축삭
+    const ax0 = pad + 70, ax1 = w - pad - 20;
+    ctx.strokeStyle = 'rgba(255,255,255,.16)';
+    ctx.lineWidth = 13;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(ax0, axonY); ctx.lineTo(ax1, axonY); ctx.stroke();
+
+    if (S.myelin) {
+      // 수초 — 마디 사이를 감싼 절연층
+      const segs = 7;
+      for (let i = 0; i < segs; i++) {
+        const a = ax0 + (ax1 - ax0) * (i + 0.08) / segs;
+        const b = ax0 + (ax1 - ax0) * (i + 0.92) / segs;
+        ctx.strokeStyle = 'rgba(244,162,97,.4)';
+        ctx.lineWidth = 19;
+        ctx.beginPath(); ctx.moveTo(a, axonY); ctx.lineTo(b, axonY); ctx.stroke();
+      }
+    }
+
+    // 세포체
+    ctx.fillStyle = 'rgba(123,223,242,.3)';
+    ctx.beginPath(); ctx.arc(ax0 - 26, axonY, 17, 0, Math.PI * 2); ctx.fill();
+
+    // 신호
+    travellers.forEach((tr) => {
+      const x = ax0 + tr.pos * (ax1 - ax0);
+      ctx.fillStyle = '#e63946';
+      ctx.beginPath(); ctx.arc(x, axonY, 6.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(230,57,70,.28)';
+      ctx.beginPath(); ctx.arc(x, axonY, 12, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.font = '11px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.fillText(S.myelin ? '수초 있음 — 마디를 건너뜀 (약 100 m/s)'
+                          : '수초 없음 — 한 칸씩 (약 1 m/s)', pad, h - 8);
+
+    ctx.textAlign = 'right';
+    if (S.stim <= 60) {
+      ctx.fillStyle = '#ffb4a2';
+      ctx.font = '600 12px ui-sans-serif, system-ui';
+      ctx.fillText('역치 미달 — 막전위만 오르다 멈춥니다', w - pad, h - 8);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      ctx.fillText(`${fireRate(S.stim, S.tref).toFixed(1)} Hz`, w - pad, h - 8);
+    }
+  }
+
+  // ── 그래프: 세기 → 크기·빈도 ──
+  function drawGraph() {
+    gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const w = graph.width / DPR, h = graph.height / DPR;
+    gctx.clearRect(0, 0, w, h);
+    gctx.fillStyle = '#f7f7f5';
+    gctx.fillRect(0, 0, w, h);
+
+    const pad = { l: 62, r: 62, t: 26, b: 44 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
+
+    let maxF = 0;
+    for (let I = 0; I <= 100; I++) maxF = Math.max(maxF, fireRate(I, S.tref));
+    maxF = Math.max(10, maxF * 1.15);
+
+    const X = (I) => pad.l + I / 100 * gw;
+    const YA = (a) => pad.t + gh - a / 120 * gh;       // 왼쪽축: 크기 mV
+    const YF = (f) => pad.t + gh - f / maxF * gh;      // 오른쪽축: 빈도 Hz
+
+    gctx.strokeStyle = 'rgba(128,128,128,.2)';
+    gctx.lineWidth = 1;
+    gctx.font = '11px ui-sans-serif, system-ui';
+    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.textAlign = 'center';
+    for (let I = 0; I <= 100; I += 20) {
+      gctx.beginPath(); gctx.moveTo(X(I), pad.t); gctx.lineTo(X(I), pad.t + gh); gctx.stroke();
+      gctx.fillText(I + '%', X(I), h - 20);
+    }
+    gctx.fillText('자극 세기', pad.l + gw / 2, h - 5);
+
+    gctx.textAlign = 'right';
+    gctx.fillStyle = '#c0392b';
+    for (let a = 0; a <= 120; a += 30) gctx.fillText(a, pad.l - 8, YA(a) + 4);
+    gctx.save();
+    gctx.translate(16, pad.t + gh / 2); gctx.rotate(-Math.PI / 2);
+    gctx.textAlign = 'center'; gctx.fillText('봉우리 높이 (mV)', 0, 0);
+    gctx.restore();
+
+    gctx.textAlign = 'left';
+    gctx.fillStyle = '#1d7870';
+    for (let i = 0; i <= 4; i++) gctx.fillText((maxF * i / 4).toFixed(0), pad.l + gw + 8, YF(maxF * i / 4) + 4);
+    gctx.save();
+    gctx.translate(w - 14, pad.t + gh / 2); gctx.rotate(Math.PI / 2);
+    gctx.textAlign = 'center'; gctx.fillText('1초당 횟수 (Hz)', 0, 0);
+    gctx.restore();
+
+    // 역치
+    gctx.setLineDash([4, 4]);
+    gctx.strokeStyle = 'rgba(217,119,6,.7)'; gctx.lineWidth = 1.6;
+    gctx.beginPath(); gctx.moveTo(X(60), pad.t); gctx.lineTo(X(60), pad.t + gh); gctx.stroke();
+    gctx.setLineDash([]);
+    gctx.fillStyle = '#8a5c08';
+    gctx.font = '600 11px ui-sans-serif, system-ui';
+    gctx.textAlign = 'left';
+    gctx.fillText('역치 60%', X(60) + 5, pad.t + 13);
+
+    // 봉우리 높이 — 계단처럼 평평
+    gctx.beginPath();
+    gctx.moveTo(X(0), YA(0)); gctx.lineTo(X(60), YA(0));
+    gctx.moveTo(X(60), YA(100)); gctx.lineTo(X(100), YA(100));
+    gctx.strokeStyle = '#c0392b'; gctx.lineWidth = 3.4; gctx.stroke();
+    gctx.setLineDash([3, 3]);
+    gctx.beginPath(); gctx.moveTo(X(60), YA(0)); gctx.lineTo(X(60), YA(100));
+    gctx.strokeStyle = 'rgba(192,57,43,.45)'; gctx.lineWidth = 2; gctx.stroke();
+    gctx.setLineDash([]);
+
+    // 빈도 — 계속 오름
+    gctx.beginPath();
+    let started = false;
+    for (let I = 0; I <= 100; I += 0.5) {
+      const f = fireRate(I, S.tref);
+      if (f <= 0) continue;
+      const xx = X(I), yy = YF(f);
+      started ? gctx.lineTo(xx, yy) : (gctx.moveTo(xx, yy), started = true);
+    }
+    gctx.strokeStyle = '#1d7870'; gctx.lineWidth = 3; gctx.stroke();
+
+    // 현재 위치
+    if (S.stim > 60) {
+      gctx.beginPath(); gctx.arc(X(S.stim), YF(fireRate(S.stim, S.tref)), 6, 0, Math.PI * 2);
+      gctx.fillStyle = '#111'; gctx.fill();
+      gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.2; gctx.stroke();
+      gctx.beginPath(); gctx.arc(X(S.stim), YA(100), 6, 0, Math.PI * 2);
+      gctx.fillStyle = '#111'; gctx.fill();
+      gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.2; gctx.stroke();
+    }
+
+    /* 범례는 왼쪽 아래에 둔다. 오른쪽 위에 두면 빈도 곡선이 그쪽으로
+       올라와 글자와 겹친다(좁은 화면에서 특히). */
+    gctx.font = '600 11.5px ui-sans-serif, system-ui';
+    gctx.textAlign = 'left';
+    gctx.fillStyle = '#c0392b';
+    gctx.fillText('— 봉우리 높이: 평평합니다', pad.l + 8, pad.t + gh - 26);
+    gctx.fillStyle = '#1d7870';
+    gctx.fillText('— 1초당 횟수: 계속 오릅니다', pad.l + 8, pad.t + gh - 9);
+  }
+
+  // ── 수치 ──
+  function readout() {
+    const f = fireRate(S.stim, S.tref);
+    const c = chargeTime(S.stim);
+    const fires = S.stim > 60;
+
+    el('r-amp').textContent = fires ? '100 mV (−70 → +30)' : '없음';
+    el('r-freq').textContent = fires ? f.toFixed(1) + ' Hz' : '0 Hz';
+    el('r-charge').textContent = isFinite(c) ? c.toFixed(2) + ' ms' : '영영 못 닿음';
+    el('r-speed').textContent = conduction() + ' m/s';
+    el('r-count').textContent = totalSpikes.toLocaleString() + ' 번';
+
+    el('s-amp').textContent = fires ? '100 mV' : '—';
+    el('s-freq').textContent = fires ? f.toFixed(1) + ' Hz' : '0 Hz';
+
+    const v = el('verdict');
+    if (!fires) {
+      v.className = 'verdict warn';
+      v.innerHTML = `자극이 <strong>${S.stim}%</strong> 라 역치(60%)에 못 미칩니다. ` +
+        '막전위가 <strong>역치 근처까지 오르다 멈출 뿐</strong>, 활동전위는 하나도 안 생깁니다. ' +
+        '<strong>약한 자극은 작은 신호를 보내는 게 아니라, 아예 안 보냅니다.</strong>';
+    } else {
+      const f60 = fireRate(61, S.tref);
+      v.className = 'verdict';
+      v.innerHTML = `봉우리 높이는 <strong>100 mV</strong> — 세기를 아무리 올려도 ` +
+        `<strong>1 mV 도 안 변합니다.</strong> 바뀌는 건 횟수뿐이라, ` +
+        `겨우 역치를 넘은 61%에서 <strong>${f60.toFixed(1)}Hz</strong> 이던 것이 ` +
+        `지금 <strong>${f.toFixed(1)}Hz</strong> 입니다.`;
+    }
+
+    el('note').textContent =
+      `역치까지 ${isFinite(c) ? c.toFixed(2) + 'ms' : '∞'} + 불응기 ${S.tref}ms = ` +
+      `한 번에 ${isFinite(c) ? (c + S.tref).toFixed(2) + 'ms' : '—'}. ` +
+      `불응기가 ${S.tref}ms 이므로 이론상 1초에 ${(1000 / S.tref).toFixed(0)}번이 한계입니다.`;
+  }
+
+  // ── 입력 ──
+  const labels = {
+    stim: (v) => Number(v) + ' %',
+    tref: (v) => Number(v) + ' ms',
+    myelin: (v) => (Number(v) ? '있음' : '없음')
+  };
+  ['stim', 'tref', 'myelin'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      S[k] = Number(input.value);
+      el(k + '-out').textContent = labels[k](input.value);
+      syncPresets(); readout();
+    });
+  });
+
+  const presetBox = el('presets');
+  presetBox.querySelectorAll('button').forEach((b) => {
+    b.addEventListener('click', () => {
+      S.stim = Number(b.dataset.s); S.tref = Number(b.dataset.t); S.myelin = Number(b.dataset.m);
+      ['stim', 'tref', 'myelin'].forEach((k) => {
+        el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
+      });
+      syncPresets(); readout();
+    });
+  });
+  function syncPresets() {
+    presetBox.querySelectorAll('button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(
+        Number(b.dataset.s) === S.stim &&
+        Number(b.dataset.t) === S.tref &&
+        Number(b.dataset.m) === S.myelin));
+    });
+  }
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', () => {
+    S.stim = 80; S.tref = 5; S.myelin = 1;
+    ['stim', 'tref', 'myelin'].forEach((k) => {
+      el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
+    });
+    reset(); syncPresets(); readout();
+  });
+
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({ s: S.stim, t: S.tref, m: S.myelin });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    const map = { s: 'stim', t: 'tref', m: 'myelin' };
+    Object.entries(map).forEach(([key, id]) => {
+      const raw = q.get(key);
+      if (raw === null) return;
+      const val = Number(raw);
+      if (!Number.isFinite(val)) return;
+      const input = el(id);
+      const c = Math.max(Number(input.min), Math.min(Number(input.max), val));
+      S[id] = c; input.value = c;
+      el(id + '-out').textContent = labels[id](c);
+    });
+  }
+
+  const TRACE_MS = 220;      // 화면에 보이는 시간 폭
+  let last = 0;
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    const dt = Math.min(0.05, now - last);
+    last = now;
+
+    if (running) {
+      // 실제 ms 단위로 진행. 화면은 느리게 보여야 하니 배속을 낮춘다.
+      const stepMs = dt * 1000 * 0.35;
+      const fired = advance(sim, S.stim, S.tref, stepMs);
+      totalSpikes += fired.length;
+      fired.forEach(() => travellers.push({ pos: 0 }));
+
+      trace.push({ v: displayVoltage(sim), peak: fired.length > 0 });
+      const maxPts = Math.round(TRACE_MS / 0.6);
+      if (trace.length > maxPts) trace.splice(0, trace.length - maxPts);
+
+      const sp = S.myelin ? 1.9 : 0.34;
+      travellers.forEach((t) => { t.pos += sp * dt; });
+      travellers = travellers.filter((t) => t.pos <= 1);
+
+      readout();
+    }
+    draw(); drawGraph();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.5) * DPR;
+    canvas.style.height = Math.round(w * 0.5) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 380 * DPR;
+  }
+
+  applyQuery();
+  reset();
+  syncPresets();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

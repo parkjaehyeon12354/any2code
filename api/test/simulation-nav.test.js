@@ -88,6 +88,55 @@ test('물리 시뮬레이션이 실제 물리 상수를 쓴다', () => {
   assert.ok(/mbPdf|맥스웰/.test(thermal), '맥스웰-볼츠만 분포가 없다');
 });
 
+test('생명과학 시뮬레이션 네 개가 실제로 있다', () => {
+  for (const f of ['ecology-population', 'neural-signal',
+                   'circulation-transport', 'metabolism-enzyme']) {
+    assert.ok(fs.existsSync(path.join(SIM_DIR, f + '.html')), f + '.html 이 없다');
+  }
+});
+
+test('생명과학 상수가 코드에 실제로 있다', () => {
+  /* 숫자를 박아 두는 이유: 이 값들은 교과서와 대조해 확인한 것이라
+     누가 무심코 바꾸면 물리적으로 틀린 화면이 된다.
+     전부 브라우저에서도 재확인했다. */
+  const eco = read(path.join(SIM_DIR, 'ecology-population.html'));
+  assert.match(eco, /const r = 0\.5/, '피식자 번식률 0.5');
+  assert.match(eco, /const e = 0\.3/, '전환효율 0.3');
+  assert.match(eco, /const m = 0\.08/, '포식자 사망률 0.08');
+
+  const neu = read(path.join(SIM_DIR, 'neural-signal.html'));
+  assert.match(neu, /TAU = 10\.0/, '막 시상수 10ms');
+  assert.match(neu, /VTH = 15\.0/, '역치 15mV');
+  assert.match(neu, /V_REST = -70/, '휴지전위 -70mV');
+  assert.match(neu, /V_PEAK = 30/, '정점 +30mV');
+
+  const cir = read(path.join(SIM_DIR, 'circulation-transport.html'));
+  assert.match(cir, /CAP_R = 4e-4/, '모세혈관 반지름 4e-4 cm');
+
+  const enz = read(path.join(SIM_DIR, 'metabolism-enzyme.html'));
+  assert.match(enz, /Km = 2\.0/, '미카엘리스 상수 2.0 mM');
+  assert.match(enz, /T_HALF = 50/, '절반 변성 온도 50도');
+});
+
+test('신경 시뮬은 진폭을 자극 세기와 무관하게 그린다', () => {
+  /* 실무율이 이 화면의 전부다. spikeVoltage 가 자극 세기를 인자로
+     받기 시작하면 "세게 누르면 크게"가 되어 오개념을 그대로 가르친다. */
+  const neu = read(path.join(SIM_DIR, 'neural-signal.html'));
+  const m = neu.match(/function spikeVoltage\(([^)]*)\)/);
+  assert.ok(m, 'spikeVoltage 함수가 없다');
+  assert.strictEqual(m[1].trim(), 'age', 'spikeVoltage 는 age 하나만 받아야 한다');
+});
+
+test('신경 시뮬의 불응기 비교는 부동소수점 안전값을 쓴다', () => {
+  /* refLeft > 0 으로 두면 불응기가 끝나는 순간 3.55e-15 가 남아
+     시간이 0 만큼 흐르는 교착에 빠진다(실제로 t=34.47 에서 멈췄다).
+     임계값 비교여야 한다. */
+  const neu = read(path.join(SIM_DIR, 'neural-signal.html'));
+  assert.ok(!/if \(refLeft > 0\)/.test(neu),
+    'refLeft > 0 은 교착을 만든다 — 임계값 비교를 쓸 것');
+  assert.match(neu, /refLeft > 1e-9/, '임계값 비교가 있어야 한다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
