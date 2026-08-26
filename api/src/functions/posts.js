@@ -463,12 +463,25 @@ app.http('commentsUpdate', {
          일어나지 않는다 (실제로 이 순서 때문에 답변 수가 안 움직였다). */
       const prevStatus = comment.status;
 
-      await c.item(commentId, postId).patch([
-        { op: 'replace', path: '/body', value: text },
-        { op: 'replace', path: '/status', value: newStatus },
-        ...(hits.length ? [{ op: 'add', path: '/heldWords', value: hits }] : [{ op: 'remove', path: '/heldWords' }]),
-        { op: 'replace', path: '/updatedAt', value: new Date().toISOString() }
-      ]);
+      /* ⚠ Cosmos 의 patch 연산은 대상 필드의 존재 여부를 따진다.
+           replace — 이미 있는 필드에만 된다. 없으면 요청 전체가 실패한다.
+           remove  — 없는 필드를 지우려 해도 실패한다.
+           set     — 있으면 바꾸고 없으면 만든다 (upsert).
+
+         `updatedAt` 은 처음 수정할 때 문서에 없고, `heldWords` 는 금칙어에
+         걸린 적 없는 답변에 없다. 그래서 replace/remove 를 쓰면 정상 답변을
+         수정하는 순간 503 이 난다 — 라이브에서 실제로 그랬다.
+         가짜 컨테이너는 세 연산을 전부 대입으로 처리해서 이걸 못 잡는다. */
+      const ops = [
+        { op: 'set', path: '/body', value: text },
+        { op: 'set', path: '/status', value: newStatus },
+        { op: 'set', path: '/updatedAt', value: new Date().toISOString() }
+      ];
+      // 없는 필드를 지우면 실패한다 — 실제로 있을 때만 remove 를 넣는다
+      if (hits.length) ops.push({ op: 'set', path: '/heldWords', value: hits });
+      else if (comment.heldWords !== undefined) ops.push({ op: 'remove', path: '/heldWords' });
+
+      await c.item(commentId, postId).patch(ops);
 
       // 답변 수 조정: public→held 면 -1, (held|blocked)→public 면 +1
       if (prevStatus === 'public' && newStatus === 'held') {
@@ -527,10 +540,12 @@ app.http('commentsDelete', {
         await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: -1 }]);
       }
 
+      /* set 을 쓴다 — `deletedAt` 은 문서에 없던 필드라 replace 로는 실패한다.
+         (commentsUpdate 의 주석 참고) */
       await c.item(commentId, postId).patch([
-        { op: 'replace', path: '/status', value: 'deleted' },
-        { op: 'replace', path: '/body', value: '(삭제된 답변입니다.)' },
-        { op: 'replace', path: '/deletedAt', value: new Date().toISOString() }
+        { op: 'set', path: '/status', value: 'deleted' },
+        { op: 'set', path: '/body', value: '(삭제된 답변입니다.)' },
+        { op: 'set', path: '/deletedAt', value: new Date().toISOString() }
       ]);
 
       return { status: 200, jsonBody: { ok: true } };
