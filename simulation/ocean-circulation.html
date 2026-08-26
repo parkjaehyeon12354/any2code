@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="바람과 표층 해류의 90도 어긋남, 용승과 심층 순환을 확인하는 시뮬레이션">
+<title>해양과 순환 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script src="/assets/js/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 소기관 목록 — 누르면 무대에서 강조된다 */
+.organelles { display: grid; gap: 6px; }
+.organelles button {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.organelles button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.organelles button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.organelles .dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.organelles .plant-only {
+  margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  background: var(--badge-wait-bg); color: var(--badge-wait-fg); font-weight: 600;
+}
+.organelles button[aria-pressed="true"] .plant-only { background: rgba(255,255,255,.22); color: inherit; }
+
+/* 동물/식물 전환 */
+.cell-kind { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.cell-kind button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.cell-kind button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.cell-kind button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.fact { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+        border: 1px solid var(--hairline); border-radius: 9px;
+        font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.fact strong { color: var(--ink); }
+.fact .job { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* 도시(위도) 고르기 */
+.cities { display: grid; gap: 5px; }
+.cities button {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.cities button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.cities button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cities .lat { font-size: 11.5px; opacity: .7; }
+
+.preset-row { display: flex; gap: 6px; margin-top: 10px; }
+.preset-row button {
+  flex: 1; height: 34px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer;
+}
+.preset-row button:hover { color: var(--ink); }
+.preset-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.season-now { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+              border: 1px solid var(--hairline); border-radius: 9px;
+              font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.season-now strong { color: var(--ink); }
+.season-now .sub { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+#daylight-graph { display: block; width: 100%; height: 360px; }
+
+/* ── 이 페이지 전용 추가 ──
+   ⚠ 변수는 styles.css 에 있는 것만 쓴다. --line/--surface/--accent 는 없다.
+      쓰면 색이 통째로 빠진 채 배포된다. */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: var(--sp-sm); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+  flex: 1 1 auto; min-width: 118px; padding: 9px 10px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft); color: var(--ink);
+  font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; line-height: 1.35;
+}
+.chips button:hover { border-color: var(--primary); }
+.chips button[aria-pressed="true"] { border-color: var(--primary); background: var(--badge-wait-bg); color: var(--badge-wait-fg); }
+.chips button small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.chips button[aria-pressed="true"] small { color: var(--badge-wait-fg); opacity: .85; }
+
+.verdict {
+  margin-top: var(--sp-md); padding: 12px 14px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  font-size: 13.5px; line-height: 1.65; color: var(--ink); word-break: keep-all;
+}
+.verdict strong { color: var(--primary); }
+.verdict.warn { border-color: var(--warn-fg); }
+
+.stat-row { display: flex; gap: var(--sp-sm); flex-wrap: wrap; margin-top: var(--sp-sm); }
+.stat {
+  flex: 1 1 118px; padding: 10px 12px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+}
+.stat dt { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+.stat dd { font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat dd.up { color: #c2410c; }
+.stat dd.down { color: #2563eb; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <span class="soon">개체와 생태계</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">움직이는 지구</p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">지구와 우주</p>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+    <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 지구과학 · 해양과 순환</p>
+
+  <div class="head">
+    <h1>해양과 순환</h1>
+    <p>바람이 부는 쪽으로 바닷물도 흐를까요? 실제 표층 해수는 바람에서
+    <strong>90° 틀어져</strong> 흐릅니다. 북반구는 오른쪽, 남반구는 왼쪽입니다.
+    이 어긋남 하나가 <strong>좋은 어장</strong>과 <strong>엘니뇨</strong>를 만듭니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="바람과 표층 해류, 용승과 침강"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#e5b567"></i>바람</span>
+        <span><i style="background:#3b82f6"></i>표층 해류 (90° 틀어짐)</span>
+        <span><i style="background:#10b981"></i>영양염 · 플랑크톤</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>바람과 장소</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="wind">바람 방향</label>
+              <output id="wind-out">남 → 북</output>
+            </div>
+            <input type="range" id="wind" min="0" max="359" step="1" value="0">
+            <span class="hint">해안선은 화면 왼쪽에 세로로 있습니다.
+            해안과 나란한 바람일 때 무슨 일이 생기는지 보세요.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="strength">바람 세기</label>
+              <output id="strength-out">9.0 m/s</output>
+            </div>
+            <input type="range" id="strength" min="0" max="20" step="0.5" value="9">
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="lat">위도</label>
+              <output id="lat-out">37.5° (북반구)</output>
+            </div>
+            <input type="range" id="lat" min="-60" max="60" step="0.5" value="37.5">
+            <div class="preset-row">
+              <button type="button" data-lat="37.5">북반구 37.5°</button>
+              <button type="button" data-lat="0">적도 0°</button>
+              <button type="button" data-lat="-33.9">남반구 −33.9°</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>물의 성질</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">수온</label>
+              <output id="temp-out">15.0°C</output>
+            </div>
+            <input type="range" id="temp" min="-2" max="32" step="0.5" value="15">
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="salt">염분</label>
+              <output id="salt-out">34.0 psu</output>
+            </div>
+            <input type="range" id="salt" min="30" max="40" step="0.1" value="34">
+            <span class="hint">차갑고 짤수록 무거워 가라앉습니다.
+            이 가라앉음이 심층 순환의 출발점입니다.</span>
+            <div class="preset-row">
+              <button type="button" data-t="2" data-s="35">북대서양 (침강)</button>
+              <button type="button" data-t="28" data-s="33">열대 표층</button>
+              <button type="button" data-t="13" data-s="38.5">지중해</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>표층 해류 방향</dt><dd id="r-current">—</dd></div>
+            <div><dt>바람과의 각도</dt><dd id="r-angle">—</dd></div>
+            <div><dt>해수 밀도</dt><dd id="r-density">—</dd></div>
+            <div><dt>주변 표층 대비</dt><dd id="r-buoy">—</dd></div>
+            <div><dt>연안 상태</dt><dd id="r-coast" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>이 바다는 지금</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>표층 수온</dt><dd id="s-sst">—</dd></dl>
+            <dl class="stat"><dt>플랑크톤</dt><dd id="s-plankton">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="density-title">
+    <div class="analysis-head"><h2 id="density-title">수온·염분과 밀도</h2><p>가로축은 수온, 세로축은 염분입니다. 등고선은 같은 밀도를 잇습니다. 오른쪽 아래(덥고 싱거움)일수록 가볍고, 왼쪽 위(차고 짬)일수록 무겁습니다.</p></div>
+    <div class="graph-wrap"><canvas id="ts-graph" aria-label="수온-염분 도표와 밀도 등고선"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">바람 방향과 물이 가는 방향이 다르다</h2><p>지구가 돌기 때문에 생기는 어긋남입니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">표층 해류 = 바람 방향 ± 90° &nbsp;(북반구 오른쪽 · 남반구 왼쪽) &nbsp;&nbsp;|&nbsp;&nbsp; 적도에서는 0°</p>
+      <p>물 위에 부는 바람이 물을 끌지만, 지구가 자전하는 탓에 움직이는 물은 계속 옆으로 휘어집니다(<strong>전향력</strong>). 깊이에 따라 조금씩 더 휘어지는 것을 <strong>에크만 나선</strong>이라 하고, 층 전체를 평균하면 정확히 <strong>90°</strong> 틀어집니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>전향력은 <strong>지구 자전 때문에 생기는 겉보기 힘</strong>입니다. 북반구에서는 움직이는 물체가 오른쪽으로, 남반구에서는 왼쪽으로 휘는 것처럼 보입니다. 적도에서는 0이라 아무리 바람이 세게 불어도 물이 틀어지지 않습니다.</p><p>바다 표면 바로 아래층은 바람 방향에서 약 45° 틀어져 흐르고, 더 깊이 내려갈수록 더 많이 틀어지며 느려집니다. 이 층들을 전부 더한 <strong>에크만 수송</strong>이 90°가 됩니다.</p><p>이 90°가 <strong>연안 용승</strong>을 만듭니다. 해안이 왼쪽에 있고 바람이 해안과 나란히 불면, 표층수가 바다 쪽으로 밀려 나갑니다. 그 빈자리를 <strong>아래에 있던 차가운 물이 올라와</strong> 채웁니다. 이 물에는 가라앉아 쌓여 있던 <strong>영양염</strong>이 풍부합니다.</p><p>영양염이 올라오면 플랑크톤이 폭발적으로 늘고, 그것을 먹는 물고기가 모입니다. 페루 앞바다가 세계적인 어장인 이유가 이것입니다. 반대로 <strong>엘니뇨</strong> 때는 무역풍이 약해져 용승이 멈추고, 바다가 따뜻해지며 어획량이 급감합니다.</p><p>밀도는 <strong>수온이 낮을수록, 염분이 높을수록</strong> 커집니다. 북대서양 그린란드 앞바다에서는 차가워지고 얼음이 얼며 소금만 남아 염분이 높아진 물이 <strong>가라앉아</strong> 심층수가 됩니다. 이 물이 수백 년에 걸쳐 전 세계 바다를 도는 것이 <strong>심층 순환</strong>이며, 지구의 열을 옮기는 거대한 컨베이어 벨트 역할을 합니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 해양과 순환: 바람과 물이 가는 방향이 다르다 ──
+
+     "바람 부는 쪽으로 물도 흐른다" 가 흔한 오해다. 실제 표층 해수는
+     전향력 때문에 90도 틀어져 흐른다(에크만 수송). 북반구는 오른쪽,
+     남반구는 왼쪽, 적도에서는 틀어지지 않는다.
+
+     이 90도가 연안 용승을 만들고, 용승이 좋은 어장을 만든다.
+     엘니뇨는 그 용승이 멈추는 현상이다.
+
+     밀도는 UNESCO 간이식을 쓴다 — 표준 해수(0도, 35psu)에서 1028.1 이
+     나오는 것을 확인했다. */
+
+  const S = { wind: 0, strength: 9, lat: 37.5, temp: 15, salt: 34 };
+  let running = true;
+  let t = 0;
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  const graph = el('ts-graph');
+  const gctx = graph.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  const rad = (d) => d * Math.PI / 180;
+
+  /* 해수 밀도 (UNESCO 간이식).
+     수온이 낮을수록, 염분이 높을수록 무겁다. */
+  function density(T, sal) {
+    const rw = 999.842594 + 6.793952e-2 * T - 9.095290e-3 * T * T
+             + 1.001685e-4 * Math.pow(T, 3) - 1.120083e-6 * Math.pow(T, 4)
+             + 6.536332e-9 * Math.pow(T, 5);
+    const A = 0.824493 - 4.0899e-3 * T + 7.6438e-5 * T * T
+            - 8.2467e-7 * Math.pow(T, 3) + 5.3875e-9 * Math.pow(T, 4);
+    const B = -5.72466e-3 + 1.0227e-4 * T - 1.6546e-6 * T * T;
+    const C = 4.8314e-4;
+    return rw + A * sal + B * Math.pow(sal, 1.5) + C * sal * sal;
+  }
+
+  const REF = () => density(15, 34);   // 주변 표층 기준
+
+  /* 에크만 수송 — 바람에서 90도.
+     적도(위도 0)에서는 전향력이 0이라 틀어지지 않는다.
+     아주 낮은 위도에서는 서서히 약해지게 둔다. */
+  function deflection() {
+    const f = Math.sin(rad(S.lat));           // 전향 인자
+    if (Math.abs(S.lat) < 0.5) return 0;
+    // 위도가 낮으면 90도에 못 미친다 — 적도에서 0으로 이어지게
+    const mag = Math.min(1, Math.abs(f) / Math.sin(rad(10)));
+    return Math.sign(f) * 90 * mag;
+  }
+
+  const currentDir = () => (S.wind + deflection() + 360) % 360;
+
+  /* 연안 용승 지수.
+     해안선은 화면 왼쪽(서쪽)에 있다. 표층 해류가 바다 쪽(오른쪽, 동쪽)으로
+     밀려나면 그 빈자리를 아래 찬물이 채운다 = 용승.
+     방위각은 '가는 방향'이며 0=북, 90=동, 180=남, 270=서 로 둔다. */
+  function upwelling() {
+    if (S.strength < 0.4) return 0;
+    const dir = rad(currentDir());
+    const east = Math.sin(dir);          // +면 동쪽(바다쪽)으로 간다
+    return east * Math.min(1, S.strength / 12);
+  }
+
+  const sst = () => {
+    const u = upwelling();
+    // 용승하면 아래 찬물이 올라와 표층이 차가워진다
+    return S.temp - u * 6;
+  };
+
+  const plankton = () => {
+    const u = upwelling();
+    return Math.max(0, Math.min(1, u));   // 용승할 때만 영양염이 올라온다
+  };
+
+  function dirName(deg) {
+    const names = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+    return names[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+  }
+
+  // ── 무대 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+    const w = W(), h = H();
+    const coast = w * 0.16;              // 해안선 x
+    const surface = h * 0.20;            // 해수면 y
+
+    // 하늘
+    const sky = ctx.createLinearGradient(0, 0, 0, surface);
+    sky.addColorStop(0, '#bcd7ef');
+    sky.addColorStop(1, '#e6f0f8');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, surface);
+
+    // 바다 — 용승하면 표층이 차가워져 색이 달라진다
+    const u = upwelling();
+    const cold = Math.max(0, u);
+    const sea = ctx.createLinearGradient(0, surface, 0, h);
+    sea.addColorStop(0, cold > 0.15 ? '#2d7d9a' : '#3aa0c9');
+    sea.addColorStop(0.45, '#1c5f85');
+    sea.addColorStop(1, '#0d3450');
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, surface, w, h - surface);
+
+    // 육지
+    ctx.fillStyle = '#4a5a45';
+    ctx.beginPath();
+    ctx.moveTo(0, surface - 26);
+    ctx.lineTo(coast, surface - 26);
+    ctx.lineTo(coast, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#6b7f63';
+    ctx.fillRect(0, surface - 32, coast, 8);
+
+    ctx.font = '12px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.textAlign = 'center';
+    ctx.fillText('육지', coast / 2, surface + 30);
+
+    // 나침반
+    ctx.save();
+    ctx.translate(w - 58, 52);
+    ctx.strokeStyle = 'rgba(255,255,255,.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(60,70,80,.9)';
+    ctx.font = '10px ui-sans-serif, system-ui';
+    ctx.fillText('북', 0, -30); ctx.fillText('남', 0, 39);
+    ctx.fillText('동', 33, 4); ctx.fillText('서', -33, 4);
+    ctx.restore();
+
+    // 바람 화살표 (하늘)
+    const wr = rad(S.wind);
+    const wdx = Math.sin(wr), wdy = -Math.cos(wr);
+    ctx.strokeStyle = '#e5b567';
+    ctx.fillStyle = '#e5b567';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 5; i++) {
+      const bx = coast + 60 + i * (w - coast - 120) / 4;
+      const by = surface * 0.5;
+      const shift = ((t * 40 * (S.strength / 7)) % 60) - 30;
+      const ax = bx + wdx * shift, ay = by + wdy * shift;
+      arrow(ax, ay, wdx, wdy, 22);
+    }
+    ctx.fillStyle = 'rgba(90,70,20,.9)';
+    ctx.font = '600 12px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('바람 ' + dirName(S.wind) + '쪽으로', coast + 14, 22);
+
+    // 표층 해류 화살표
+    const cr = rad(currentDir());
+    const cdx = Math.sin(cr), cdy = -Math.cos(cr);
+    ctx.strokeStyle = '#63b3ed';
+    ctx.fillStyle = '#63b3ed';
+    ctx.lineWidth = 3.4;
+    for (let i = 0; i < 6; i++) {
+      const bx = coast + 50 + i * (w - coast - 100) / 5;
+      const by = surface + 46;
+      const shift = ((t * 46 * (S.strength / 7)) % 64) - 32;
+      arrow(bx + cdx * shift, by + cdy * shift, cdx, cdy, 24);
+    }
+    ctx.fillStyle = 'rgba(230,245,255,.95)';
+    ctx.font = '600 12px ui-sans-serif, system-ui';
+    ctx.fillText('표층 해류 ' + dirName(currentDir()) + '쪽으로', coast + 14, surface + 22);
+
+    // 용승 / 침강
+    if (u > 0.12) {
+      ctx.strokeStyle = 'rgba(16,185,129,.85)';
+      ctx.fillStyle = 'rgba(16,185,129,.85)';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        const bx = coast + 26 + i * 22;
+        const shift = ((t * 34) % 70);
+        arrow(bx, h - 20 - shift, 0, -1, 20);
+      }
+      ctx.font = '600 12.5px ui-sans-serif, system-ui';
+      ctx.fillText('용승 — 찬물과 영양염이 올라온다', coast + 14, h - 16);
+
+      // 플랑크톤
+      const p = plankton();
+      for (let i = 0; i < Math.round(p * 40); i++) {
+        const px = coast + 20 + ((i * 61) % (w * 0.5));
+        const py = surface + 30 + ((i * 47 + t * 20) % (h - surface - 50));
+        ctx.beginPath();
+        ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(52,211,153,.75)';
+        ctx.fill();
+      }
+    } else if (u < -0.12) {
+      ctx.strokeStyle = 'rgba(147,197,253,.8)';
+      ctx.fillStyle = 'rgba(147,197,253,.8)';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        const bx = coast + 26 + i * 22;
+        const shift = ((t * 34) % 70);
+        arrow(bx, surface + 30 + shift, 0, 1, 20);
+      }
+      ctx.font = '600 12.5px ui-sans-serif, system-ui';
+      ctx.fillText('침강 — 표층수가 해안으로 몰려 가라앉는다', coast + 14, h - 16);
+    }
+
+    // 무거운 물 표시 — 밀도가 크면 가라앉는 덩어리를 보여준다
+    const d = density(S.temp, S.salt), ref = REF();
+    if (d > ref + 0.15) {
+      const sink = ((t * 26) % (h - surface - 40));
+      ctx.beginPath();
+      ctx.arc(w * 0.72, surface + 24 + sink, 13, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(30,58,95,.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = 'rgba(230,240,250,.95)';
+      ctx.font = '11.5px ui-sans-serif, system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('무거워 가라앉음', w * 0.72, surface + 24 + sink - 20);
+    }
+  }
+
+  function arrow(x, y, dx, dy, len) {
+    const ex = x + dx * len, ey = y + dy * len;
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+    const a = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - 8 * Math.cos(a - 0.4), ey - 8 * Math.sin(a - 0.4));
+    ctx.lineTo(ex - 8 * Math.cos(a + 0.4), ey - 8 * Math.sin(a + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ── 수온-염분 도표 ──
+  function drawGraph() {
+    gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const w = graph.width / DPR, h = graph.height / DPR;
+    gctx.clearRect(0, 0, w, h);
+    const pad = { l: 54, r: 18, t: 18, b: 34 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
+
+    const T0 = -2, T1 = 32, S0 = 30, S1 = 40;
+    const X = (T) => pad.l + (T - T0) / (T1 - T0) * gw;
+    const Y = (s) => pad.t + gh - (s - S0) / (S1 - S0) * gh;
+
+    gctx.fillStyle = '#f7f7f5';
+    gctx.fillRect(0, 0, w, h);
+
+    // 밀도 등고선
+    gctx.font = '10.5px ui-sans-serif, system-ui';
+    for (let sig = 1020; sig <= 1032; sig += 2) {
+      gctx.beginPath();
+      let started = false;
+      for (let i = 0; i <= 160; i++) {
+        const T = T0 + (T1 - T0) * i / 160;
+        // 해당 수온에서 밀도가 sig 가 되는 염분을 이분법으로 찾는다
+        let lo = S0, hi = S1, mid = 0, ok = false;
+        for (let k = 0; k < 30; k++) {
+          mid = (lo + hi) / 2;
+          if (density(T, mid) < sig) lo = mid; else hi = mid;
+        }
+        ok = Math.abs(density(T, mid) - sig) < 0.35 && mid > S0 && mid < S1;
+        if (!ok) { started = false; continue; }
+        const xx = X(T), yy = Y(mid);
+        started ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+        started = true;
+      }
+      gctx.strokeStyle = 'rgba(120,130,145,.45)';
+      gctx.lineWidth = 1;
+      gctx.stroke();
+    }
+
+    // 축
+    gctx.strokeStyle = 'rgba(120,120,120,.35)';
+    gctx.lineWidth = 1;
+    gctx.textAlign = 'center';
+    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    for (let T = 0; T <= 30; T += 10) {
+      gctx.beginPath(); gctx.moveTo(X(T), pad.t); gctx.lineTo(X(T), pad.t + gh); gctx.stroke();
+      gctx.fillText(T + '°C', X(T), h - 12);
+    }
+    gctx.textAlign = 'right';
+    for (let s = 30; s <= 40; s += 2) {
+      gctx.beginPath(); gctx.moveTo(pad.l, Y(s)); gctx.lineTo(w - pad.r, Y(s)); gctx.stroke();
+      gctx.fillText(s + ' psu', pad.l - 8, Y(s) + 4);
+    }
+
+    // 참고 물덩어리
+    const marks = [
+      { T: 2, s: 35, name: '북대서양 심층수' },
+      { T: 28, s: 33, name: '열대 표층' },
+      { T: 13, s: 38.5, name: '지중해' }
+    ];
+    gctx.textAlign = 'left';
+    marks.forEach((m) => {
+      gctx.beginPath(); gctx.arc(X(m.T), Y(m.s), 4, 0, Math.PI * 2);
+      gctx.fillStyle = 'rgba(120,130,145,.85)'; gctx.fill();
+      gctx.fillStyle = 'rgba(100,110,125,.95)';
+      gctx.fillText(m.name, X(m.T) + 8, Y(m.s) + 4);
+    });
+
+    // 지금 물
+    gctx.beginPath();
+    gctx.arc(X(S.temp), Y(S.salt), 7, 0, Math.PI * 2);
+    gctx.fillStyle = '#e06c3a'; gctx.fill();
+    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.5; gctx.stroke();
+    gctx.fillStyle = '#b4471f';
+    gctx.font = '600 12px ui-sans-serif, system-ui';
+    gctx.fillText('지금 물 ' + density(S.temp, S.salt).toFixed(1), X(S.temp) + 11, Y(S.salt) - 9);
+  }
+
+  // ── 수치 ──
+  function readout() {
+    const def = deflection();
+    const d = density(S.temp, S.salt), ref = REF();
+    const u = upwelling();
+
+    el('r-current').textContent = dirName(currentDir()) + '쪽 (' + Math.round(currentDir()) + '°)';
+    el('r-angle').textContent = Math.abs(def) < 0.5
+      ? '0° — 틀어지지 않음'
+      : (def > 0 ? '오른쪽 ' : '왼쪽 ') + Math.abs(def).toFixed(0) + '°';
+    el('r-density').textContent = d.toFixed(2) + ' kg/m³';
+
+    const diff = d - ref;
+    el('r-buoy').textContent = Math.abs(diff) < 0.05
+      ? '같음'
+      : (diff > 0 ? '무거움 (+' : '가벼움 (') + diff.toFixed(2) + ') — ' + (diff > 0 ? '가라앉음' : '떠오름');
+
+    el('r-coast').textContent = u > 0.12 ? '용승' : (u < -0.12 ? '침강' : '거의 없음');
+
+    el('s-sst').textContent = sst().toFixed(1) + '°C';
+    const sstEl = el('s-sst');
+    sstEl.className = u > 0.12 ? 'down' : (u < -0.12 ? 'up' : '');
+
+    const p = plankton();
+    el('s-plankton').textContent = p > 0.6 ? '매우 많음' : p > 0.3 ? '많음' : p > 0.08 ? '보통' : '적음';
+    el('s-plankton').className = p > 0.3 ? 'down' : '';
+
+    const v = el('verdict');
+    if (S.strength < 0.4) {
+      v.className = 'verdict';
+      v.innerHTML = '바람이 없어 표층 해류도 생기지 않습니다. 바람 세기를 올려 보세요.';
+    } else if (Math.abs(S.lat) < 0.5) {
+      v.className = 'verdict warn';
+      v.innerHTML = '<strong>적도입니다.</strong> 전향력이 0이라 물이 전혀 틀어지지 않고 ' +
+        '바람과 같은 방향으로 흐릅니다. 위도를 올리거나 내려 차이를 확인해 보세요.';
+    } else if (u > 0.12) {
+      v.className = 'verdict warn';
+      v.innerHTML = '표층수가 바다 쪽으로 밀려나 <strong>용승</strong>이 일어납니다. ' +
+        `찬물과 영양염이 올라와 표층이 <strong>${(S.temp - sst()).toFixed(1)}°C 차가워지고</strong> ` +
+        '플랑크톤이 늘어납니다. 페루 앞바다가 세계적 어장인 이유입니다. ' +
+        '<strong>엘니뇨</strong> 때는 바람이 약해져 이 용승이 멈춥니다.';
+    } else if (u < -0.12) {
+      v.className = 'verdict';
+      v.innerHTML = '표층수가 해안으로 몰려 <strong>가라앉습니다(침강)</strong>. ' +
+        '아래 영양염이 올라오지 못해 플랑크톤이 적고, 표층이 상대적으로 따뜻합니다.';
+    } else {
+      v.className = 'verdict';
+      v.innerHTML = '해류가 해안과 거의 나란해 용승도 침강도 뚜렷하지 않습니다. ' +
+        '바람 방향을 돌려 보세요.';
+    }
+
+    let note;
+    if (Math.abs(S.lat) < 0.5) {
+      note = '적도에서는 전향력이 0입니다. 바람과 해류가 같은 방향입니다.';
+    } else if (S.lat > 0) {
+      note = '북반구라 표층 해류가 바람의 오른쪽 90°로 흐릅니다.';
+    } else {
+      note = '남반구라 표층 해류가 바람의 왼쪽 90°로 흐릅니다. 북반구와 반대입니다.';
+    }
+    if (d > ref + 0.15) {
+      note += ' 이 물은 주변보다 무거워 가라앉습니다 — 심층 순환의 출발점입니다.';
+    }
+    el('note').textContent = note;
+  }
+
+  // ── 입력 ──
+  const labels = {
+    wind: (v) => {
+      const from = dirName((Number(v) + 180) % 360);
+      return from + ' → ' + dirName(Number(v));
+    },
+    strength: (v) => Number(v).toFixed(1) + ' m/s',
+    lat: (v) => {
+      const n = Number(v);
+      const where = Math.abs(n) < 0.5 ? '적도' : (n > 0 ? '북반구' : '남반구');
+      return n.toFixed(1) + '° (' + where + ')';
+    },
+    temp: (v) => Number(v).toFixed(1) + '°C',
+    salt: (v) => Number(v).toFixed(1) + ' psu'
+  };
+
+  ['wind', 'strength', 'lat', 'temp', 'salt'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      S[k] = Number(input.value);
+      el(k + '-out').textContent = labels[k](input.value);
+      readout();
+    });
+  });
+
+  document.querySelectorAll('[data-lat]').forEach((b) => {
+    b.addEventListener('click', () => {
+      S.lat = Number(b.dataset.lat);
+      el('lat').value = S.lat;
+      el('lat-out').textContent = labels.lat(S.lat);
+      readout();
+    });
+  });
+
+  document.querySelectorAll('[data-t][data-s]').forEach((b) => {
+    b.addEventListener('click', () => {
+      S.temp = Number(b.dataset.t);
+      S.salt = Number(b.dataset.s);
+      ['temp', 'salt'].forEach((k) => {
+        el(k).value = S[k];
+        el(k + '-out').textContent = labels[k](S[k]);
+      });
+      readout();
+    });
+  });
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', () => {
+    S.wind = 0; S.strength = 9; S.lat = 37.5; S.temp = 15; S.salt = 34;
+    ['wind', 'strength', 'lat', 'temp', 'salt'].forEach((k) => {
+      el(k).value = S[k];
+      el(k + '-out').textContent = labels[k](S[k]);
+    });
+    readout();
+  });
+
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({
+        wind: S.wind, strength: S.strength, lat: S.lat, temp: S.temp, salt: S.salt
+      });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['wind', 'strength', 'lat', 'temp', 'salt'].forEach((k) => {
+      const v = Number(q.get(k));
+      if (q.get(k) === null || !Number.isFinite(v)) return;
+      const input = el(k);
+      const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
+      S[k] = c; input.value = c;
+      el(k + '-out').textContent = labels[k](c);
+    });
+  }
+
+  let last = 0;
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    const dt = Math.min(0.25, now - last);
+    last = now;
+    if (running) t += dt;
+    draw(); drawGraph();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 380 * DPR;
+  }
+
+  applyQuery();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="공기를 산 너머로 넘기며 단열 팽창과 푄 현상을 확인하는 시뮬레이션">
+<title>대기와 기상 — Ans2Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script src="/assets/js/theme.js"></script>
+<style>
+/* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다. */
+.sim {
+  padding-top: var(--sp-xl);
+  padding-bottom: var(--sp-section);
+  /* .container 의 좌우 여백을 덮지 않도록 세로만 지정한다. 단축형을 쓰면
+     가운데 0 이 좌우를 0 으로 만들어 본문이 화면 끝에 붙는다. */
+  padding-left: var(--sp-xxl);
+  padding-right: var(--sp-xxl);
+  max-width: 1600px;
+}
+
+.crumb { margin-bottom: var(--sp-md); font-size: 13px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumb a:hover { color: var(--ink); }
+
+.head { margin-bottom: var(--sp-xl); }
+.head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.head p { font-size: 15px; color: var(--muted); word-break: keep-all; max-width: 60ch; }
+
+/* 캔버스가 주인공이라 넓게, 조작부는 옆에 붙인다 */
+.layout { display: grid; grid-template-columns: minmax(700px, 1fr) 420px; gap: var(--sp-lg); align-items: start; }
+.side-panels { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+.side-panels .panel { margin-bottom: 0; }
+.side-panels .panel:last-child { grid-column: auto; }
+
+/* 무대는 밝기 모드와 무관하게 어둡다. 관측 대상(추와 줄)만 밝게 남으면
+   눈이 거기로 가고, 옆 패널의 숫자와 시선이 섞이지 않는다. */
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  overflow: hidden;
+}
+#canvas { display: block; width: 100%; height: auto; }
+
+.stage-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  padding: var(--sp-md);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-soft);
+}
+.stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
+
+.panel {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.panel-head { padding: 10px 18px; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.panel-body { padding: 10px 16px; }
+
+.ctrl { margin-bottom: 6px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-sm); margin-bottom: 2px; }
+.ctrl-top label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ctrl-top output { font-size: 13.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ctrl input[type="range"] {
+  width: 100%;
+  height: 30px;
+  accent-color: var(--primary-active);
+  cursor: pointer;
+}
+.ctrl .hint { display: block; margin-top: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
+/* 측정값 — 이 화면의 결론이 여기 있다 */
+.read { font-size: 13.5px; }
+.read > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.read > div:last-child { border-bottom: none; padding-bottom: 0; }
+.read dt { color: var(--muted); }
+.read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
+.read .gap.same { color: var(--muted); font-weight: 500; }
+
+.note {
+  margin-top: var(--sp-md);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
+.share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
+.share input {
+  flex: 1 1 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+}
+.share-said { font-size: 12.5px; color: var(--muted); }
+.analysis-panel { margin-top: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; }
+.analysis-head { padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--hairline); }
+.analysis-head h2 { color: var(--ink); font-size: 16px; }
+.analysis-head p { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.formula-box { padding: var(--sp-lg); color: var(--body); line-height: 1.7; }
+.formula-main { padding: 14px 16px; border-left: 3px solid var(--primary); border-radius: 0 var(--rounded-md) var(--rounded-md) 0; background: var(--surface-soft); color: var(--ink); font: 600 16px "Cambria Math", Georgia, serif; }
+.formula-box details { margin-top: var(--sp-md); border: 1px solid var(--hairline); border-radius: var(--rounded-md); }
+.formula-box summary { padding: 13px 15px; color: var(--primary-active); font-size: 15px; font-weight: 700; cursor: pointer; }
+.proof { padding: 0 16px 17px; font-size: 15.5px; line-height: 1.85; }
+.graph-wrap { padding: var(--sp-md); background: var(--stage-bg); }
+#pendulum-graph { display: block; width: 100%; height: 400px; }
+
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 1fr; }
+  .side-panels { grid-template-columns: 1fr 1fr; }
+  /* 좁은 화면에선 넓힌 좌우 여백이 본문을 잡아먹는다 — 사이트 기본값으로 */
+  .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
+}
+@media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+
+/* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
+#speed-graph { display: block; width: 100%; height: 340px; }
+.state-row { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.state-row button {
+  flex: 1; height: 38px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13px; cursor: pointer;
+}
+.state-row button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 소기관 목록 — 누르면 무대에서 강조된다 */
+.organelles { display: grid; gap: 6px; }
+.organelles button {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.organelles button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.organelles button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.organelles .dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.organelles .plant-only {
+  margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+  background: var(--badge-wait-bg); color: var(--badge-wait-fg); font-weight: 600;
+}
+.organelles button[aria-pressed="true"] .plant-only { background: rgba(255,255,255,.22); color: inherit; }
+
+/* 동물/식물 전환 */
+.cell-kind { display: flex; gap: 6px; margin-bottom: var(--sp-md); }
+.cell-kind button {
+  flex: 1; height: 40px; border: 1px solid var(--hairline); border-radius: 9px;
+  background: var(--canvas); color: var(--body); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.cell-kind button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); font-weight: 700;
+}
+.cell-kind button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.fact { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+        border: 1px solid var(--hairline); border-radius: 9px;
+        font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.fact strong { color: var(--ink); }
+.fact .job { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* 도시(위도) 고르기 */
+.cities { display: grid; gap: 5px; }
+.cities button {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--body);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.cities button[aria-pressed="true"] {
+  background: var(--primary); color: var(--on-primary, #fff);
+  border-color: var(--primary); font-weight: 700;
+}
+.cities button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cities .lat { font-size: 11.5px; opacity: .7; }
+
+.preset-row { display: flex; gap: 6px; margin-top: 10px; }
+.preset-row button {
+  flex: 1; height: 34px; border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--canvas); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer;
+}
+.preset-row button:hover { color: var(--ink); }
+.preset-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.season-now { margin-top: 12px; padding: 12px 13px; background: var(--canvas);
+              border: 1px solid var(--hairline); border-radius: 9px;
+              font-size: 13.5px; line-height: 1.7; color: var(--body); word-break: keep-all; }
+.season-now strong { color: var(--ink); }
+.season-now .sub { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+#daylight-graph { display: block; width: 100%; height: 360px; }
+
+/* ── 이 페이지 전용 추가 ──
+   ⚠ 변수는 styles.css 에 있는 것만 쓴다. --line/--surface/--accent 는 없다.
+      쓰면 색이 통째로 빠진 채 배포된다. */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: var(--sp-sm); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+  flex: 1 1 auto; min-width: 118px; padding: 9px 10px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft); color: var(--ink);
+  font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; line-height: 1.35;
+}
+.chips button:hover { border-color: var(--primary); }
+.chips button[aria-pressed="true"] { border-color: var(--primary); background: var(--badge-wait-bg); color: var(--badge-wait-fg); }
+.chips button small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.chips button[aria-pressed="true"] small { color: var(--badge-wait-fg); opacity: .85; }
+
+.verdict {
+  margin-top: var(--sp-md); padding: 12px 14px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  font-size: 13.5px; line-height: 1.65; color: var(--ink); word-break: keep-all;
+}
+.verdict strong { color: var(--primary); }
+.verdict.warn { border-color: var(--warn-fg); }
+
+.stat-row { display: flex; gap: var(--sp-sm); flex-wrap: wrap; margin-top: var(--sp-sm); }
+.stat {
+  flex: 1 1 118px; padding: 10px 12px; border-radius: var(--rounded-md);
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+}
+.stat dt { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+.stat dd { font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat dd.up { color: #c2410c; }
+.stat dd.down { color: #2563eb; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<header class="top-nav" id="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li>
+               <a href="#" data-dropdown="physics">물리학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">고전 역학</p>
+            <a href="/simulation/pendulum.html">단진자</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">전기와 자기</p>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">다른 주제</p>
+            <span class="soon">빛과 파동</span>
+            <span class="soon">천체의 운동</span>
+            <span class="soon">열과 통계</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="chemistry">화학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">물질의 구성</p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <span class="soon">화학 반응</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">산과 염기</span>
+            <span class="soon">전기화학</span>
+            <span class="soon">방사능</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="biology">생명과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">생명의 단위</p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <span class="soon">개체와 생태계</span>
+          </div>
+          <div class="mega-col">
+            <span class="soon">신경과 자극전달</span>
+            <span class="soon">순환과 수송</span>
+            <span class="soon">대사와 효소</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <a href="#" data-dropdown="earthscience">지구과학</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">움직이는 지구</p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">지구와 우주</p>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="#" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="#">주제 탐색</a>
+            <a href="#">가설 설정 가이드</a>
+            <a href="#">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="#">세특 작성 가이드</a>
+            <a href="#">보고서 템플릿</a>
+            <a href="#">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+    <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <span class="soon">심화 탐구</span>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
+
+
+<main class="container sim">
+  <p class="crumb"><a href="/">홈</a> · 지구과학 · 대기와 기상</p>
+
+  <div class="head">
+    <h1>대기와 기상</h1>
+    <p>높이 올라갈수록 <strong>태양에 가까워지는데</strong> 왜 더 추울까요? 산 위가 추운 이유는
+    거리가 아니라 <strong>공기가 부풀면서 스스로 식기 때문</strong>입니다. 공기를 산 너머로 넘겨
+    보면, 같은 공기가 <strong>더 덥고 건조해져서</strong> 내려오는 것도 확인할 수 있습니다.</p>
+  </div>
+
+  <div class="layout">
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="산을 넘는 공기덩어리와 구름, 비"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+          <span class="share-said" id="stage-said"></span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#e06c3a"></i>기온</span>
+        <span><i style="background:#3b82f6"></i>이슬점</span>
+        <span><i style="background:#9ca3af"></i>구름 (기온 = 이슬점)</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>지상의 공기</h2></div>
+        <div class="panel-body">
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">기온</label>
+              <output id="temp-out">20.0°C</output>
+            </div>
+            <input type="range" id="temp" min="-5" max="40" step="0.5" value="20">
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="dew">이슬점</label>
+              <output id="dew-out">12.0°C</output>
+            </div>
+            <input type="range" id="dew" min="-15" max="40" step="0.5" value="12">
+            <span class="hint">이슬점은 수증기가 응결하기 시작하는 온도입니다.
+            기온에 가까울수록 습한 공기입니다. 기온보다 높을 수는 없습니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="peak">산 높이</label>
+              <output id="peak-out">2.0 km</output>
+            </div>
+            <input type="range" id="peak" min="0.5" max="5" step="0.1" value="2">
+            <div class="preset-row">
+              <button type="button" data-peak="1.6">태백산맥 1.6km</button>
+              <button type="button" data-peak="2.7">한라산 2.7km</button>
+              <button type="button" data-peak="4.8">알프스 4.8km</button>
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="speed">바람 속도</label>
+              <output id="speed-out">1.0×</output>
+            </div>
+            <input type="range" id="speed" min="0" max="3" step="0.1" value="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>상황 고르기</h2></div>
+        <div class="panel-body">
+          <div class="chips" id="presets">
+            <button type="button" data-t="20" data-d="12" data-p="2" aria-pressed="true">
+              푄 현상<small>산 넘어 덥고 건조해짐</small></button>
+            <button type="button" data-t="20" data-d="19" data-p="2">
+              습한 공기<small>낮은 곳부터 구름</small></button>
+            <button type="button" data-t="20" data-d="-5" data-p="2">
+              마른 공기<small>구름이 안 생김</small></button>
+            <button type="button" data-t="28" data-d="24" data-p="1.6">
+              장마철 영서<small>태백산맥 · 폭우</small></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>측정</h2></div>
+        <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 높이</dt><dd id="r-alt">—</dd></div>
+            <div><dt>공기덩어리 온도</dt><dd id="r-temp">—</dd></div>
+            <div><dt>구름 생기는 높이</dt><dd id="r-lcl">—</dd></div>
+            <div><dt>산 정상 온도</dt><dd id="r-peak">—</dd></div>
+            <div><dt>구름 두께</dt><dd id="r-cloud" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>넘기 전 vs 넘은 후</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>기온 변화</dt><dd id="s-temp">—</dd></dl>
+            <dl class="stat"><dt>이슬점 변화</dt><dd id="s-dew">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="analysis-panel" aria-labelledby="profile-title">
+    <div class="analysis-head"><h2 id="profile-title">높이에 따른 기온과 이슬점</h2><p>두 선이 만나는 곳에서 구름이 생깁니다. 만나기 전까지는 기온이 1km에 9.8°C씩 빠르게 떨어지고, 만난 뒤(구름 속)에는 약 5°C씩 천천히 떨어집니다.</p></div>
+    <div class="graph-wrap"><canvas id="profile-graph" aria-label="높이에 따른 기온과 이슬점 변화"></canvas></div>
+  </section>
+
+  <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">산 위가 추운 건 태양과 멀어서가 아니다</h2><p>공기가 스스로 식는 이유를 식으로 확인할 수 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">구름 높이 = (기온 − 이슬점) ÷ 7.8 &nbsp;km &nbsp;&nbsp;|&nbsp;&nbsp; 건조 9.8°C/km &nbsp; 습윤 약 5°C/km</p>
+      <p>산꼭대기는 지상보다 태양에 <strong>겨우 몇 km 가까울 뿐</strong>입니다. 태양까지 거리 1억 5천만 km에 비하면 무시할 수준이라, 가까워져서 따뜻해지는 효과는 사실상 없습니다. 그런데도 높이 올라가면 100m마다 약 1°C씩 떨어집니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>공기는 위로 올라갈수록 <strong>주변 기압이 낮아져 부풉니다</strong>. 부풀려면 주변을 밀어내야 하고, 그 일에 쓰는 에너지를 자기 안에서 꺼내 씁니다. 그래서 열을 주고받지 않아도 <strong>스스로 식습니다</strong>. 이것을 단열 팽창이라고 합니다.</p><p>수증기가 섞이지 않은 상태에서는 1km 오를 때마다 약 <strong>9.8°C</strong> 떨어집니다(건조단열감률). 그런데 계속 식다 보면 언젠가 <strong>이슬점에 닿습니다</strong>. 그 높이가 상승응결고도이고, 거기서부터 구름이 생깁니다.</p><p>이슬점도 높이 올라가면 조금씩 떨어집니다(약 2°C/km). 그래서 기온과 이슬점은 1km마다 <strong>9.8 − 2 = 7.8°C</strong>씩 가까워집니다. 지상에서 둘의 차이가 8°C였다면 8 ÷ 7.8 ≈ <strong>1.03km</strong>에서 만납니다.</p><p>구름이 생기기 시작하면 수증기가 물로 바뀌면서 <strong>숨은열을 내놓습니다</strong>. 이 열이 식는 것을 방해해서, 구름 속에서는 1km에 약 <strong>5°C</strong>만 떨어집니다(습윤단열감률). 그래프에서 꺾이는 지점이 바로 여기입니다.</p><p><strong>푄 현상(높새바람)</strong>은 이 차이 때문에 생깁니다. 올라갈 때는 구름 속에서 천천히 식었는데, 비를 뿌려 수증기를 잃고 내려올 때는 건조단열감률로 <strong>빠르게 데워집니다</strong>. 결과적으로 산을 넘은 공기는 넘기 전보다 <strong>더 덥고 더 건조합니다</strong>. 봄에 영동에서 영서로 부는 높새바람이 이렇게 만들어집니다.</p></div></details>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/js/session.js"></script>
+<script src="/assets/js/nav-user.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
+<script src="/assets/js/mobile-menu.js"></script>
+<script>
+(function () {
+  const el = (id) => document.getElementById(id);
+
+  /* ── 대기와 기상: 산 위는 왜 추운가 ──
+
+     "높이 올라가면 태양에 가까우니 따뜻해야 하는 것 아닌가" 가 흔한 오해다.
+     산꼭대기는 태양에 겨우 몇 km 가까울 뿐이라 거리 효과는 사실상 0 이다.
+     실제 이유는 공기가 부풀며 스스로 식는 것(단열 팽창)이다.
+
+     그래서 이 화면은 공기덩어리를 직접 산 너머로 넘겨 보게 한다.
+     같은 공기가 넘기 전보다 더 덥고 건조해져서 내려오는 것 — 푄 현상 —
+     을 숫자로 확인할 수 있다.
+
+     교육과정 표준값을 쓴다:
+       건조단열감률 9.8°C/km, 습윤단열감률 약 5°C/km, 이슬점 감률 2°C/km */
+  const DALR = 9.8;    // 건조단열감률 (구름 생기기 전)
+  const MALR = 5.0;    // 습윤단열감률 (구름 속 — 숨은열이 식는 걸 방해한다)
+  const DEWL = 2.0;    // 이슬점 감률
+
+  const S = { temp: 20, dew: 12, peak: 2, speed: 1 };
+  let running = true;
+  let x = 0;           // 0 → 1 : 산을 넘는 진행도
+
+  const canvas = el('canvas');
+  const ctx = canvas.getContext('2d');
+  const graph = el('profile-graph');
+  const gctx = graph.getContext('2d');
+  let DPR = 1;
+  const W = () => canvas.width / DPR;
+  const H = () => canvas.height / DPR;
+
+  /* 상승응결고도 — 기온과 이슬점이 만나는 높이.
+       (T − 9.8h) = (Td − 2h)  →  h = (T − Td) / 7.8
+     이슬점이 기온보다 높을 수는 없으므로 음수는 0 으로 막는다. */
+  function lcl() {
+    return Math.max(0, (S.temp - S.dew) / (DALR - DEWL));
+  }
+
+  /* 올라갈 때의 기온 — 구름 아래는 건조, 구름 속은 습윤 */
+  function tempUp(h) {
+    const c = lcl();
+    if (h <= c) return S.temp - DALR * h;
+    return S.temp - DALR * c - MALR * (h - c);
+  }
+
+  function dewUp(h) {
+    const c = lcl();
+    // 구름 속에서는 포화 상태라 이슬점 = 기온
+    if (h >= c) return tempUp(h);
+    return S.dew - DEWL * h;
+  }
+
+  /* 내려올 때의 기온.
+     구름이 생겼다면 비로 수증기를 잃었으므로 건조단열감률로 내려온다 —
+     이것이 푄 현상의 핵심이다. 구름이 없었다면 올라간 그대로 돌아온다. */
+  function tempDown(h) {
+    const peakT = tempUp(S.peak);
+    return peakT + DALR * (S.peak - h);
+  }
+
+  function dewDown(h) {
+    const c = lcl();
+    // 구름이 안 생겼으면 이슬점도 그대로 되돌아온다
+    if (c >= S.peak) return S.dew - DEWL * h;
+    // 정상에서 포화였고, 내려오며 기온만 오르므로 이슬점은 천천히 회복
+    const peakD = tempUp(S.peak);
+    return peakD + DEWL * (S.peak - h);
+  }
+
+  const rained = () => lcl() < S.peak;
+
+  // 현재 위치 → 높이 (산 모양: 0~0.5 오름, 0.5~1 내림)
+  function heightAt(t) {
+    const u = t < 0.5 ? t / 0.5 : (1 - t) / 0.5;
+    return S.peak * u;
+  }
+  const going = (t) => (t < 0.5 ? 'up' : 'down');
+
+  function tempAt(t) {
+    const h = heightAt(t);
+    return going(t) === 'up' ? tempUp(h) : tempDown(h);
+  }
+  function dewAt(t) {
+    const h = heightAt(t);
+    return going(t) === 'up' ? dewUp(h) : dewDown(h);
+  }
+
+  // ── 무대 그리기 ──
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W(), H());
+
+    const w = W(), h = H();
+    const ground = h * 0.86;
+    const skyTop = h * 0.06;
+    const kmToPx = (ground - skyTop) / Math.max(5, S.peak * 1.35);
+
+    // 하늘 — 위로 갈수록 어둡다
+    const sky = ctx.createLinearGradient(0, skyTop, 0, ground);
+    sky.addColorStop(0, '#274b73');
+    sky.addColorStop(0.55, '#7fa8cd');
+    sky.addColorStop(1, '#cfe0ee');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, ground);
+
+    // 산 — 경로를 함수로 둔다. 구름·비를 산 바깥으로 잘라낼 때 같은 모양이 필요하다.
+    const peakPx = ground - S.peak * kmToPx;
+    const left = w * 0.22, right = w * 0.78, mid = w * 0.5;
+    /* ⚠ beginPath 를 부르지 않는다. clip 을 만들 때 화면 전체 사각형과 이 산을
+          '한 경로 안에' 담아야 evenodd 로 산을 빼낼 수 있는데, 여기서
+          beginPath 를 부르면 앞서 그린 사각형이 통째로 지워진다.
+          그러면 산만 남아 결과가 정반대가 된다 — 실제로 그렇게 당했다. */
+    const addMountain = () => {
+      ctx.moveTo(0, ground);
+      ctx.lineTo(left, ground);
+      ctx.quadraticCurveTo(mid - w * 0.10, peakPx + (ground - peakPx) * 0.16, mid, peakPx);
+      ctx.quadraticCurveTo(mid + w * 0.10, peakPx + (ground - peakPx) * 0.16, right, ground);
+      ctx.lineTo(w, ground);
+      ctx.closePath();
+    };
+    ctx.beginPath();
+    addMountain();
+    const rock = ctx.createLinearGradient(0, peakPx, 0, ground);
+    rock.addColorStop(0, '#6b7280');
+    rock.addColorStop(1, '#3f4b5a');
+    ctx.fillStyle = rock;
+    ctx.fill();
+
+    // 땅
+    ctx.fillStyle = '#2f3b2e';
+    ctx.fillRect(0, ground, w, h - ground);
+
+    // 높이 눈금
+    ctx.font = '11px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left';
+    for (let km = 1; km <= Math.ceil(S.peak * 1.3); km++) {
+      const y = ground - km * kmToPx;
+      if (y < skyTop) break;
+      ctx.strokeStyle = 'rgba(255,255,255,.18)';
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,255,.65)';
+      ctx.fillText(km + 'km', 6, y - 4);
+    }
+
+    /* 구름과 비 — 바람받이(산 왼쪽)에만 그린다.
+
+       ⚠ save/restore 짝을 조심할 것. 산 clip 을 건 뒤 구름용 clip 을 또 걸고
+          restore 하면 바깥 clip 까지 풀린다. 그래서 비가 산 경사면 위에
+          그려졌다 — 실제로 겪었다. 구름과 비를 각각 독립된 save 블록으로 둔다. */
+    const c = lcl();
+    if (c < S.peak) {
+      const cloudBase = ground - c * kmToPx;
+      const cloudTop = peakPx - 10;
+      const windL = left * 0.35;
+      const windR = mid - w * 0.03;              // 정상 못 미치는 곳 = 바람받이
+
+      // 산을 뺀 영역만 남기는 clip 을 매번 새로 건다
+      // 화면 전체와 산을 '한 경로' 에 담고 evenodd 로 산을 빼낸다
+      const clipOutsideMountain = () => {
+        ctx.beginPath();
+        ctx.rect(0, 0, w, h);
+        addMountain();                           // beginPath 없이 이어 붙인다
+        ctx.clip('evenodd');
+      };
+
+      // ── 구름 ──
+      ctx.save();
+      clipOutsideMountain();
+      /* 사각형으로 자르면 구름 가장자리가 각져 보인다. 자르지 않고,
+         원을 가장자리로 갈수록 작게 그려 자연스럽게 흐린다. */
+      /* 구름은 응결고도 위로 '쌓인다'. 가로줄 하나로 그리면 띠처럼 보이므로
+         가로·세로로 격자를 채우고, 양 끝에서만 작아지게 해 가장자리를 흐린다. */
+      const span = Math.max(30, windR - windL);
+      const thick = Math.max(20, cloudBase - cloudTop);
+      /* 원 사이 간격이 반지름보다 크면 물방울처럼 흩어져 보인다.
+         간격을 반지름의 절반 이하로 두어 서로 겹치게 만든다. */
+      const step = 15;                               // 원 중심 간격
+      const cols = Math.max(4, Math.round(span / step));
+      const rows = Math.max(3, Math.round(thick / step));
+      ctx.fillStyle = 'rgba(246,248,251,.96)';
+      for (let cx0 = 0; cx0 <= cols; cx0++) {
+        const u = cx0 / cols;                        // 0~1 가로 위치
+        const taper = Math.sin(Math.PI * u);         // 양 끝 0, 가운데 1
+        if (taper < 0.1) continue;
+        for (let ry0 = 0; ry0 <= rows; ry0++) {
+          const v = ry0 / rows;                      // 0=응결고도, 1=구름 꼭대기
+          // 위로 갈수록, 양 끝으로 갈수록 얇아진다
+          if (v > taper * 1.15) continue;
+          const jx = ((cx0 * 37 + ry0 * 53) % 11) - 5;
+          const jy = ((cx0 * 29 + ry0 * 41) % 9) - 4;
+          const cxp = windL + u * span + jx;
+          const cyp = cloudBase - v * thick + jy;
+          const r = step * (0.95 + ((cx0 + ry0) % 3) * 0.22);
+          ctx.beginPath();
+          ctx.arc(cxp, cyp, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+
+      // ── 비 ── 구름 아래에서 땅까지. 산에 가려 경사면에는 안 보인다.
+      ctx.save();
+      clipOutsideMountain();
+      ctx.strokeStyle = 'rgba(140,190,240,.8)';
+      ctx.lineWidth = 1.4;
+      const phase = (Date.now() / 90) % 24;
+      const fall = Math.max(14, ground - cloudBase);
+      for (let i = 0; i < 46; i++) {
+        const u = (i * 29 % 100) / 100;
+        // 구름이 옅은 가장자리에는 비도 덜 내린다
+        if (Math.sin(Math.PI * u) < 0.28) continue;
+        const rx = windL + u * span;
+        const ry = cloudBase + ((i * 31 + phase) % fall);
+        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 2, ry + 9); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 공기덩어리
+    const px = left + (right - left) * x;
+    const py = ground - heightAt(x) * kmToPx;
+    const t = tempAt(x);
+    // 따뜻하면 붉게, 차가우면 푸르게
+    const warm = Math.max(0, Math.min(1, (t + 10) / 45));
+    const r = Math.round(60 + warm * 180), g = Math.round(110 - warm * 40), b = Math.round(220 - warm * 150);
+    ctx.beginPath();
+    ctx.arc(px, py - 16, 15, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},.92)`;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,.85)';
+    ctx.stroke();
+
+    ctx.font = '700 12.5px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(0,0,0,.55)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(t.toFixed(1) + '°C', px, py - 38);
+    ctx.fillText(t.toFixed(1) + '°C', px, py - 38);
+
+    // 바람 방향
+    ctx.textAlign = 'left';
+    ctx.font = '12px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.fillText('바람 →', 10, ground - 10);
+  }
+
+  // ── 그래프: 높이에 따른 기온·이슬점 ──
+  function drawGraph() {
+    gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const w = graph.width / DPR, h = graph.height / DPR;
+    gctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 52, r: 16, t: 18, b: 34 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
+    const maxH = Math.max(1, S.peak);
+
+    // 기온 범위
+    let lo = Math.min(tempUp(maxH), dewUp(0), S.dew) - 3;
+    let hi = Math.max(S.temp, tempDown(0)) + 3;
+    if (hi - lo < 10) hi = lo + 10;
+
+    const X = (temp) => pad.l + (temp - lo) / (hi - lo) * gw;
+    const Y = (km) => pad.t + gh - (km / maxH) * gh;
+
+    gctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--surface-soft') || '#f7f7f5';
+    gctx.fillRect(0, 0, w, h);
+
+    // 눈금
+    gctx.strokeStyle = 'rgba(128,128,128,.22)';
+    gctx.lineWidth = 1;
+    gctx.font = '11px ui-sans-serif, system-ui';
+    gctx.fillStyle = 'rgba(120,120,120,.95)';
+    gctx.textAlign = 'right';
+    for (let km = 0; km <= maxH + 0.001; km += Math.max(0.5, Math.round(maxH / 5 * 2) / 2)) {
+      const y = Y(km);
+      gctx.beginPath(); gctx.moveTo(pad.l, y); gctx.lineTo(w - pad.r, y); gctx.stroke();
+      gctx.fillText(km.toFixed(1) + 'km', pad.l - 8, y + 4);
+    }
+    gctx.textAlign = 'center';
+    const step = (hi - lo) > 40 ? 10 : 5;
+    for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) {
+      const xx = X(t);
+      gctx.strokeStyle = 'rgba(128,128,128,.14)';
+      gctx.beginPath(); gctx.moveTo(xx, pad.t); gctx.lineTo(xx, pad.t + gh); gctx.stroke();
+      gctx.fillText(t + '°', xx, h - 12);
+    }
+
+    // 구름 영역
+    const c = lcl();
+    if (c < maxH) {
+      gctx.fillStyle = 'rgba(156,163,175,.22)';
+      gctx.fillRect(pad.l, pad.t, gw, Y(c) - pad.t);
+      gctx.fillStyle = 'rgba(90,95,105,.85)';
+      gctx.textAlign = 'left';
+      gctx.fillText('구름 (기온 = 이슬점)', pad.l + 8, Y(c) - 8);
+    }
+
+    const line = (fn, color, dash) => {
+      gctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const km = maxH * i / 100;
+        const xx = X(fn(km)), yy = Y(km);
+        i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+      }
+      gctx.strokeStyle = color;
+      gctx.lineWidth = 2.4;
+      gctx.setLineDash(dash || []);
+      gctx.stroke();
+      gctx.setLineDash([]);
+    };
+
+    line(tempUp, '#e06c3a');
+    line(dewUp, '#3b82f6');
+    if (rained()) line(tempDown, '#e06c3a', [6, 5]);
+
+    // 현재 위치 점
+    const hNow = heightAt(x);
+    gctx.beginPath();
+    gctx.arc(X(tempAt(x)), Y(hNow), 5, 0, Math.PI * 2);
+    gctx.fillStyle = '#111';
+    gctx.fill();
+    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2; gctx.stroke();
+
+    gctx.textAlign = 'left';
+    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillText('실선 = 올라갈 때 · 점선 = 내려올 때(더 따뜻함)', pad.l + 8, pad.t + 14);
+  }
+
+  // ── 수치 ──
+  function readout() {
+    const c = lcl();
+    const hNow = heightAt(x);
+    const peakT = tempUp(S.peak);
+    const backT = tempDown(0);
+    const backD = dewDown(0);
+
+    el('r-alt').textContent = hNow.toFixed(2) + ' km';
+    el('r-temp').textContent = tempAt(x).toFixed(1) + '°C';
+    el('r-lcl').textContent = c >= S.peak ? '구름 없음' : (c * 1000).toFixed(0) + ' m';
+    el('r-peak').textContent = peakT.toFixed(1) + '°C';
+    el('r-cloud').textContent = c >= S.peak ? '0 m' : ((S.peak - c) * 1000).toFixed(0) + ' m';
+
+    const dT = backT - S.temp, dD = backD - S.dew;
+    const sT = el('s-temp'), sD = el('s-dew');
+    sT.textContent = (dT >= 0 ? '+' : '') + dT.toFixed(1) + '°C';
+    sD.textContent = (dD >= 0 ? '+' : '') + dD.toFixed(1) + '°C';
+    sT.className = dT > 0.05 ? 'up' : (dT < -0.05 ? 'down' : '');
+    sD.className = dD < -0.05 ? 'down' : '';
+
+    const v = el('verdict');
+    if (!rained()) {
+      v.className = 'verdict';
+      v.innerHTML = '구름이 생기지 않아 비도 내리지 않았습니다. 올라갈 때와 내려올 때 같은 비율로 ' +
+        '식고 데워지므로, 산을 넘어도 <strong>기온이 그대로</strong>입니다. ' +
+        '이슬점을 올려 습한 공기로 만들어 보세요.';
+    } else {
+      v.className = 'verdict warn';
+      v.innerHTML = `산을 넘은 공기는 <strong>${dT.toFixed(1)}°C 더 덥고</strong> ` +
+        `이슬점은 <strong>${Math.abs(dD).toFixed(1)}°C 낮아져</strong> 더 건조합니다. ` +
+        '올라갈 때는 구름 속에서 천천히 식었는데, 비로 수증기를 잃고 ' +
+        '내려올 때는 빠르게 데워졌기 때문입니다. 이것이 <strong>푄 현상(높새바람)</strong>입니다.';
+    }
+
+    let note;
+    if (S.dew >= S.temp - 0.4) {
+      note = '이슬점이 기온과 거의 같습니다. 지표에서 바로 응결이 시작돼 안개가 낀 상태에 가깝습니다.';
+    } else if (!rained()) {
+      note = `구름이 생기려면 ${(c * 1000).toFixed(0)}m 까지 올라가야 하는데 산이 ${(S.peak * 1000).toFixed(0)}m 라 못 미칩니다.`;
+    } else if (going(x) === 'up') {
+      note = hNow < c
+        ? '아직 구름 아래입니다. 1km에 9.8°C씩 빠르게 식습니다.'
+        : '구름 속입니다. 수증기가 응결하며 숨은열을 내놓아 1km에 약 5°C만 식습니다.';
+    } else {
+      note = '내려오는 중입니다. 수증기를 비로 잃었기 때문에 1km에 9.8°C씩 빠르게 데워집니다.';
+    }
+    el('note').textContent = note;
+  }
+
+  // ── 입력 ──
+  const labels = {
+    temp: (v) => Number(v).toFixed(1) + '°C',
+    dew: (v) => Number(v).toFixed(1) + '°C',
+    peak: (v) => Number(v).toFixed(1) + ' km',
+    speed: (v) => Number(v).toFixed(1) + '×'
+  };
+
+  /* 이슬점은 기온을 넘을 수 없다 — 물리적으로 불가능한 상태다.
+     사용자가 밀어 올리면 조용히 기온에 맞춰 막는다. */
+  function clampDew() {
+    if (S.dew > S.temp) {
+      S.dew = S.temp;
+      el('dew').value = S.temp;
+      el('dew-out').textContent = labels.dew(S.temp);
+    }
+  }
+
+  ['temp', 'dew', 'peak', 'speed'].forEach((k) => {
+    const input = el(k);
+    input.addEventListener('input', () => {
+      S[k] = Number(input.value);
+      el(k + '-out').textContent = labels[k](input.value);
+      clampDew();
+      syncPresets();
+      readout();
+    });
+  });
+
+  document.querySelectorAll('.preset-row button').forEach((b) => {
+    b.addEventListener('click', () => {
+      const v = Number(b.dataset.peak);
+      S.peak = v;
+      el('peak').value = v;
+      el('peak-out').textContent = labels.peak(v);
+      syncPresets();
+      readout();
+    });
+  });
+
+  const presetBox = el('presets');
+  presetBox.querySelectorAll('button').forEach((b) => {
+    b.addEventListener('click', () => {
+      S.temp = Number(b.dataset.t);
+      S.dew = Number(b.dataset.d);
+      S.peak = Number(b.dataset.p);
+      ['temp', 'dew', 'peak'].forEach((k) => {
+        el(k).value = S[k];
+        el(k + '-out').textContent = labels[k](S[k]);
+      });
+      x = 0;
+      syncPresets();
+      readout();
+    });
+  });
+
+  // 슬라이더를 직접 움직이면 어떤 상황도 아니게 된다 — 표시를 맞춰준다
+  function syncPresets() {
+    presetBox.querySelectorAll('button').forEach((b) => {
+      const match = Number(b.dataset.t) === S.temp &&
+                    Number(b.dataset.d) === S.dew &&
+                    Number(b.dataset.p) === S.peak;
+      b.setAttribute('aria-pressed', String(match));
+    });
+  }
+
+  el('toggle').addEventListener('click', () => {
+    running = !running;
+    el('toggle').textContent = running ? '일시정지' : '이어서';
+  });
+  el('reset').addEventListener('click', () => { x = 0; readout(); });
+
+  // ── 공유 ──
+  el('share').addEventListener('click', async () => {
+    const said = el('share-said');
+    try {
+      const me = await Session.refresh();
+      if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
+      const q = new URLSearchParams({
+        temp: S.temp, dew: S.dew, peak: S.peak, speed: S.speed, x: x.toFixed(3)
+      });
+      const url = location.origin + location.pathname + '?' + q;
+      const b = el('share-url');
+      b.value = url; b.hidden = false; b.select();
+      try { await navigator.clipboard.writeText(url); said.textContent = '복사했습니다.'; }
+      catch { said.textContent = '주소를 복사해 주세요.'; }
+    } catch { said.textContent = '잠시 후 다시 시도해 주세요.'; }
+  });
+
+  function applyQuery() {
+    const q = new URLSearchParams(location.search);
+    ['temp', 'dew', 'peak', 'speed'].forEach((k) => {
+      const v = Number(q.get(k));
+      if (q.get(k) === null || !Number.isFinite(v)) return;
+      const input = el(k);
+      const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
+      S[k] = c; input.value = c;
+      el(k + '-out').textContent = labels[k](c);
+    });
+    clampDew();
+    const px = Number(q.get('x'));
+    if (Number.isFinite(px) && px >= 0 && px <= 1) x = px;
+    if (S.speed === 0) { running = false; el('toggle').textContent = '이어서'; }
+    syncPresets();
+  }
+
+  // ── 루프 ──
+  let last = 0;
+  function frame(ts) {
+    const now = ts / 1000;
+    if (!last) last = now;
+    const dt = Math.min(0.25, now - last);
+    last = now;
+    if (running) {
+      x += dt * 0.12 * S.speed;
+      if (x > 1) x -= 1;
+      readout();
+    }
+    draw(); drawGraph();
+    requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 900;
+    canvas.width = w * DPR;
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
+    const gw = graph.clientWidth || 900;
+    graph.width = gw * DPR;
+    graph.height = 360 * DPR;
+  }
+
+  applyQuery();
+  readout();
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
