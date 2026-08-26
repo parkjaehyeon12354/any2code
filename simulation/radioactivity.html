@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="공기를 산 너머로 넘기며 단열 팽창과 푄 현상을 확인하는 시뮬레이션">
-<title>대기와 기상 — Ans2Quest</title>
+<meta name="description" content="원자를 무작위로 붕괴시켜 반감기가 개별 수명이 아니라 집단 통계임을 확인하는 시뮬레이션">
+<title>방사능 — Ans2Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -397,10 +397,7 @@
     <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
          없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
     <a href="/simulation/pendulum.html">단진자</a>
-    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
-    <a href="/simulation/wave-interference.html">빛과 파동</a>
-    <a href="/simulation/orbital-motion.html">천체의 운동</a>
-    <a href="/simulation/thermal-gas.html">열과 통계</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a><a href="/simulation/wave-interference.html">빛과 파동</a><a href="/simulation/orbital-motion.html">천체의 운동</a><a href="/simulation/thermal-gas.html">열과 통계</a>
     <a href="/simulation/particle-motion.html">입자의 운동</a>
     <a href="/simulation/chemical-bond.html">화학 결합</a><a href="/simulation/chemical-reaction.html">화학 반응</a><a href="/simulation/acid-base.html">산과 염기</a><a href="/simulation/electrochemistry.html">전기화학</a><a href="/simulation/radioactivity.html">방사능</a>
     <a href="/simulation/cell-structure.html">세포의 구조</a>
@@ -420,20 +417,22 @@
 </div>
 
 
+
 <main class="container sim">
-  <p class="crumb"><a href="/">홈</a> · 지구과학 · 대기와 기상</p>
+  <p class="crumb"><a href="/">홈</a> · 화학 · 방사능</p>
 
   <div class="head">
-    <h1>대기와 기상</h1>
-    <p>높이 올라갈수록 <strong>태양에 가까워지는데</strong> 왜 더 추울까요? 산 위가 추운 이유는
-    거리가 아니라 <strong>공기가 부풀면서 스스로 식기 때문</strong>입니다. 공기를 산 너머로 넘겨
-    보면, 같은 공기가 <strong>더 덥고 건조해져서</strong> 내려오는 것도 확인할 수 있습니다.</p>
+    <h1>방사능</h1>
+    <p>반감기가 두 번 지나면 <strong>다 없어질까요?</strong> 아닙니다 — <strong>1/4 이 남습니다.</strong>
+    절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이니까요.
+    더 중요한 건 <strong>어느 원자가 언제 터질지는 아무도 모른다</strong>는 점입니다.
+    원자 수를 줄여 보세요 — 곡선이 들쭉날쭉해집니다.</p>
   </div>
 
   <div class="layout">
     <div class="side-panels">
       <div class="stage">
-        <canvas id="canvas" aria-label="산을 넘는 공기덩어리와 구름, 비"></canvas>
+        <canvas id="canvas" aria-label="무작위로 붕괴하는 방사성 원자들"></canvas>
         <div class="stage-foot">
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
@@ -441,69 +440,58 @@
         </div>
       </div>
       <div class="legend">
-        <span><i style="background:#e06c3a"></i>기온</span>
-        <span><i style="background:#3b82f6"></i>이슬점</span>
-        <span><i style="background:#9ca3af"></i>구름 (기온 = 이슬점)</span>
+        <span><i style="background:#7bdff2"></i>아직 남은 원자</span>
+        <span><i style="background:#ffd166"></i>지금 붕괴하는 중</span>
+        <span><i style="background:#4a5464"></i>이미 붕괴한 자리</span>
       </div>
     </div>
 
     <div>
       <div class="panel">
-        <div class="panel-head"><h2>지상의 공기</h2></div>
+        <div class="panel-head"><h2>조건</h2></div>
         <div class="panel-body">
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="temp">기온</label>
-              <output id="temp-out">20.0°C</output>
+              <label for="natoms">원자 수</label>
+              <output id="natoms-out">400개</output>
             </div>
-            <input type="range" id="temp" min="-5" max="40" step="0.5" value="20">
+            <input type="range" id="natoms" min="10" max="2000" step="10" value="400">
+            <span class="hint"><strong>20개로 줄여 보세요.</strong> 곡선이 계단처럼 들쭉날쭉해집니다.
+            2000개로 늘리면 매끄러워집니다 — <strong>반감기는 개별 원자의 수명이 아니라
+            집단의 통계</strong>이기 때문입니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="dew">이슬점</label>
-              <output id="dew-out">12.0°C</output>
+              <label for="half">반감기</label>
+              <output id="half-out">6.0초</output>
             </div>
-            <input type="range" id="dew" min="-15" max="40" step="0.5" value="12">
-            <span class="hint">이슬점은 수증기가 응결하기 시작하는 온도입니다.
-            기온에 가까울수록 습한 공기입니다. 기온보다 높을 수는 없습니다.</span>
+            <input type="range" id="half" min="2" max="20" step="0.5" value="6">
+            <span class="hint">화면에서만 쓰는 시간입니다. 실제 핵종은 아래 상황 버튼에서 볼 수 있습니다.</span>
           </div>
 
           <div class="ctrl">
             <div class="ctrl-top">
-              <label for="peak">산 높이</label>
-              <output id="peak-out">2.0 km</output>
+              <label for="speed">재생 속도</label>
+              <output id="speed-out">1.0배</output>
             </div>
-            <input type="range" id="peak" min="0.5" max="5" step="0.1" value="2">
-            <div class="preset-row">
-              <button type="button" data-peak="1.6">태백산맥 1.6km</button>
-              <button type="button" data-peak="2.7">한라산 2.7km</button>
-              <button type="button" data-peak="4.8">알프스 4.8km</button>
-            </div>
-          </div>
-
-          <div class="ctrl">
-            <div class="ctrl-top">
-              <label for="speed">바람 속도</label>
-              <output id="speed-out">1.0×</output>
-            </div>
-            <input type="range" id="speed" min="0" max="3" step="0.1" value="1">
+            <input type="range" id="speed" min="0.25" max="4" step="0.25" value="1">
           </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>상황 고르기</h2></div>
+        <div class="panel-head"><h2>실제 핵종으로 보기</h2></div>
         <div class="panel-body">
           <div class="chips" id="presets">
-            <button type="button" data-t="20" data-d="12" data-p="2" aria-pressed="true">
-              푄 현상<small>산 넘어 덥고 건조해짐</small></button>
-            <button type="button" data-t="20" data-d="19" data-p="2">
-              습한 공기<small>낮은 곳부터 구름</small></button>
-            <button type="button" data-t="20" data-d="-5" data-p="2">
-              마른 공기<small>구름이 안 생김</small></button>
-            <button type="button" data-t="28" data-d="24" data-p="1.6">
-              장마철 영서<small>태백산맥 · 폭우</small></button>
+            <button type="button" data-n="400" data-h="6" data-iso="c14" aria-pressed="true">
+              탄소-14<small>5,730년 · 연대 측정</small></button>
+            <button type="button" data-n="400" data-h="6" data-iso="i131">
+              요오드-131<small>8.02일 · 의료용</small></button>
+            <button type="button" data-n="400" data-h="6" data-iso="cs137">
+              세슘-137<small>30.17년 · 원전 사고</small></button>
+            <button type="button" data-n="20" data-h="6" data-iso="c14">
+              원자 20개만<small>들쭉날쭉해집니다</small></button>
           </div>
         </div>
       </div>
@@ -512,22 +500,22 @@
         <div class="panel-head"><h2>측정</h2></div>
         <div class="panel-body">
           <dl class="read">
-            <div><dt>지금 높이</dt><dd id="r-alt">—</dd></div>
-            <div><dt>공기덩어리 온도</dt><dd id="r-temp">—</dd></div>
-            <div><dt>구름 생기는 높이</dt><dd id="r-lcl">—</dd></div>
-            <div><dt>산 정상 온도</dt><dd id="r-peak">—</dd></div>
-            <div><dt>구름 두께</dt><dd id="r-cloud" class="gap">—</dd></div>
+            <div><dt>남은 원자</dt><dd id="r-alive">—</dd></div>
+            <div><dt>지난 반감기 횟수</dt><dd id="r-halves">—</dd></div>
+            <div><dt>이론값 (1/2)ⁿ</dt><dd id="r-theory">—</dd></div>
+            <div><dt>실제 남은 비율</dt><dd id="r-actual">—</dd></div>
+            <div><dt>이론과의 차이</dt><dd id="r-gap" class="gap">—</dd></div>
           </dl>
           <p class="note" id="note"></p>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>넘기 전 vs 넘은 후</h2></div>
+        <div class="panel-head"><h2>반감기가 지날 때마다</h2></div>
         <div class="panel-body">
           <div class="stat-row">
-            <dl class="stat"><dt>기온 변화</dt><dd id="s-temp">—</dd></dl>
-            <dl class="stat"><dt>이슬점 변화</dt><dd id="s-dew">—</dd></dl>
+            <dl class="stat"><dt>2회 지나면</dt><dd id="s-two">25%</dd></dl>
+            <dl class="stat"><dt>10회 지나도</dt><dd id="s-ten">0.098%</dd></dl>
           </div>
           <div class="verdict" id="verdict"></div>
         </div>
@@ -548,17 +536,17 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="profile-title">
-    <div class="analysis-head"><h2 id="profile-title">높이에 따른 기온과 이슬점</h2><p>두 선이 만나는 곳에서 구름이 생깁니다. 만나기 전까지는 기온이 1km에 9.8°C씩 빠르게 떨어지고, 만난 뒤(구름 속)에는 약 5°C씩 천천히 떨어집니다.</p></div>
-    <div class="graph-wrap"><canvas id="profile-graph" aria-label="높이에 따른 기온과 이슬점 변화"></canvas></div>
+  <section class="analysis-panel" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">개별 원자는 무작위, 집단은 규칙적</h2><p>위쪽은 원자 <strong>여덟 개를 골라</strong> 각각 언제 터졌는지 표시한 것입니다 — 아무 규칙이 없습니다. 아래쪽은 <strong>전체 집단</strong>이고, 가로축은 시간이 아니라 <strong>지나간 반감기 횟수</strong>입니다. 개별은 예측할 수 없지만 집단은 (1/2)ⁿ 을 따릅니다. 원자 수를 줄이면 점들이 회색 이론선에서 벗어납니다.</p></div>
+    <div class="graph-wrap"><canvas id="decay-graph" aria-label="개별 원자의 붕괴 시점과 집단의 감소"></canvas></div>
   </section>
 
   <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">산 위가 추운 건 태양과 멀어서가 아니다</h2><p>공기가 스스로 식는 이유를 식으로 확인할 수 있습니다.</p></div>
+    <div class="analysis-head"><h2 id="formula-title">반감기는 예언이 아니라 통계다</h2><p>동전 던지기와 같은 원리입니다.</p></div>
     <div class="formula-box">
-      <p class="formula-main">구름 높이 = (기온 − 이슬점) ÷ 7.8 &nbsp;km &nbsp;&nbsp;|&nbsp;&nbsp; 건조 9.8°C/km &nbsp; 습윤 약 5°C/km</p>
-      <p>산꼭대기는 지상보다 태양에 <strong>겨우 몇 km 가까울 뿐</strong>입니다. 태양까지 거리 1억 5천만 km에 비하면 무시할 수준이라, 가까워져서 따뜻해지는 효과는 사실상 없습니다. 그런데도 높이 올라가면 100m마다 약 1°C씩 떨어집니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p>공기는 위로 올라갈수록 <strong>주변 기압이 낮아져 부풉니다</strong>. 부풀려면 주변을 밀어내야 하고, 그 일에 쓰는 에너지를 자기 안에서 꺼내 씁니다. 그래서 열을 주고받지 않아도 <strong>스스로 식습니다</strong>. 이것을 단열 팽창이라고 합니다.</p><p>수증기가 섞이지 않은 상태에서는 1km 오를 때마다 약 <strong>9.8°C</strong> 떨어집니다(건조단열감률). 그런데 계속 식다 보면 언젠가 <strong>이슬점에 닿습니다</strong>. 그 높이가 상승응결고도이고, 거기서부터 구름이 생깁니다.</p><p>이슬점도 높이 올라가면 조금씩 떨어집니다(약 2°C/km). 그래서 기온과 이슬점은 1km마다 <strong>9.8 − 2 = 7.8°C</strong>씩 가까워집니다. 지상에서 둘의 차이가 8°C였다면 8 ÷ 7.8 ≈ <strong>1.03km</strong>에서 만납니다.</p><p>구름이 생기기 시작하면 수증기가 물로 바뀌면서 <strong>숨은열을 내놓습니다</strong>. 이 열이 식는 것을 방해해서, 구름 속에서는 1km에 약 <strong>5°C</strong>만 떨어집니다(습윤단열감률). 그래프에서 꺾이는 지점이 바로 여기입니다.</p><p><strong>푄 현상(높새바람)</strong>은 이 차이 때문에 생깁니다. 올라갈 때는 구름 속에서 천천히 식었는데, 비를 뿌려 수증기를 잃고 내려올 때는 건조단열감률로 <strong>빠르게 데워집니다</strong>. 결과적으로 산을 넘은 공기는 넘기 전보다 <strong>더 덥고 더 건조합니다</strong>. 봄에 영동에서 영서로 부는 높새바람이 이렇게 만들어집니다.</p></div></details>
+      <p class="formula-main">N = N₀ · (1/2)ⁿ &nbsp;&nbsp;(n = 지난 반감기 횟수) &nbsp;&nbsp;|&nbsp;&nbsp; N = N₀ · e<sup>−λt</sup> &nbsp;&nbsp;|&nbsp;&nbsp; λ = ln2 ÷ T½</p>
+      <p>반감기는 <strong>절반씩 곱해 나가는</strong> 것입니다. 두 번 지나면 ½ × ½ = ¼ 이 남고, 세 번이면 ⅛ 입니다. 아무리 여러 번 지나도 <strong>0 이 되지는 않습니다</strong> — 다만 아주 작아질 뿐입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>개별 원자는 나이를 먹지 않습니다.</strong> 방금 만들어진 원자든 100만 년 된 원자든, 앞으로 1초 안에 붕괴할 확률이 <strong>완전히 똑같습니다</strong>. 원자에는 시계도 수명도 없습니다. 어느 것이 언제 터질지는 원리적으로 예측할 수 없고, 이것은 측정 기술의 한계가 아니라 자연의 근본 성질입니다.</p><p><strong>그런데 집단은 놀랍도록 규칙적입니다.</strong> 원자 하나하나는 완전히 무작위인데, 수억 개를 모아 놓으면 정확히 지수 곡선을 따라 줄어듭니다. 동전 하나를 던지면 앞뒤를 알 수 없지만 만 번 던지면 거의 정확히 절반이 앞면인 것과 같습니다. 이것을 <strong>큰 수의 법칙</strong>이라 합니다. 위 화면에서 원자 수를 20개로 줄이면 곡선이 들쭉날쭉해지는 것이 그 증거입니다.</p><p><strong>반감기는 아무것도 바꿀 수 없습니다.</strong> 화학 반응은 온도를 올리거나 촉매를 넣으면 빨라지지만, 핵붕괴는 그런 것에 전혀 반응하지 않습니다. 원자핵 안에서 일어나는 일이라 바깥의 온도·압력·화학 결합 상태와 무관하기 때문입니다. 그래서 방사성 폐기물은 <strong>기다리는 것 말고는 방법이 없습니다.</strong> 세슘-137 이 1000분의 1 로 줄려면 반감기 10번, 약 302년이 걸립니다.</p><p><strong>탄소 연대 측정에는 한계가 있습니다.</strong> 탄소-14 의 반감기는 5730년입니다. 5만 년이 지나면 처음의 0.24% 밖에 남지 않아 측정이 사실상 불가능해집니다. 그래서 공룡 화석(6600만 년)은 탄소로 잴 수 없습니다 — 반감기가 1만 번 넘게 지나 남은 것이 없기 때문입니다. 공룡 화석에는 우라늄-납처럼 반감기가 수십억 년인 방법을 씁니다.</p><p><strong>방사능과 방사선은 다른 말입니다.</strong> 방사능은 원자핵이 붕괴하며 방사선을 내는 <strong>성질이나 능력</strong>이고, 방사선은 그때 실제로 <strong>튀어나오는 것</strong>(알파선·베타선·감마선)입니다. "이 물질은 방사능이 있다"는 맞는 말이지만 "방사능이 날아온다"는 어색합니다. 날아오는 것은 방사선입니다.</p></div></details>
     </div>
   </section>
 </main>
@@ -571,420 +559,297 @@
 (function () {
   const el = (id) => document.getElementById(id);
 
-  /* ── 대기와 기상: 산 위는 왜 추운가 ──
+  /* ── 방사능: 반감기는 예언이 아니라 통계다 ──
 
-     "높이 올라가면 태양에 가까우니 따뜻해야 하는 것 아닌가" 가 흔한 오해다.
-     산꼭대기는 태양에 겨우 몇 km 가까울 뿐이라 거리 효과는 사실상 0 이다.
-     실제 이유는 공기가 부풀며 스스로 식는 것(단열 팽창)이다.
+     "반감기가 두 번 지나면 다 없어진다" 와
+     "개별 원자는 수명이 정해져 있다" 를 함께 겨냥한다.
 
-     그래서 이 화면은 공기덩어리를 직접 산 너머로 넘겨 보게 한다.
-     같은 공기가 넘기 전보다 더 덥고 건조해져서 내려오는 것 — 푄 현상 —
-     을 숫자로 확인할 수 있다.
+     핵심은 원자마다 '남은 수명 바' 를 절대 그리지 않는 것이다(Solar 지적).
+     그걸 그리는 순간 "원자에 시계가 있다" 는 오개념이 오히려 굳는다.
+     대신 매 순간 같은 확률로 독립 판정한다 — 원자는 나이를 먹지 않는다.
 
-     교육과정 표준값을 쓴다:
-       건조단열감률 9.8°C/km, 습윤단열감률 약 5°C/km, 이슬점 감률 2°C/km */
-  const DALR = 9.8;    // 건조단열감률 (구름 생기기 전)
-  const MALR = 5.0;    // 습윤단열감률 (구름 속 — 숨은열이 식는 걸 방해한다)
-  const DEWL = 2.0;    // 이슬점 감률
+     그래프도 화학 반응의 시간-농도 곡선과 겹치지 않게
+     '개별 원자 붕괴 시점(무작위 점)' 과 '집단 비율(반감기 횟수 축)' 을 나눠 그린다.
 
-  const S = { temp: 20, dew: 12, peak: 2, speed: 1 };
+     검증(직접 계산): (1/2)^n → 1회 50%, 2회 25%, 3회 12.5%, 10회 0.098%.
+     통계 요동 √(Np(1−p))/Np: N=20 → 22.4%, N=2000 → 2.2%. */
+
+  const ISO = {
+    c14:  { name: '탄소-14',    half: 5730,  unit: '년', note: '연대 측정에 씁니다' },
+    i131: { name: '요오드-131', half: 8.02,  unit: '일', note: '갑상선 치료에 씁니다' },
+    cs137:{ name: '세슘-137',   half: 30.17, unit: '년', note: '원전 사고 때 문제가 됩니다' }
+  };
+
+  const S = { natoms: 400, half: 6, speed: 1, iso: 'c14' };
   let running = true;
-  let x = 0;           // 0 → 1 : 산을 넘는 진행도
+  let t = 0;                    // 화면 시간 (초)
+  let atoms = [];               // {x, y, alive, deadAt, flash}
+  let tracked = [];             // 개별 추적용 원자 8개의 index
+  let samples = [];             // {n(반감기 횟수), frac}
 
   const canvas = el('canvas');
   const ctx = canvas.getContext('2d');
-  const graph = el('profile-graph');
+  const graph = el('decay-graph');
   const gctx = graph.getContext('2d');
   let DPR = 1;
-  const W = () => canvas.width / DPR;
-  const H = () => canvas.height / DPR;
 
-  /* 상승응결고도 — 기온과 이슬점이 만나는 높이.
-       (T − 9.8h) = (Td − 2h)  →  h = (T − Td) / 7.8
-     이슬점이 기온보다 높을 수는 없으므로 음수는 0 으로 막는다. */
-  function lcl() {
-    return Math.max(0, (S.temp - S.dew) / (DALR - DEWL));
+  const halves = () => t / S.half;                    // 지난 반감기 횟수
+  const theory = () => Math.pow(0.5, halves());
+  const aliveCount = () => atoms.filter((a) => a.alive).length;
+  const actualFrac = () => atoms.length ? aliveCount() / atoms.length : 0;
+
+  function seed() {
+    atoms = [];
+    for (let i = 0; i < S.natoms; i++) {
+      atoms.push({ x: Math.random(), y: Math.random(), alive: true, deadAt: null, flash: 0 });
+    }
+    // 개별 추적 8개 — 골고루 흩어진 것으로
+    tracked = [];
+    const step = Math.max(1, Math.floor(S.natoms / 8));
+    for (let i = 0; i < 8 && i * step < S.natoms; i++) tracked.push(i * step);
+    t = 0;
+    samples = [{ n: 0, frac: 1 }];
   }
 
-  /* 올라갈 때의 기온 — 구름 아래는 건조, 구름 속은 습윤 */
-  function tempUp(h) {
-    const c = lcl();
-    if (h <= c) return S.temp - DALR * h;
-    return S.temp - DALR * c - MALR * (h - c);
+  /* 붕괴 판정 — 원자는 나이를 먹지 않는다.
+     dt 동안 붕괴할 확률은 1 − (1/2)^(dt/T½) 로, 지금까지 얼마나 살았든 똑같다.
+     이게 "메모리가 없다" 는 뜻이고, 반감기가 통계인 이유다. */
+  function decayStep(dt) {
+    const pDecay = 1 - Math.pow(0.5, dt / S.half);
+    atoms.forEach((a) => {
+      if (!a.alive) { if (a.flash > 0) a.flash = Math.max(0, a.flash - dt * 2.4); return; }
+      if (Math.random() < pDecay) {
+        a.alive = false;
+        a.deadAt = t;
+        a.flash = 1;
+      }
+    });
   }
 
-  function dewUp(h) {
-    const c = lcl();
-    // 구름 속에서는 포화 상태라 이슬점 = 기온
-    if (h >= c) return tempUp(h);
-    return S.dew - DEWL * h;
-  }
-
-  /* 내려올 때의 기온.
-     구름이 생겼다면 비로 수증기를 잃었으므로 건조단열감률로 내려온다 —
-     이것이 푄 현상의 핵심이다. 구름이 없었다면 올라간 그대로 돌아온다. */
-  function tempDown(h) {
-    const peakT = tempUp(S.peak);
-    return peakT + DALR * (S.peak - h);
-  }
-
-  function dewDown(h) {
-    const c = lcl();
-    // 구름이 안 생겼으면 이슬점도 그대로 되돌아온다
-    if (c >= S.peak) return S.dew - DEWL * h;
-    // 정상에서 포화였고, 내려오며 기온만 오르므로 이슬점은 천천히 회복
-    const peakD = tempUp(S.peak);
-    return peakD + DEWL * (S.peak - h);
-  }
-
-  const rained = () => lcl() < S.peak;
-
-  // 현재 위치 → 높이 (산 모양: 0~0.5 오름, 0.5~1 내림)
-  function heightAt(t) {
-    const u = t < 0.5 ? t / 0.5 : (1 - t) / 0.5;
-    return S.peak * u;
-  }
-  const going = (t) => (t < 0.5 ? 'up' : 'down');
-
-  function tempAt(t) {
-    const h = heightAt(t);
-    return going(t) === 'up' ? tempUp(h) : tempDown(h);
-  }
-  function dewAt(t) {
-    const h = heightAt(t);
-    return going(t) === 'up' ? dewUp(h) : dewDown(h);
-  }
-
-  // ── 무대 그리기 ──
+  // ── 무대 ──
   function draw() {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.clearRect(0, 0, W(), H());
+    const w = canvas.width / DPR, h = canvas.height / DPR;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#0f141c';
+    ctx.fillRect(0, 0, w, h);
 
-    const w = W(), h = H();
-    const ground = h * 0.86;
-    const skyTop = h * 0.06;
-    const kmToPx = (ground - skyTop) / Math.max(5, S.peak * 1.35);
+    const pad = 14, top = 44;
+    const iw = w - pad * 2, ih = h - top - pad - 22;
 
-    // 하늘 — 위로 갈수록 어둡다
-    const sky = ctx.createLinearGradient(0, skyTop, 0, ground);
-    sky.addColorStop(0, '#274b73');
-    sky.addColorStop(0.55, '#7fa8cd');
-    sky.addColorStop(1, '#cfe0ee');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, ground);
-
-    // 산 — 경로를 함수로 둔다. 구름·비를 산 바깥으로 잘라낼 때 같은 모양이 필요하다.
-    const peakPx = ground - S.peak * kmToPx;
-    const left = w * 0.22, right = w * 0.78, mid = w * 0.5;
-    /* ⚠ beginPath 를 부르지 않는다. clip 을 만들 때 화면 전체 사각형과 이 산을
-          '한 경로 안에' 담아야 evenodd 로 산을 빼낼 수 있는데, 여기서
-          beginPath 를 부르면 앞서 그린 사각형이 통째로 지워진다.
-          그러면 산만 남아 결과가 정반대가 된다 — 실제로 그렇게 당했다. */
-    const addMountain = () => {
-      ctx.moveTo(0, ground);
-      ctx.lineTo(left, ground);
-      ctx.quadraticCurveTo(mid - w * 0.10, peakPx + (ground - peakPx) * 0.16, mid, peakPx);
-      ctx.quadraticCurveTo(mid + w * 0.10, peakPx + (ground - peakPx) * 0.16, right, ground);
-      ctx.lineTo(w, ground);
-      ctx.closePath();
-    };
-    ctx.beginPath();
-    addMountain();
-    const rock = ctx.createLinearGradient(0, peakPx, 0, ground);
-    rock.addColorStop(0, '#6b7280');
-    rock.addColorStop(1, '#3f4b5a');
-    ctx.fillStyle = rock;
-    ctx.fill();
-
-    // 땅
-    ctx.fillStyle = '#2f3b2e';
-    ctx.fillRect(0, ground, w, h - ground);
-
-    // 높이 눈금
-    ctx.font = '11px ui-sans-serif, system-ui';
-    ctx.textAlign = 'left';
-    for (let km = 1; km <= Math.ceil(S.peak * 1.3); km++) {
-      const y = ground - km * kmToPx;
-      if (y < skyTop) break;
-      ctx.strokeStyle = 'rgba(255,255,255,.18)';
-      ctx.setLineDash([4, 5]);
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(255,255,255,.65)';
-      ctx.fillText(km + 'km', 6, y - 4);
-    }
-
-    /* 구름과 비 — 바람받이(산 왼쪽)에만 그린다.
-
-       ⚠ save/restore 짝을 조심할 것. 산 clip 을 건 뒤 구름용 clip 을 또 걸고
-          restore 하면 바깥 clip 까지 풀린다. 그래서 비가 산 경사면 위에
-          그려졌다 — 실제로 겪었다. 구름과 비를 각각 독립된 save 블록으로 둔다. */
-    const c = lcl();
-    if (c < S.peak) {
-      const cloudBase = ground - c * kmToPx;
-      const cloudTop = peakPx - 10;
-      const windL = left * 0.35;
-      const windR = mid - w * 0.03;              // 정상 못 미치는 곳 = 바람받이
-
-      // 산을 뺀 영역만 남기는 clip 을 매번 새로 건다
-      // 화면 전체와 산을 '한 경로' 에 담고 evenodd 로 산을 빼낸다
-      const clipOutsideMountain = () => {
-        ctx.beginPath();
-        ctx.rect(0, 0, w, h);
-        addMountain();                           // beginPath 없이 이어 붙인다
-        ctx.clip('evenodd');
-      };
-
-      // ── 구름 ──
-      ctx.save();
-      clipOutsideMountain();
-      /* 사각형으로 자르면 구름 가장자리가 각져 보인다. 자르지 않고,
-         원을 가장자리로 갈수록 작게 그려 자연스럽게 흐린다. */
-      /* 구름은 응결고도 위로 '쌓인다'. 가로줄 하나로 그리면 띠처럼 보이므로
-         가로·세로로 격자를 채우고, 양 끝에서만 작아지게 해 가장자리를 흐린다. */
-      const span = Math.max(30, windR - windL);
-      const thick = Math.max(20, cloudBase - cloudTop);
-      /* 원 사이 간격이 반지름보다 크면 물방울처럼 흩어져 보인다.
-         간격을 반지름의 절반 이하로 두어 서로 겹치게 만든다. */
-      const step = 15;                               // 원 중심 간격
-      const cols = Math.max(4, Math.round(span / step));
-      const rows = Math.max(3, Math.round(thick / step));
-      ctx.fillStyle = 'rgba(246,248,251,.96)';
-      for (let cx0 = 0; cx0 <= cols; cx0++) {
-        const u = cx0 / cols;                        // 0~1 가로 위치
-        const taper = Math.sin(Math.PI * u);         // 양 끝 0, 가운데 1
-        if (taper < 0.1) continue;
-        for (let ry0 = 0; ry0 <= rows; ry0++) {
-          const v = ry0 / rows;                      // 0=응결고도, 1=구름 꼭대기
-          // 위로 갈수록, 양 끝으로 갈수록 얇아진다
-          if (v > taper * 1.15) continue;
-          const jx = ((cx0 * 37 + ry0 * 53) % 11) - 5;
-          const jy = ((cx0 * 29 + ry0 * 41) % 9) - 4;
-          const cxp = windL + u * span + jx;
-          const cyp = cloudBase - v * thick + jy;
-          const r = step * (0.95 + ((cx0 + ry0) % 3) * 0.22);
+    // 원자 — 크기는 개수에 맞춰 조절
+    const r = Math.max(1.8, Math.min(7, 90 / Math.sqrt(S.natoms)));
+    atoms.forEach((a) => {
+      const px = pad + a.x * iw, py = top + a.y * ih;
+      if (a.alive) {
+        ctx.fillStyle = '#7bdff2';
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      } else {
+        if (a.flash > 0) {
+          ctx.strokeStyle = `rgba(255,209,102,${a.flash})`;
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(cxp, cyp, r, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.arc(px, py, r + (1 - a.flash) * 16, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = `rgba(255,209,102,${a.flash * 0.9})`;
+          ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = 'rgba(74,84,100,.55)';
+          ctx.beginPath(); ctx.arc(px, py, r * 0.72, 0, Math.PI * 2); ctx.fill();
         }
       }
-      ctx.restore();
+    });
 
-      // ── 비 ── 구름 아래에서 땅까지. 산에 가려 경사면에는 안 보인다.
-      ctx.save();
-      clipOutsideMountain();
-      ctx.strokeStyle = 'rgba(140,190,240,.8)';
-      ctx.lineWidth = 1.4;
-      const phase = (Date.now() / 90) % 24;
-      const fall = Math.max(14, ground - cloudBase);
-      for (let i = 0; i < 46; i++) {
-        const u = (i * 29 % 100) / 100;
-        // 구름이 옅은 가장자리에는 비도 덜 내린다
-        if (Math.sin(Math.PI * u) < 0.28) continue;
-        const rx = windL + u * span;
-        const ry = cloudBase + ((i * 31 + phase) % fall);
-        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 2, ry + 9); ctx.stroke();
-      }
-      ctx.restore();
+    // 상단 진행 막대
+    const barY = 16, barH = 16;
+    const frac = actualFrac();
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
+    ctx.fillRect(pad, barY, iw, barH);
+    ctx.fillStyle = '#7bdff2';
+    ctx.fillRect(pad, barY, iw * frac, barH);
+    // 반감기 눈금
+    for (let k = 1; k <= 4; k++) {
+      const x = pad + iw * Math.pow(0.5, k);
+      ctx.strokeStyle = 'rgba(255,255,255,.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, barY); ctx.lineTo(x, barY + barH); ctx.stroke();
+      ctx.font = '9.5px ui-sans-serif, system-ui';
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      ctx.textAlign = 'center';
+      ctx.fillText(k + '회', x, barY - 3);
     }
-
-    // 공기덩어리
-    const px = left + (right - left) * x;
-    const py = ground - heightAt(x) * kmToPx;
-    const t = tempAt(x);
-    // 따뜻하면 붉게, 차가우면 푸르게
-    const warm = Math.max(0, Math.min(1, (t + 10) / 45));
-    const r = Math.round(60 + warm * 180), g = Math.round(110 - warm * 40), b = Math.round(220 - warm * 150);
-    ctx.beginPath();
-    ctx.arc(px, py - 16, 15, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${r},${g},${b},.92)`;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255,255,255,.85)';
-    ctx.stroke();
-
-    ctx.font = '700 12.5px ui-sans-serif, system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = 'rgba(0,0,0,.55)';
-    ctx.lineWidth = 3;
-    ctx.strokeText(t.toFixed(1) + '°C', px, py - 38);
-    ctx.fillText(t.toFixed(1) + '°C', px, py - 38);
-
-    // 바람 방향
+    ctx.font = '700 12px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
     ctx.textAlign = 'left';
-    ctx.font = '12px ui-sans-serif, system-ui';
-    ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ctx.fillText('바람 →', 10, ground - 10);
+    ctx.fillText(`${aliveCount()} / ${atoms.length} 남음`, pad + 5, barY + 12);
+
+    // 하단
+    const iso = ISO[S.iso];
+    ctx.textAlign = 'center';
+    ctx.font = '600 12px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.fillText(
+      `${iso.name} · 반감기 ${iso.half.toLocaleString()}${iso.unit} · ` +
+      `지금 ${halves().toFixed(2)} 번 지남`,
+      w / 2, h - 8
+    );
   }
 
-  // ── 그래프: 높이에 따른 기온·이슬점 ──
+  // ── 그래프: 개별 vs 집단 ──
   function drawGraph() {
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 52, r: 16, t: 18, b: 34 };
-    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
-    const maxH = Math.max(1, S.peak);
-
-    // 기온 범위
-    let lo = Math.min(tempUp(maxH), dewUp(0), S.dew) - 3;
-    let hi = Math.max(S.temp, tempDown(0)) + 3;
-    if (hi - lo < 10) hi = lo + 10;
-
-    const X = (temp) => pad.l + (temp - lo) / (hi - lo) * gw;
-    const Y = (km) => pad.t + gh - (km / maxH) * gh;
-
-    gctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--surface-soft') || '#f7f7f5';
+    gctx.fillStyle = '#f7f7f5';
     gctx.fillRect(0, 0, w, h);
 
-    // 눈금
-    gctx.strokeStyle = 'rgba(128,128,128,.22)';
+    const pad = { l: 58, r: 20, t: 18, b: 36 };
+    const NMAX = 5;                                  // 반감기 5회까지
+    const gw = w - pad.l - pad.r;
+    const topH = h * 0.30, botH = h - pad.t - pad.b - topH - 16;
+    const X = (n) => pad.l + Math.min(1, n / NMAX) * gw;
+
+    // ── 위: 개별 원자 8개가 언제 터졌나 ──
+    gctx.font = '600 11.5px ui-sans-serif, system-ui';
+    gctx.fillStyle = '#5a6472';
+    gctx.textAlign = 'left';
+    gctx.fillText('원자 여덟 개를 따라가 보면 — 아무 규칙이 없습니다', pad.l, pad.t + 10);
+
+    tracked.forEach((idx, row) => {
+      const y = pad.t + 20 + row * (topH - 20) / 8;
+      const a = atoms[idx];
+      // 살아있는 구간
+      const endN = a && !a.alive ? a.deadAt / S.half : Math.min(NMAX, halves());
+      gctx.strokeStyle = 'rgba(123,223,242,.85)';
+      gctx.lineWidth = 2.4;
+      gctx.beginPath();
+      gctx.moveTo(X(0), y);
+      gctx.lineTo(X(Math.min(NMAX, endN)), y);
+      gctx.stroke();
+      // 붕괴 시점
+      if (a && !a.alive && a.deadAt / S.half <= NMAX) {
+        const bx = X(a.deadAt / S.half);
+        gctx.fillStyle = '#e0a03a';
+        gctx.beginPath(); gctx.arc(bx, y, 4, 0, Math.PI * 2); gctx.fill();
+      }
+    });
+
+    // ── 아래: 집단 비율 (반감기 횟수 축) ──
+    const by0 = pad.t + topH + 16;
+    const Y = (f) => by0 + botH - f * botH;
+
+    gctx.strokeStyle = 'rgba(128,128,128,.2)';
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
-    gctx.fillStyle = 'rgba(120,120,120,.95)';
-    gctx.textAlign = 'right';
-    for (let km = 0; km <= maxH + 0.001; km += Math.max(0.5, Math.round(maxH / 5 * 2) / 2)) {
-      const y = Y(km);
-      gctx.beginPath(); gctx.moveTo(pad.l, y); gctx.lineTo(w - pad.r, y); gctx.stroke();
-      gctx.fillText(km.toFixed(1) + 'km', pad.l - 8, y + 4);
-    }
-    gctx.textAlign = 'center';
-    const step = (hi - lo) > 40 ? 10 : 5;
-    for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) {
-      const xx = X(t);
-      gctx.strokeStyle = 'rgba(128,128,128,.14)';
-      gctx.beginPath(); gctx.moveTo(xx, pad.t); gctx.lineTo(xx, pad.t + gh); gctx.stroke();
-      gctx.fillText(t + '°', xx, h - 12);
-    }
-
-    // 구름 영역
-    const c = lcl();
-    if (c < maxH) {
-      gctx.fillStyle = 'rgba(156,163,175,.22)';
-      gctx.fillRect(pad.l, pad.t, gw, Y(c) - pad.t);
-      gctx.fillStyle = 'rgba(90,95,105,.85)';
-      gctx.textAlign = 'left';
-      gctx.fillText('구름 (기온 = 이슬점)', pad.l + 8, Y(c) - 8);
-    }
-
-    const line = (fn, color, dash) => {
-      gctx.beginPath();
-      for (let i = 0; i <= 100; i++) {
-        const km = maxH * i / 100;
-        const xx = X(fn(km)), yy = Y(km);
-        i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
-      }
-      gctx.strokeStyle = color;
-      gctx.lineWidth = 2.4;
-      gctx.setLineDash(dash || []);
-      gctx.stroke();
-      gctx.setLineDash([]);
-    };
-
-    line(tempUp, '#e06c3a');
-    line(dewUp, '#3b82f6');
-    if (rained()) line(tempDown, '#e06c3a', [6, 5]);
-
-    // 현재 위치 점
-    const hNow = heightAt(x);
-    gctx.beginPath();
-    gctx.arc(X(tempAt(x)), Y(hNow), 5, 0, Math.PI * 2);
-    gctx.fillStyle = '#111';
-    gctx.fill();
-    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2; gctx.stroke();
-
-    gctx.textAlign = 'left';
     gctx.fillStyle = 'rgba(110,110,110,.95)';
-    gctx.fillText('실선 = 올라갈 때 · 점선 = 내려올 때(더 따뜻함)', pad.l + 8, pad.t + 14);
+    gctx.textAlign = 'center';
+    for (let n = 0; n <= NMAX; n++) {
+      gctx.beginPath(); gctx.moveTo(X(n), by0); gctx.lineTo(X(n), by0 + botH); gctx.stroke();
+      gctx.fillText(n + '회', X(n), h - 16);
+    }
+    gctx.fillText('지나간 반감기 횟수', pad.l + gw / 2, h - 3);
+    gctx.textAlign = 'right';
+    [[1, '100%'], [0.5, '50%'], [0.25, '25%'], [0.125, '12.5%'], [0, '0']].forEach(([f, lab]) => {
+      gctx.beginPath(); gctx.moveTo(pad.l, Y(f)); gctx.lineTo(pad.l + gw, Y(f)); gctx.stroke();
+      gctx.fillText(lab, pad.l - 8, Y(f) + 4);
+    });
+
+    // 이론 곡선 (1/2)^n
+    gctx.beginPath();
+    for (let i = 0; i <= 150; i++) {
+      const n = i / 150 * NMAX;
+      const xx = X(n), yy = Y(Math.pow(0.5, n));
+      i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+    }
+    gctx.strokeStyle = 'rgba(120,120,130,.8)';
+    gctx.lineWidth = 2;
+    gctx.setLineDash([6, 4]); gctx.stroke(); gctx.setLineDash([]);
+
+    // 실제 관측점
+    gctx.beginPath();
+    let started = false;
+    samples.forEach((s) => {
+      if (s.n > NMAX) return;
+      const xx = X(s.n), yy = Y(s.frac);
+      started ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
+      started = true;
+    });
+    gctx.strokeStyle = '#2a9d8f'; gctx.lineWidth = 2.6; gctx.stroke();
+
+    // 반감기 지점 표시
+    for (let n = 1; n <= 3; n++) {
+      const yy = Y(Math.pow(0.5, n));
+      gctx.fillStyle = 'rgba(90,100,114,.9)';
+      gctx.textAlign = 'left';
+      gctx.font = '11px ui-sans-serif, system-ui';
+      gctx.fillText(`${n}회 → ${(Math.pow(0.5, n) * 100).toFixed(n > 2 ? 1 : 0)}%`, X(n) + 5, yy - 5);
+    }
+
+    gctx.fillStyle = '#1d7870';
+    gctx.textAlign = 'left';
+    gctx.font = '600 11.5px ui-sans-serif, system-ui';
+    gctx.fillText('집단 전체 — 원자가 많을수록 회색 이론선에 붙습니다', pad.l + 6, by0 + 14);
   }
 
   // ── 수치 ──
   function readout() {
-    const c = lcl();
-    const hNow = heightAt(x);
-    const peakT = tempUp(S.peak);
-    const backT = tempDown(0);
-    const backD = dewDown(0);
+    const n = halves();
+    const th = theory(), ac = actualFrac();
+    const iso = ISO[S.iso];
 
-    el('r-alt').textContent = hNow.toFixed(2) + ' km';
-    el('r-temp').textContent = tempAt(x).toFixed(1) + '°C';
-    el('r-lcl').textContent = c >= S.peak ? '구름 없음' : (c * 1000).toFixed(0) + ' m';
-    el('r-peak').textContent = peakT.toFixed(1) + '°C';
-    el('r-cloud').textContent = c >= S.peak ? '0 m' : ((S.peak - c) * 1000).toFixed(0) + ' m';
+    el('r-alive').textContent = aliveCount().toLocaleString() + ' / ' + atoms.length.toLocaleString() + '개';
+    el('r-halves').textContent = n.toFixed(2) + '회 (' +
+      (n * iso.half).toLocaleString(undefined, { maximumFractionDigits: 1 }) + iso.unit + ')';
+    el('r-theory').textContent = (th * 100).toFixed(2) + '%';
+    el('r-actual').textContent = (ac * 100).toFixed(2) + '%';
+    const gap = Math.abs(ac - th) * 100;
+    el('r-gap').textContent = gap.toFixed(2) + '%p';
 
-    const dT = backT - S.temp, dD = backD - S.dew;
-    const sT = el('s-temp'), sD = el('s-dew');
-    sT.textContent = (dT >= 0 ? '+' : '') + dT.toFixed(1) + '°C';
-    sD.textContent = (dD >= 0 ? '+' : '') + dD.toFixed(1) + '°C';
-    sT.className = dT > 0.05 ? 'up' : (dT < -0.05 ? 'down' : '');
-    sD.className = dD < -0.05 ? 'down' : '';
+    // 통계 요동의 이론적 크기 √(Np(1−p))/N
+    const sd = atoms.length ? Math.sqrt(atoms.length * th * (1 - th)) / atoms.length * 100 : 0;
 
     const v = el('verdict');
-    if (!rained()) {
+    if (n < 0.1) {
       v.className = 'verdict';
-      v.innerHTML = '구름이 생기지 않아 비도 내리지 않았습니다. 올라갈 때와 내려올 때 같은 비율로 ' +
-        '식고 데워지므로, 산을 넘어도 <strong>기온이 그대로</strong>입니다. ' +
-        '이슬점을 올려 습한 공기로 만들어 보세요.';
-    } else {
+      v.innerHTML = `${iso.name} 원자 <strong>${atoms.length.toLocaleString()}개</strong>로 시작합니다. ` +
+        `반감기는 <strong>${iso.half.toLocaleString()}${iso.unit}</strong> 입니다. 재생을 눌러 보세요.`;
+    } else if (atoms.length <= 60) {
       v.className = 'verdict warn';
-      v.innerHTML = `산을 넘은 공기는 <strong>${dT.toFixed(1)}°C 더 덥고</strong> ` +
-        `이슬점은 <strong>${Math.abs(dD).toFixed(1)}°C 낮아져</strong> 더 건조합니다. ` +
-        '올라갈 때는 구름 속에서 천천히 식었는데, 비로 수증기를 잃고 ' +
-        '내려올 때는 빠르게 데워졌기 때문입니다. 이것이 <strong>푄 현상(높새바람)</strong>입니다.';
+      v.innerHTML = `원자가 <strong>${atoms.length}개</strong>뿐이라 실제값이 이론에서 ` +
+        `<strong>${gap.toFixed(1)}%p</strong> 벗어나 있습니다(예상 흔들림 ${sd.toFixed(1)}%p). ` +
+        '개별 원자가 언제 터질지는 <strong>정말로 무작위</strong>이기 때문입니다. ' +
+        '원자 수를 늘리면 이 흔들림이 사라집니다.';
+    } else if (n >= 1.9) {
+      v.className = 'verdict warn';
+      v.innerHTML = `반감기가 <strong>${Math.floor(n)}번</strong> 지났는데도 ` +
+        `<strong>${(ac * 100).toFixed(1)}%</strong> 가 남아 있습니다. ` +
+        '절반씩 <strong>빼는</strong> 게 아니라 <strong>곱하는</strong> 것이라 ' +
+        '두 번이면 1/4, 세 번이면 1/8 입니다. 0 이 되지는 않습니다.';
+    } else {
+      v.className = 'verdict';
+      v.innerHTML = `반감기 <strong>${n.toFixed(2)}번</strong> 경과. ` +
+        `이론 ${(th * 100).toFixed(1)}% 대비 실제 <strong>${(ac * 100).toFixed(1)}%</strong> ` +
+        `(차이 ${gap.toFixed(2)}%p). 원자가 많을수록 이론에 딱 붙습니다.`;
     }
 
-    let note;
-    if (S.dew >= S.temp - 0.4) {
-      note = '이슬점이 기온과 거의 같습니다. 지표에서 바로 응결이 시작돼 안개가 낀 상태에 가깝습니다.';
-    } else if (!rained()) {
-      note = `구름이 생기려면 ${(c * 1000).toFixed(0)}m 까지 올라가야 하는데 산이 ${(S.peak * 1000).toFixed(0)}m 라 못 미칩니다.`;
-    } else if (going(x) === 'up') {
-      note = hNow < c
-        ? '아직 구름 아래입니다. 1km에 9.8°C씩 빠르게 식습니다.'
-        : '구름 속입니다. 수증기가 응결하며 숨은열을 내놓아 1km에 약 5°C만 식습니다.';
-    } else {
-      note = '내려오는 중입니다. 수증기를 비로 잃었기 때문에 1km에 9.8°C씩 빠르게 데워집니다.';
-    }
-    el('note').textContent = note;
+    el('note').textContent =
+      `원자 ${atoms.length.toLocaleString()}개일 때 통계적으로 예상되는 흔들림은 약 ${sd.toFixed(2)}%p 입니다. ` +
+      `원자 수를 100배 늘리면 흔들림은 1/10 로 줄어듭니다 — 큰 수의 법칙입니다.`;
   }
 
   // ── 입력 ──
   const labels = {
-    temp: (v) => Number(v).toFixed(1) + '°C',
-    dew: (v) => Number(v).toFixed(1) + '°C',
-    peak: (v) => Number(v).toFixed(1) + ' km',
-    speed: (v) => Number(v).toFixed(1) + '×'
+    natoms: (v) => Number(v).toLocaleString() + '개',
+    half: (v) => Number(v).toFixed(1) + '초',
+    speed: (v) => Number(v).toFixed(2) + '배'
   };
 
-  /* 이슬점은 기온을 넘을 수 없다 — 물리적으로 불가능한 상태다.
-     사용자가 밀어 올리면 조용히 기온에 맞춰 막는다. */
-  function clampDew() {
-    if (S.dew > S.temp) {
-      S.dew = S.temp;
-      el('dew').value = S.temp;
-      el('dew-out').textContent = labels.dew(S.temp);
-    }
-  }
-
-  ['temp', 'dew', 'peak', 'speed'].forEach((k) => {
+  ['natoms', 'half', 'speed'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
       el(k + '-out').textContent = labels[k](input.value);
-      clampDew();
-      syncPresets();
-      readout();
-    });
-  });
-
-  document.querySelectorAll('.preset-row button').forEach((b) => {
-    b.addEventListener('click', () => {
-      const v = Number(b.dataset.peak);
-      S.peak = v;
-      el('peak').value = v;
-      el('peak-out').textContent = labels.peak(v);
+      if (k !== 'speed') seed();
       syncPresets();
       readout();
     });
@@ -993,26 +858,22 @@
   const presetBox = el('presets');
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
-      S.temp = Number(b.dataset.t);
-      S.dew = Number(b.dataset.d);
-      S.peak = Number(b.dataset.p);
-      ['temp', 'dew', 'peak'].forEach((k) => {
+      S.natoms = Number(b.dataset.n);
+      S.half = Number(b.dataset.h);
+      S.iso = b.dataset.iso;
+      ['natoms', 'half'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
-      x = 0;
-      syncPresets();
-      readout();
+      seed(); syncPresets(); readout();
     });
   });
 
-  // 슬라이더를 직접 움직이면 어떤 상황도 아니게 된다 — 표시를 맞춰준다
   function syncPresets() {
     presetBox.querySelectorAll('button').forEach((b) => {
-      const match = Number(b.dataset.t) === S.temp &&
-                    Number(b.dataset.d) === S.dew &&
-                    Number(b.dataset.p) === S.peak;
-      b.setAttribute('aria-pressed', String(match));
+      b.setAttribute('aria-pressed', String(
+        Number(b.dataset.n) === S.natoms && b.dataset.iso === S.iso
+      ));
     });
   }
 
@@ -1020,17 +881,21 @@
     running = !running;
     el('toggle').textContent = running ? '일시정지' : '이어서';
   });
-  el('reset').addEventListener('click', () => { x = 0; readout(); });
+  el('reset').addEventListener('click', () => {
+    S.natoms = 400; S.half = 6; S.speed = 1; S.iso = 'c14';
+    ['natoms', 'half', 'speed'].forEach((k) => {
+      el(k).value = S[k];
+      el(k + '-out').textContent = labels[k](S[k]);
+    });
+    seed(); syncPresets(); readout();
+  });
 
-  // ── 공유 ──
   el('share').addEventListener('click', async () => {
     const said = el('share-said');
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({
-        temp: S.temp, dew: S.dew, peak: S.peak, speed: S.speed, x: x.toFixed(3)
-      });
+      const q = new URLSearchParams({ n: S.natoms, h: S.half, iso: S.iso });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -1041,31 +906,36 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['temp', 'dew', 'peak', 'speed'].forEach((k) => {
-      const v = Number(q.get(k));
-      if (q.get(k) === null || !Number.isFinite(v)) return;
-      const input = el(k);
+    [['n', 'natoms'], ['h', 'half']].forEach(([key, id]) => {
+      const v = Number(q.get(key));
+      if (q.get(key) === null || !Number.isFinite(v)) return;
+      const input = el(id);
       const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
-      S[k] = c; input.value = c;
-      el(k + '-out').textContent = labels[k](c);
+      S[id] = c; input.value = c;
+      el(id + '-out').textContent = labels[id](c);
     });
-    clampDew();
-    const px = Number(q.get('x'));
-    if (Number.isFinite(px) && px >= 0 && px <= 1) x = px;
-    if (S.speed === 0) { running = false; el('toggle').textContent = '이어서'; }
+    if (ISO[q.get('iso')]) S.iso = q.get('iso');
     syncPresets();
   }
 
   // ── 루프 ──
   let last = 0;
+  let sampleAt = 0;
   function frame(ts) {
     const now = ts / 1000;
     if (!last) last = now;
-    const dt = Math.min(0.25, now - last);
+    const dt = Math.min(0.1, now - last) * S.speed;
     last = now;
-    if (running) {
-      x += dt * 0.12 * S.speed;
-      if (x > 1) x -= 1;
+
+    if (running && halves() < 5.2) {
+      t += dt;
+      decayStep(dt);
+      // 관측점 기록 — 반감기 0.05 회마다
+      if (halves() - sampleAt > 0.05) {
+        samples.push({ n: halves(), frac: actualFrac() });
+        sampleAt = halves();
+        if (samples.length > 400) samples.shift();
+      }
       readout();
     }
     draw(); drawGraph();
@@ -1076,14 +946,15 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.54) * DPR;
-    canvas.style.height = Math.round(w * 0.54) + 'px';
+    canvas.height = Math.round(w * 0.5) * DPR;
+    canvas.style.height = Math.round(w * 0.5) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
-    graph.height = 360 * DPR;
+    graph.height = 400 * DPR;
   }
 
   applyQuery();
+  seed();
   readout();
   resize();
   window.addEventListener('resize', resize);

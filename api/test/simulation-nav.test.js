@@ -88,6 +88,54 @@ test('물리 시뮬레이션이 실제 물리 상수를 쓴다', () => {
   assert.ok(/mbPdf|맥스웰/.test(thermal), '맥스웰-볼츠만 분포가 없다');
 });
 
+test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
+  /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
+     설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
+     여기서는 "그 상수가 코드에 실제로 있는지" 만 지킨다. */
+  const must = {
+    'chemical-reaction.html': [
+      /kf \/ S\.kr/,              // 평형 상수 K = kf/kr
+      /Math\.exp\(-\(kfEff\(\) \+ krEff\(\)\)/  // 해석해
+    ],
+    'acid-base.html': [
+      /Math\.sqrt\(c \* c \+ 4 \* Kw\(\)\)/,     // 물의 자동 이온화 포함 정확식
+      /13\.995/,                                  // 25°C pKw
+      /13\.017/                                   // 60°C pKw
+    ],
+    'electrochemistry.html': [
+      /NERNST = 0\.0592/,          // 25°C 네른스트 계수
+      /N_ELECTRON = 2/             // Cu²⁺ + 2e⁻
+    ],
+    'radioactivity.html': [
+      /5730/,                      // 탄소-14
+      /8\.02/,                     // 요오드-131
+      /30\.17/,                    // 세슘-137
+      /1 - Math\.pow\(0\.5, dt \/ S\.half\)/  // 무기억 붕괴 확률
+    ]
+  };
+  const missing = [];
+  for (const [file, patterns] of Object.entries(must)) {
+    const src = read(path.join(SIM_DIR, file));
+    patterns.forEach((re) => {
+      if (!re.test(src)) missing.push(`${file}: ${re} 없음`);
+    });
+  }
+  assert.deepStrictEqual(missing, [], '화학 시뮬레이션에서 상수·공식이 빠졌다');
+});
+
+test('방사능 시뮬레이션이 원자마다 남은 수명을 그리지 않는다', () => {
+  /* 원자에 "남은 수명 바" 를 그리면 "원자에 시계가 있다" 는 오개념이
+     오히려 굳는다. 개별 원자는 나이를 먹지 않고, 매 순간 같은 확률로
+     붕괴한다는 것이 이 화면의 요점이다. */
+  const src = read(path.join(SIM_DIR, 'radioactivity.html'));
+  const draw = src.match(/function draw\(\)[\s\S]*?\n  \}/);
+  assert.ok(draw, 'draw() 를 찾지 못했다');
+  assert.ok(
+    !/수명|lifetime|remaining|countdown/i.test(draw[0]),
+    'draw() 안에 원자별 수명 표시가 있다 — 오개념을 굳힌다'
+  );
+});
+
 test('궤도 시뮬레이션이 지표 아래를 지나지 않는다', () => {
   /* a=10000, e=0.4 는 근지점이 6000km 로 지표(6378km) 아래다.
      존재할 수 없는 궤도라 e 를 자동으로 제한해야 한다.
