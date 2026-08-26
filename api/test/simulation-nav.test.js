@@ -38,6 +38,82 @@ const PAGES = allHtml(ROOT);
 // 이번에 추가한 두 개
 const NEW_SIMS = ['atmosphere-weather.html', 'ocean-circulation.html'];
 
+test('새 물리 시뮬레이션 세 개가 연결됐다', () => {
+  /* 빛과 파동(굴절·전반사), 천체의 운동(궤도·중력), 열과 통계(속력 분포).
+     파일·카드·네비 셋 다 있어야 실제로 들어갈 수 있다. */
+  const html = read(path.join(SIM_DIR, 'index.html'));
+  for (const [topic, file] of [['wave', 'wave-interference.html'],
+                               ['astronomy', 'orbital-motion.html'],
+                               ['thermal', 'thermal-gas.html']]) {
+    assert.ok(fs.existsSync(path.join(SIM_DIR, file)), `${file} 이 없다`);
+    const card = html.match(
+      new RegExp(`<article class="simulation-card ([^"]+)" data-topic="${topic}">(.*?)</article>`, 's')
+    );
+    assert.ok(card, `${topic} 카드가 없다`);
+    assert.ok(card[1].split(/\s+/).includes('ready'), `${topic} 카드가 아직 준비중이다`);
+    assert.ok(card[2].includes(`href="/simulation/${file}"`), `${topic} 카드에 링크가 없다`);
+  }
+});
+
+test('새 물리 페이지에 필요한 요소가 다 있다', () => {
+  for (const [file, ids] of [
+    ['wave-interference.html', ['canvas', 'angle-graph', 'angle', 'n1', 'n2', 'r-t2', 'r-crit', 'verdict']],
+    ['orbital-motion.html', ['canvas', 'orbit-graph', 'sma', 'ecc', 'gravity', 'r-period', 'r-area', 'verdict']],
+    ['thermal-gas.html', ['canvas', 'dist-graph', 'temp', 'mA', 'mB', 'r-ek', 'r-graham', 'verdict']]
+  ]) {
+    const html = read(path.join(SIM_DIR, file));
+    for (const id of ids) {
+      assert.ok(html.includes(`id="${id}"`), `${file} 에 #${id} 가 없다`);
+    }
+    assert.ok(/<details>[\s\S]*더 알아보기/.test(html), `${file} 에 '더 알아보기' 가 없다`);
+    assert.ok(html.includes('share'), `${file} 에 공유 기능이 없다`);
+  }
+});
+
+test('물리 시뮬레이션이 실제 물리 상수를 쓴다', () => {
+  /* 값을 눈대중으로 박아 넣으면 조건이 바뀔 때 조용히 틀린다.
+     공식과 상수를 코드에 두고 계산해야 슬라이더를 움직여도 맞는다. */
+  const wave = read(path.join(SIM_DIR, 'wave-interference.html'));
+  assert.ok(wave.includes('3.0e8') || wave.includes('3.00e8'), '빛의 속력 상수가 없다');
+  assert.ok(/Math\.asin/.test(wave), '스넬 법칙(asin) 계산이 없다');
+
+  const orbit = read(path.join(SIM_DIR, 'orbital-motion.html'));
+  assert.ok(orbit.includes('3.986e5'), '지구 중력상수 GM 이 없다');
+  assert.ok(orbit.includes('6378'), '지구 반지름이 없다');
+  assert.ok(/solveE|케플러 방정식/.test(orbit), '케플러 방정식 풀이가 없다');
+
+  const thermal = read(path.join(SIM_DIR, 'thermal-gas.html'));
+  assert.ok(thermal.includes('1.380649e-23'), '볼츠만 상수가 없다');
+  assert.ok(thermal.includes('6.02214076e23'), '아보가드로 수가 없다');
+  assert.ok(/mbPdf|맥스웰/.test(thermal), '맥스웰-볼츠만 분포가 없다');
+});
+
+test('궤도 시뮬레이션이 지표 아래를 지나지 않는다', () => {
+  /* a=10000, e=0.4 는 근지점이 6000km 로 지표(6378km) 아래다.
+     존재할 수 없는 궤도라 e 를 자동으로 제한해야 한다.
+
+     ⚠ 이름만 찾으면 안 된다. clampEcc 를 _clampEcc 로 바꾸고 호출을 주석
+        처리해도 /clampEcc/ 는 여전히 매치돼 테스트가 통과해 버렸다.
+        제한 로직이 '실제로 실행되는지' 를 봐야 한다. */
+  const orbit = read(path.join(SIM_DIR, 'orbital-motion.html'));
+
+  // 제한 함수가 정의돼 있어야 한다
+  assert.ok(/const\s+clampEcc\s*=/.test(orbit),
+    'clampEcc 정의가 없다 — 궤도가 지구를 뚫는다');
+  assert.ok(/maxEcc/.test(orbit) && /MIN_ALT/.test(orbit),
+    '근지점 고도 하한(MIN_ALT)과 최대 이심률(maxEcc) 계산이 없다');
+
+  /* 주석이 아닌 '실제 호출' 이 최소 세 곳 있어야 한다:
+     슬라이더 입력 / 프리셋 클릭 / 공유 링크 복원.
+     한 곳이라도 빠지면 그 경로로 지표 아래 궤도가 들어온다. */
+  const live = orbit
+    .replace(/\/\*[\s\S]*?\*\//g, '')      // 블록 주석 제거
+    .replace(/^\s*\/\/.*$/gm, '');          // 줄 주석 제거
+  const calls = (live.match(/(?<![_\w])clampEcc\s*\(\s*\)/g) || []).length;
+  assert.ok(calls >= 3,
+    `clampEcc 실제 호출이 ${calls}곳뿐이다 — 슬라이더·프리셋·공유링크 세 경로 모두 필요하다`);
+});
+
 test('새 지구과학 시뮬레이션 파일이 실제로 있다', () => {
   for (const f of NEW_SIMS) {
     assert.ok(fs.existsSync(path.join(SIM_DIR, f)), `${f} 가 없다`);
