@@ -243,6 +243,50 @@ test('시뮬레이션을 나열하는 페이지는 모두 같은 목록을 보�
     [...sets].map(([k, v]) => `  ${k}\n    ${v}`).join('\n'));
 });
 
+test('만들어 놓은 페이지가 준비중으로 죽어 있지 않다', () => {
+  /* 실제로 있는 페이지인데 네비에서 <span class="soon"> 이면,
+     사용자는 그런 게 있는 줄도 모른다. 링크가 틀린 것보다 나쁘다 —
+     아무 일도 안 일어나니 버그로 신고조차 안 된다.
+
+     실제로 심화 탐구(/research)가 시뮬레이션 15개 파일의 모바일 메뉴에서
+     "준비중" 으로 죽어 있었다. 페이지는 멀쩡히 배포돼 있었다.
+     시뮬 링크만 비교하는 기존 검사로는 안 잡혔다. */
+  const built = {
+    '심화 탐구': 'research/index.html',
+    '커뮤니티': 'community.html',
+    'AI 과학 도우미': 'science.html',
+    '가이드': 'guide.html'
+  };
+  const dead = [];
+  for (const file of PAGES) {
+    const src = read(file);
+    for (const [label, target] of Object.entries(built)) {
+      if (!fs.existsSync(path.join(ROOT, target))) continue;   // 아직 안 만든 건 넘어감
+      const re = new RegExp(`<span class="soon">\\s*${label}\\s*</span>`);
+      if (re.test(src)) dead.push(`${path.relative(ROOT, file)}: "${label}" 이 준비중인데 ${target} 은 있다`);
+    }
+  }
+  assert.deepStrictEqual(dead, [], '만들어 둔 페이지가 네비에서 죽어 있다');
+});
+
+test('네비 링크가 아무 데도 가지 않는 채로 남지 않는다', () => {
+  /* href="#" 은 드롭다운을 여는 용도로는 정당하다 — 과목별 메뉴가 그렇다.
+     하지만 갈 수 있는 실제 페이지가 있는데 "#" 이면 클릭이 먹통이 된다.
+     심화 탐구가 그랬다: 어떤 파일은 /research, 어떤 파일은 # 였다. */
+  const broken = [];
+  for (const file of PAGES) {
+    const src = read(file);
+    // data-dropdown 트리거 중, 같은 이름의 실제 페이지가 있는 것
+    for (const m of src.matchAll(/<a href="#" data-dropdown="([^"]+)"[^>]*>([^<]*)<\/a>/g)) {
+      const key = m[1];
+      const hasPage = fs.existsSync(path.join(ROOT, `${key}/index.html`)) ||
+                      fs.existsSync(path.join(ROOT, `${key}.html`));
+      if (hasPage) broken.push(`${path.relative(ROOT, file)}: "${m[2]}" 가 href="#" 인데 /${key} 페이지가 있다`);
+    }
+  }
+  assert.deepStrictEqual(broken, [], '갈 수 있는 페이지인데 링크가 죽어 있다');
+});
+
 test('시뮬레이션을 나열하지 않는 페이지도 갈 길은 있다', () => {
   /* research/* 처럼 개별 목록을 안 그리더라도, 최소한 시뮬레이션 목록으로는
      갈 수 있어야 막다른 페이지가 되지 않는다.
