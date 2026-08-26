@@ -53,7 +53,7 @@ test('COSMOS_CONNECTION 이 없으면 원인을 알려준다', async () => {
 
 test('여섯 엔드포인트가 등록된다', () => {
   assert.deepStrictEqual(Object.keys(routes).sort(),
-    ['commentsCreate', 'commentsList', 'postsCreate', 'postsGet', 'postsList', 'postsVote']);
+    ['commentsCreate', 'commentsDelete', 'commentsList', 'commentsUpdate', 'postsCreate', 'postsGet', 'postsList', 'postsVote']);
   assert.strictEqual(routes.postsVote.route, 'posts/{id}/vote');
   assert.strictEqual(routes.commentsList.route, 'posts/{id}/comments');
 });
@@ -407,6 +407,268 @@ test('댓글 — 킬 스위치에 함께 막힌다', async () => {
     const create = await routes.commentsCreate.handler(
       req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
     assert.deepStrictEqual([list.status, create.status], [503, 503]);
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+});
+
+// ── 댓글 수정 ──
+
+test('댓글 수정 — 비로그인은 401', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '원본 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsUpdate.handler(
+    req({ body: { body: '수정된 답변' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 401);
+});
+
+test('댓글 수정 — 남의 답변은 403', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '원본 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsUpdate.handler(
+    req({ cookie: login({ sub: 'discord:other' }), body: { body: '수정된 답변' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 403);
+});
+
+test('댓글 수정 — 빈 내용·길이 초과는 400', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '원본 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+  const cookie = login();
+
+  for (const body of ['', '   ', 'ㄱ'.repeat(2001)]) {
+    const res = await routes.commentsUpdate.handler(
+      req({ cookie, body: { body }, params: { postId: post.id, commentId: comment.id } }), ctx);
+    assert.strictEqual(res.status, 400, `body="${body}" 가 통과했다`);
+  }
+});
+
+test('댓글 수정 — 차단·삭제된 답변은 수정 불가', async () => {
+  const post = await seedPost();
+  const cookie = login();
+
+  // 욕설로 보류된 답변 만들기 — 보류는 수정 가능해야 함(금칙어 고쳐서 공개 전환)
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '이 병신아' }, params: { id: post.id } }), ctx);
+  let comment = state.docs.find((d) => d.type === 'comment');
+  assert.strictEqual(comment.status, 'held');
+
+  // 보류된 답변은 수정 가능 — 금칙어 빼고 다시 올리면 공개로 바뀜
+  const resHeld = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '이제 정상적인 답변입니다.' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(resHeld.status, 200);
+  assert.strictEqual(resHeld.jsonBody.held, false);
+  assert.strictEqual(resHeld.jsonBody.comment.status, 'public');
+
+  // 차단된 답변은 수정 불가
+  comment.status = 'blocked';
+  const resBlocked = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '수정 시도' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(resBlocked.status, 403);
+
+  // 삭제된 답변도 수정 불가
+  comment.status = 'deleted';
+  const resDeleted = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '수정 시도' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(resDeleted.status, 403);
+});
+
+test('댓글 수정 — 정상 수정되고 답변 수는 그대로', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '원본 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '수정된 답변입니다.' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.jsonBody.held, false);
+  assert.strictEqual(res.jsonBody.comment.body, '수정된 답변입니다.');
+  assert.ok(res.jsonBody.comment.updatedAt, 'updatedAt 이 있어야 함');
+
+  // 답변 수는 변하지 않음
+  const postNow = state.docs.find((d) => d.type === 'post');
+  assert.strictEqual(postNow.answers, 1);
+});
+
+test('댓글 수정 — 금칙어 포함 시 보류되고 답변 수 -1', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '정상 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '이 병신 같은 답변' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.jsonBody.held, true);
+
+  const postNow = state.docs.find((d) => d.type === 'post');
+  assert.strictEqual(postNow.answers, 0, '보류되면 답변 수가 내려야 한다');
+});
+
+test('댓글 수정 — 보류→공개 시 답변 수 +1', async () => {
+  const post = await seedPost();
+  const cookie = login();
+
+  // 먼저 보류된 답변 만들기
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '이 병신아' }, params: { id: post.id } }), ctx);
+  let comment = state.docs.find((d) => d.type === 'comment');
+  assert.strictEqual(comment.status, 'held');
+  assert.strictEqual(post.answers, 0);
+
+  // 금칙어 없는 내용으로 수정
+  const res = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '이제 정상적인 답변입니다.' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.jsonBody.held, false);
+  assert.strictEqual(res.jsonBody.comment.status, 'public');
+
+  const postNow = state.docs.find((d) => d.type === 'post');
+  assert.strictEqual(postNow.answers, 1, '공개되면 답변 수가 올라가야 한다');
+});
+
+test('댓글 수정 — 없는 댓글·없는 글은 404', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const missingComment = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '수정' }, params: { postId: post.id, commentId: '없음' } }), ctx);
+  assert.strictEqual(missingComment.status, 404);
+
+  const missingPost = await routes.commentsUpdate.handler(
+    req({ cookie, body: { body: '수정' }, params: { postId: '없는글', commentId: comment.id } }), ctx);
+  assert.strictEqual(missingPost.status, 404);
+});
+
+test('댓글 수정 — 킬 스위치에 막힌다', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  process.env.LOCKDOWN = '1';
+  try {
+    const res = await routes.commentsUpdate.handler(
+      req({ cookie: login(), body: { body: '수정' }, params: { postId: post.id, commentId: comment.id } }), ctx);
+    assert.strictEqual(res.status, 503);
+  } finally {
+    delete process.env.LOCKDOWN;
+  }
+});
+
+// ── 댓글 삭제 ──
+
+test('댓글 삭제 — 비로그인은 401', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsDelete.handler(
+    req({ params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 401);
+});
+
+test('댓글 삭제 — 남의 답변은 403', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const res = await routes.commentsDelete.handler(
+    req({ cookie: login({ sub: 'discord:other' }), params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 403);
+});
+
+test('댓글 삭제 — 이미 삭제된 답변은 400', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  await routes.commentsDelete.handler(req({ cookie, params: { postId: post.id, commentId: comment.id } }), ctx);
+  const again = await routes.commentsDelete.handler(req({ cookie, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(again.status, 400);
+});
+
+test('댓글 삭제 — 공개 상태 답변 삭제 시 답변 수 -1, 문서는 deleted로', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '삭제할 답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+  assert.strictEqual(post.answers, 1);
+
+  const res = await routes.commentsDelete.handler(
+    req({ cookie, params: { postId: post.id, commentId: comment.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.jsonBody.ok, true);
+
+  const postNow = state.docs.find((d) => d.type === 'post');
+  assert.strictEqual(postNow.answers, 0);
+
+  const deletedComment = state.docs.find((d) => d.type === 'comment' && d.id === comment.id);
+  assert.strictEqual(deletedComment.status, 'deleted');
+  assert.strictEqual(deletedComment.body, '(삭제된 답변입니다.)');
+  assert.ok(deletedComment.deletedAt);
+});
+
+test('댓글 삭제 — 보류/차단 상태 답변 삭제는 답변 수 그대로 (이미 안 세고 있음)', async () => {
+  const post = await seedPost();
+  const cookie = login();
+
+  // 보류된 답변
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '이 병신아' }, params: { id: post.id } }), ctx);
+  let comment = state.docs.find((d) => d.type === 'comment');
+  assert.strictEqual(post.answers, 0);
+
+  await routes.commentsDelete.handler(req({ cookie, params: { postId: post.id, commentId: comment.id } }), ctx);
+  const postNow = state.docs.find((d) => d.type === 'post');
+  assert.strictEqual(postNow.answers, 0, '보류된 답변 삭제는 답변 수에 영향 없어야 함');
+});
+
+test('댓글 삭제 — 없는 댓글·없는 글은 404', async () => {
+  const post = await seedPost();
+  const cookie = login();
+  await routes.commentsCreate.handler(
+    req({ cookie, body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  const missingComment = await routes.commentsDelete.handler(
+    req({ cookie, params: { postId: post.id, commentId: '없음' } }), ctx);
+  assert.strictEqual(missingComment.status, 404);
+
+  const missingPost = await routes.commentsDelete.handler(
+    req({ cookie, params: { postId: '없는글', commentId: comment.id } }), ctx);
+  assert.strictEqual(missingPost.status, 404);
+});
+
+test('댓글 삭제 — 킬 스위치에 막힌다', async () => {
+  const post = await seedPost();
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '답변' }, params: { id: post.id } }), ctx);
+  const comment = state.docs.find((d) => d.type === 'comment');
+
+  process.env.LOCKDOWN = '1';
+  try {
+    const res = await routes.commentsDelete.handler(
+      req({ cookie: login(), params: { postId: post.id, commentId: comment.id } }), ctx);
+    assert.strictEqual(res.status, 503);
   } finally {
     delete process.env.LOCKDOWN;
   }

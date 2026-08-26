@@ -127,6 +127,34 @@
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
+/* ── 답변 액션 (수정/삭제) ── */
+.answer-actions {
+  display: inline-flex; gap: 4px; margin-top: var(--sp-xs);
+}
+.answer-actions button {
+  min-height: 36px; padding: 0 10px;
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
+  border: none; background: var(--surface-soft); color: var(--body);
+  border-radius: var(--rounded-md); cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.answer-actions button:hover { background: var(--muted-soft); color: var(--ink); }
+.answer-actions .delete:hover { background: rgba(189, 59, 59, .12); color: var(--error); }
+
+/* ── 답변 수정 폼 ── */
+.answer-edit-form { margin-top: var(--sp-sm); }
+.answer-edit-form textarea {
+  width: 100%; min-height: 100px; padding: 10px 12px; resize: vertical;
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  color: var(--body); background: var(--canvas);
+  border: 1px solid var(--hairline); border-radius: var(--rounded-md);
+}
+.answer-edit-form textarea:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
+}
+.answer-edit-form .row { display: flex; gap: var(--sp-sm); margin-top: var(--sp-sm); justify-content: flex-end; }
+.answer-edit-form .hint { font-size: 12.5px; color: var(--muted); align-self: center; }
+
 .state {
   padding: var(--sp-section) var(--sp-lg); text-align: center;
   border: 1px dashed var(--hairline); border-radius: var(--rounded-lg);
@@ -356,6 +384,7 @@
   let post = null;
   let myVote = 0;
   let comments = null;                    // null = 아직 안 받음 (빈 배열과 구분)
+  let editing = null;                     // 수정 중인 답변 id (null = 없음)
 
   const say = (msg) => { notice.textContent = msg; notice.hidden = false; };
   const hush = () => { notice.hidden = true; };
@@ -392,10 +421,37 @@
     if (comments === null) return '<p class="answer-empty">답변을 불러오는 중…</p>';
     if (!comments.length) return '<p class="answer-empty">아직 답변이 없습니다. 아는 만큼만 적어주셔도 도움이 됩니다.</p>';
     return comments.map(function (c) {
-      return '<div class="answer">' +
+      /* 수정 중인 답변은 본문 자리에 폼을 그린다. 폼이 render() 밖에서 만들어지면
+         다음 render() 가 쓰고 있던 내용을 지운다. */
+      if (c.id === editing) {
+        return '<div class="answer" id="ans-' + esc(c.id) + '">' +
+          '<div class="answer-meta"><span class="who">' + esc(c.author) + '</span>' +
+          '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) + '</div>' +
+          '<form class="answer-edit-form" data-for="' + esc(c.id) + '">' +
+            '<textarea aria-label="답변 수정" maxlength="2000">' + esc(c.body) + '</textarea>' +
+            '<div class="row">' +
+              '<span class="hint">2000자까지</span>' +
+              '<button type="button" class="btn btn-ghost cancel-edit">취소</button>' +
+              '<button type="submit" class="btn btn-primary">저장</button>' +
+            '</div>' +
+          '</form>' +
+        '</div>';
+      }
+
+      var actions = '';
+      if (c.mine) {
+        actions =
+          '<div class="answer-actions">' +
+            '<button type="button" class="edit" data-edit="' + esc(c.id) + '">수정</button>' +
+            '<button type="button" class="delete" data-delete="' + esc(c.id) + '">삭제</button>' +
+          '</div>';
+      }
+      return '<div class="answer" id="ans-' + esc(c.id) + '">' +
         '<div class="answer-meta"><span class="who">' + esc(c.author) + '</span>' +
-        '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) + '</div>' +
+        '<span class="sep" aria-hidden="true">·</span>' + esc(ago(c.createdAt)) +
+        (c.updatedAt ? '<span class="sep" aria-hidden="true">·</span>수정됨' : '') + '</div>' +
         '<div class="answer-body">' + esc(c.body) + '</div>' +
+        actions +
         reportBtn(c.id, c.mine) +
       '</div>';
     }).join('');
@@ -555,6 +611,112 @@
     } finally {
       submit.disabled = false;
       submit.textContent = '신고';
+    }
+  });
+
+  // ── 답변 수정 ──
+  /* 수정 폼은 render() 가 그린다 (editing 상태를 보고). 리스너는 box 하나에만
+     위임으로 붙인다 — 폼에 직접 붙이면 render() 마다 새 폼에 다시 붙어 쌓이고,
+     저장 한 번에 요청이 여러 번 나간다. */
+  box.addEventListener('click', function (e) {
+    const editBtn = e.target.closest('[data-edit]');
+    if (editBtn) {
+      editing = editBtn.dataset.edit;
+      render();
+      const ta = box.querySelector('.answer-edit-form textarea');
+      if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      return;
+    }
+    if (e.target.closest('.cancel-edit')) {
+      editing = null;
+      render();
+    }
+  });
+
+  box.addEventListener('submit', async function (e) {
+    const form = e.target.closest('.answer-edit-form');
+    if (!form) return;
+    e.preventDefault();
+
+    const commentId = form.dataset.for;
+    const comment = comments.find(function (c) { return c.id === commentId; });
+    if (!comment) return;
+
+    const ta = form.querySelector('textarea');
+    const text = ta.value.trim();
+    if (!text) { ta.focus(); return; }
+    if (text === comment.body) { editing = null; render(); return; }   // 안 바뀌었으면 요청도 안 보낸다
+
+    const submitBtn = form.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '저장 중…';
+
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments/' + encodeURIComponent(commentId), {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: text })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        say(data.error || '수정하지 못했습니다.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '저장';
+        return;                     // 폼을 닫지 않는다 — 닫으면 쓴 내용이 날아간다
+      }
+
+      if (data.held) {
+        // 보류된 답변은 목록에서 빠진다. 사라진 걸로 오해하지 않게 이유를 알린다
+        say(data.message);
+        comments = comments.filter(function (c) { return c.id !== commentId; });
+        post.answers = Math.max(0, post.answers - 1);
+      } else {
+        hush();
+        comment.body = data.comment.body;
+        comment.updatedAt = data.comment.updatedAt;
+      }
+      editing = null;
+      render();
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '저장';
+    }
+  });
+
+  // ── 답변 삭제 ──
+  box.addEventListener('click', async function (e) {
+    const delBtn = e.target.closest('[data-delete]');
+    if (!delBtn) return;
+
+    const commentId = delBtn.dataset.delete;
+    if (!comments.some(function (c) { return c.id === commentId; })) return;
+
+    if (!confirm('이 답변을 삭제하시겠습니까? 삭제하면 복구할 수 없습니다.')) return;
+
+    delBtn.disabled = true;
+    delBtn.textContent = '삭제 중…';
+
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id) + '/comments/' + encodeURIComponent(commentId), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) { say(data.error || '삭제하지 못했습니다.'); return; }
+
+      hush();
+      /* 서버 목록은 status='public' 만 준다 — 삭제된 답변은 새로고침하면
+         아예 사라진다. 화면에 흔적을 남기면 새로고침 전후가 달라진다. */
+      comments = comments.filter(function (x) { return x.id !== commentId; });
+      post.answers = Math.max(0, post.answers - 1);
+      render();
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      delBtn.disabled = false;
+      delBtn.textContent = '삭제';
     }
   });
 

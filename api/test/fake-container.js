@@ -53,6 +53,9 @@ function createFake() {
           const key = o.path.slice(1);
           if (o.op === 'incr') d[key] = (d[key] || 0) + o.value;
           if (o.op === 'set') d[key] = o.value;
+          if (o.op === 'replace') d[key] = o.value;
+          if (o.op === 'add') d[key] = o.value;
+          if (o.op === 'remove') delete d[key];
         });
         return { resource: d };
       }

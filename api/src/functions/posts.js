@@ -299,7 +299,9 @@ const publicComment = (c, viewerSub = null) => ({
   mine: !!viewerSub && c.authorSub === viewerSub,
   body: c.body,
   author: c.authorName,
-  createdAt: c.createdAt
+  createdAt: c.createdAt,
+  ...(c.status ? { status: c.status } : {}),
+  ...(c.updatedAt ? { updatedAt: c.updatedAt } : {})
 });
 
 app.http('commentsList', {
@@ -406,6 +408,138 @@ app.http('commentsCreate', {
 });
 
 function bad(message) { return { status: 400, jsonBody: { error: message } }; }
+
+
+/* ── 댓글 수정 ──
+   자기 댓글만, 공개 상태인 글에만, 내용만 변경 가능 */
+app.http('commentsUpdate', {
+  route: 'posts/{postId}/comments/{commentId}',
+  methods: ['PATCH'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
+
+    const postId = request.params.postId;
+    const commentId = request.params.commentId;
+    const c = container();
+
+    try {
+      // 글 존재/상태 확인
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: postId }]
+      }))[0];
+      if (!post || post.status !== 'public') {
+        return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      }
+
+      // 댓글 존재/권한 확인
+      const comment = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'comment' AND c.id = @id AND c.pk = @p",
+        parameters: [{ name: '@id', value: commentId }, { name: '@p', value: postId }]
+      }))[0];
+      if (!comment) return { status: 404, jsonBody: { error: '없는 답변입니다.' } };
+      if (comment.authorSub !== user.sub) return { status: 403, jsonBody: { error: '본인 답변만 수정할 수 있습니다.' } };
+      if (comment.status === 'blocked') return { status: 403, jsonBody: { error: '차단된 답변은 수정할 수 없습니다.' } };
+      if (comment.status === 'deleted') return { status: 403, jsonBody: { error: '삭제된 답변은 수정할 수 없습니다.' } };
+
+      let body;
+      try { body = await request.json(); } catch { return bad('요청 형식이 잘못됐습니다.'); }
+
+      const text = String(body.body || '').trim();
+      if (!text) return bad('내용을 입력해 주세요.');
+      if (text.length > LIMIT.comment) return bad(`답변은 ${LIMIT.comment}자까지 쓸 수 있습니다.`);
+
+      // 금칙어 확인
+      const cfg = await settings.get();
+      const hits = findBanned(text, cfg.bannedWords);
+      const newStatus = hits.length ? 'held' : 'public';
+
+      /* 고치기 전 상태를 patch 이전에 붙잡아 둔다. patch 가 문서를 바꾸고 나면
+         comment.status 는 이미 새 상태라, 그걸 보고 답변 수를 조정하면 아무 일도
+         일어나지 않는다 (실제로 이 순서 때문에 답변 수가 안 움직였다). */
+      const prevStatus = comment.status;
+
+      await c.item(commentId, postId).patch([
+        { op: 'replace', path: '/body', value: text },
+        { op: 'replace', path: '/status', value: newStatus },
+        ...(hits.length ? [{ op: 'add', path: '/heldWords', value: hits }] : [{ op: 'remove', path: '/heldWords' }]),
+        { op: 'replace', path: '/updatedAt', value: new Date().toISOString() }
+      ]);
+
+      // 답변 수 조정: public→held 면 -1, (held|blocked)→public 면 +1
+      if (prevStatus === 'public' && newStatus === 'held') {
+        await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: -1 }]);
+      } else if (prevStatus !== 'public' && newStatus === 'public') {
+        await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: 1 }]);
+      }
+
+      return {
+        status: 200,
+        jsonBody: newStatus === 'held'
+          ? { held: true, message: '부적절한 표현이 감지되어 검토 대기 중입니다. 오탐이면 곧 공개됩니다.' }
+          : { held: false, comment: publicComment({ ...comment, body: text, status: newStatus, updatedAt: new Date().toISOString() }, user.sub) }
+      };
+    } catch (e) {
+      context.error('댓글 수정 실패:', e.message);
+      return dbFail(e, '수정하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  }
+});
+
+/* ── 댓글 삭제 ──
+   자기 댓글만, 공개 상태인 글에서만 가능. 문서는 지우지 않고 status만 'deleted'로 */
+app.http('commentsDelete', {
+  route: 'posts/{postId}/comments/{commentId}',
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+
+    const postId = request.params.postId;
+    const commentId = request.params.commentId;
+    const c = container();
+
+    try {
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: postId }]
+      }))[0];
+      if (!post || post.status !== 'public') {
+        return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      }
+
+      const comment = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'comment' AND c.id = @id AND c.pk = @p",
+        parameters: [{ name: '@id', value: commentId }, { name: '@p', value: postId }]
+      }))[0];
+      if (!comment) return { status: 404, jsonBody: { error: '없는 답변입니다.' } };
+      if (comment.authorSub !== user.sub) return { status: 403, jsonBody: { error: '본인 답변만 삭제할 수 있습니다.' } };
+      if (comment.status === 'deleted') return { status: 400, jsonBody: { error: '이미 삭제된 답변입니다.' } };
+
+      // 답변 수가 올라가 있는 상태(public)였다면 내린다
+      if (comment.status === 'public') {
+        await c.item(post.id, post.pk).patch([{ op: 'incr', path: '/answers', value: -1 }]);
+      }
+
+      await c.item(commentId, postId).patch([
+        { op: 'replace', path: '/status', value: 'deleted' },
+        { op: 'replace', path: '/body', value: '(삭제된 답변입니다.)' },
+        { op: 'replace', path: '/deletedAt', value: new Date().toISOString() }
+      ]);
+
+      return { status: 200, jsonBody: { ok: true } };
+    } catch (e) {
+      context.error('댓글 삭제 실패:', e.message);
+      return dbFail(e, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  }
+});
 
 
 // 테스트가 레이트 리밋만 직접 부른다 — 나머지는 이 파일 안에서만 쓴다
