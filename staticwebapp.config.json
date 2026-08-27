@@ -65,6 +65,10 @@
       "rewrite": "/login.html"
     },
     {
+      "route": "/signup",
+      "rewrite": "/signup.html"
+    },
+    {
       "route": "/welcome",
       "rewrite": "/welcome.html"
     },

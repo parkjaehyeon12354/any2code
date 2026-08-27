@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Ans2Quest 로그인">
-<title>로그인 — Ans2Quest</title>
+<meta name="description" content="Ans2Quest 회원가입">
+<title>회원가입 — Ans2Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -162,18 +162,18 @@
 
   <div class="auth-card">
     <h1>탐구를 시작해볼까요?</h1>
-    <p class="auth-lead">이미 쓰던 계정으로 로그인하세요. 처음이라면 로그인 후 약관 동의만 하면 바로 시작할 수 있습니다.</p>
+    <p class="auth-lead">처음이시라면 소셜 계정으로 가입하세요. 로그인 후 약관 동의만 하면 바로 시작할 수 있습니다.</p>
 
     <p class="auth-notice" id="notice" role="alert"></p>
 
-    <p class="auth-switch">계정이 없으신가요? <a href="/signup" id="switch-link">회원가입</a></p>
+    <p class="auth-switch">이미 계정이 있으신가요? <a href="/login" id="switch-link">로그인</a></p>
 
     <div class="providers">
       <button type="button" class="btn-oauth oauth-kakao" data-provider="kakao">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#000000" d="M12 3C6.99 3 3 6.24 3 10.2c0 2.52 1.68 4.74 4.2 6.02-.18.66-.66 2.4-.75 2.78-.12.48.18.48.36.36.15-.09 2.34-1.59 3.3-2.25.6.09 1.23.15 1.89.15 5.01 0 9-3.24 9-7.06S17.01 3 12 3z"/>
         </svg>
-        카카오 로그인
+        카카오 가입
       </button>
 
       <!-- 구글: G 로고는 컬러 그라데이션 원본만 사용 가능하고 크기·색 변경이 금지된다.
@@ -185,21 +185,21 @@
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        Google로 로그인
+        Google로 가입
       </button>
 
       <button type="button" class="btn-oauth oauth-github" data-provider="github">
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path fill="#ffffff" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
         </svg>
-        GitHub로 로그인
+        GitHub로 가입
       </button>
 
       <button type="button" class="btn-oauth oauth-discord" data-provider="discord">
         <svg viewBox="0 0 71 55" aria-hidden="true">
           <path fill="#ffffff" d="M60.1 4.9A58.5 58.5 0 0 0 45.65.42a.22.22 0 0 0-.23.1c-.63 1.11-1.32 2.56-1.8 3.7a54 54 0 0 0-16.23 0A37.4 37.4 0 0 0 25.56.52a.23.23 0 0 0-.23-.1A58.4 58.4 0 0 0 10.88 4.9a.21.21 0 0 0-.1.08C1.58 18.73-.94 32.14.29 45.39c0 .07.04.13.09.17a58.8 58.8 0 0 0 17.73 8.96c.09.03.19 0 .24-.08a42 42 0 0 0 3.63-5.9.22.22 0 0 0-.12-.31 38.7 38.7 0 0 1-5.54-2.64.22.22 0 0 1-.02-.37c.37-.28.74-.57 1.1-.86a.21.21 0 0 1 .22-.03c11.62 5.3 24.2 5.3 35.68 0a.21.21 0 0 1 .23.03c.36.29.73.58 1.1.86a.22.22 0 0 1-.02.37 36.3 36.3 0 0 1-5.54 2.63.22.22 0 0 0-.12.32 47.2 47.2 0 0 0 3.63 5.9c.05.08.15.11.24.08a58.6 58.6 0 0 0 17.76-8.96.22.22 0 0 0 .09-.17c1.48-15.32-2.48-28.62-10.5-40.41a.17.17 0 0 0-.09-.09zM23.73 37.33c-3.5 0-6.38-3.21-6.38-7.16s2.83-7.16 6.38-7.16c3.58 0 6.44 3.24 6.38 7.16 0 3.95-2.83 7.16-6.38 7.16zm23.59 0c-3.5 0-6.38-3.21-6.38-7.16s2.83-7.16 6.38-7.16c3.58 0 6.44 3.24 6.38 7.16 0 3.95-2.8 7.16-6.38 7.16z"/>
         </svg>
-        Discord로 로그인
+        Discord로 가입
       </button>
     </div>
 
@@ -220,10 +220,10 @@
   //   - state 를 sessionStorage 에 두면 서버가 대조할 수 없어 CSRF 방어가 성립하지 않는다
   //   - 이제 서버가 state 를 발급해 httpOnly 쿠키에 심고, 콜백에서 직접 대조한다
   const notice = document.getElementById('notice');
-  // 회원가입 화면으로 건너뛸 때도 원래 가려던 곳(?to=)을 그대로 들고 간다.
+  // 로그인 화면으로 건너뛸 때도 원래 가려던 곳(?to=)을 그대로 들고 간다.
   const switchLink = document.getElementById('switch-link');
   const toParam = new URLSearchParams(location.search).get('to');
-  if (switchLink && toParam) switchLink.href = '/signup?to=' + encodeURIComponent(toParam);
+  if (switchLink && toParam) switchLink.href = '/login?to=' + encodeURIComponent(toParam);
   const LABEL = { kakao: '카카오', google: 'Google', github: 'GitHub', discord: 'Discord' };
 
   // 콜백이 실패하면 ?error= 를 달고 돌아온다

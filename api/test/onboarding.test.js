@@ -502,3 +502,46 @@ test('약관과 정책 문서가 비어 있지 않다', () => {
     assert.ok(/href="\/(terms|privacy)"/.test(html), `${f} 에 상호 링크가 없다`);
   }
 });
+
+test('회원가입은 별도 화면(/signup)이다', () => {
+  /* "시작하기" 버튼이 곧장 /login(소셜 버튼 나열)으로 가면 신규 사용자에게
+     "가입" 이라는 개념이 화면에 없다 — 로그인이자 가입인 화면 하나뿐이었다.
+     지금은 /signup 이 따로 있고, 두 화면이 서로 오갈 수 있다. */
+  const signup = readRoot('signup.html');
+  assert.ok(/id="switch-link"/.test(signup), '로그인으로 건너가는 링크가 있어야 한다');
+  assert.ok(/href="\/login"/.test(signup), '전환 링크가 /login 을 가리켜야 한다');
+
+  const login = readRoot('login.html');
+  assert.ok(/id="switch-link"/.test(login), '회원가입으로 건너가는 링크가 있어야 한다');
+  assert.ok(/href="\/signup"/.test(login), '전환 링크가 /signup 을 가리켜야 한다');
+
+  // 두 화면 다 같은 OAuth 흐름(Session.startLogin)을 쓴다 — 서버가 신규/기존을
+  // 알아서 구분하므로 signup 전용 API 가 새로 필요하지 않다.
+  assert.ok(/Session\.startLogin/.test(signup), 'signup 도 같은 로그인 흐름을 써야 한다');
+});
+
+test('"시작하기" 버튼은 전부 회원가입으로 간다', () => {
+  /* 사용자 지시: "시작하기 빼고 그 자리에 회원가입 만들어". 남아있는 곳이
+     하나라도 있으면 그 페이지만 옛날 방식(로그인 화면에 바로 던짐)으로 남는다. */
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const ROOT = path.join(__dirname, '..', '..');
+
+  function walk(dir) {
+    let out = [];
+    for (const name of fs.readdirSync(dir)) {
+      if (name === 'node_modules' || name === '.git') continue;
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isDirectory()) out = out.concat(walk(full));
+      else if (name.endsWith('.html')) out.push(full);
+    }
+    return out;
+  }
+
+  const offenders = [];
+  for (const file of walk(ROOT)) {
+    const html = fs.readFileSync(file, 'utf8');
+    if (/<a href="\/login">시작하기<\/a>/.test(html)) offenders.push(file);
+  }
+  assert.deepStrictEqual(offenders, [], '아직 /login 으로 바로 가는 "시작하기" 가 남아 있다');
+});

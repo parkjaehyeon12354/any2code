@@ -139,7 +139,7 @@
 
 
     <div class="nav-cta" id="nav-cta">
-      <a href="/login">시작하기</a>
+      <a href="/signup">회원가입</a>
     </div>
     <button class="hamburger" aria-label="메뉴 열기">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -188,7 +188,7 @@
     <a href="/guide">가이드</a>
   </nav>
   <div class="mobile-menu-actions" id="mobile-cta">
-    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+    <a href="/signup" class="btn btn-primary" style="width:100%">회원가입</a>
   </div>
 </div>
 
@@ -198,7 +198,7 @@
   <h1>탐구의 시작,<br>Ans2Quest</h1>
   <p>과학 실험 시뮬레이션과 커뮤니티 기반 탐구 활동으로 당신의 과학적 사고를 확장하세요.</p>
   <div class="hero-buttons">
-    <a href="/login" class="btn btn-primary" id="free-start">무료로 시작하기</a>
+    <a href="/signup" class="btn btn-primary" id="free-start">무료로 시작하기</a>
     <a href="/guide" class="btn btn-ghost">더 알아보기</a>
   </div>
 </section>
@@ -211,7 +211,7 @@
   if (!button) return;
 
   const setDestination = (user) => {
-    button.href = user && user.authenticated ? '/simulation/' : '/login';
+    button.href = user && user.authenticated ? '/simulation/' : '/signup';
   };
 
   // 캐시로 즉시 반영하고 서버 확인 결과로 다시 확정한다.
