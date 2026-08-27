@@ -531,6 +531,74 @@ test('해양과 순환의 나침반과 그래프가 어두운 묵대와 맞는�
     '그래프 배경이 하얀색 하드코딩으로 돌아갔다');
 });
 
+
+test('슬라이더를 어디를 잡아도 끌 수 있다', () => {
+  /* height: 44px 로 터치 타깃은 키웠는데 thumb 스타일이 없어서, 브라우저
+     기본 thumb(16px 남짓)만 가운데 뜨고 위아래 28px 은 빈 곳이었다.
+     그 빈 곳을 잡으면 드래그가 안 걸리고 클릭만 먹었다 — 사용자가
+     '클릭해야 작동함, 마우스로 끌어당기기 안 됨' 이라고 신고한 증상이다.
+     appearance 를 벗기고 트랙·thumb 를 직접 그려야 높이 전체가 잡힌다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    if (!/type="range"/.test(html)) continue;
+    assert.match(html, /::-webkit-slider-thumb \{[\s\S]*?appearance: none;/,
+      f + ' 의 슬라이더에 thumb 스타일이 없다 — 빈 곳을 잡으면 드래그가 안 걸린다');
+    assert.match(html, /::-webkit-slider-runnable-track \{/,
+      f + ' 의 슬라이더에 트랙 스타일이 없다');
+    assert.match(html, /\.ctrl input\[type="range"\] \{[\s\S]*?touch-action: none;/,
+      f + ' 의 슬라이더에 touch-action 이 없다 — 모바일에서 드래그가 스크롤로 먹힌다');
+  }
+});
+
+test('그래프 캔버스의 CSS 가 실제 id 를 가리킨다', () => {
+  /* 파일을 복사해 만들면서 canvas id 만 바꾸고 CSS 선택자는 그대로 둬서,
+     #pendulum-graph 같은 죽은 규칙이 15개 파일에 남아 있었다. 규칙이
+     안 걸리니 캔버스가 기본 300px 로 쪼그라들고, JS 가 clientWidth 를 읽어
+     그 폭에 그리니 축 글씨가 잘렸다 — '방사능 글씨 잘림' 신고가 이것이다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    const canvases = [...html.matchAll(/<canvas id="([a-zA-Z-]+)"/g)]
+      .map((m) => m[1]).filter((id) => id !== 'canvas');
+    const rules = [...html.matchAll(/#([a-zA-Z-]+) \{ display: block; width: 100%; height: \d+px; \}/g)]
+      .map((m) => m[1]);
+    for (const id of canvases) {
+      assert.ok(rules.includes(id),
+        f + ' 의 #' + id + ' 에 크기 규칙이 없다 — 300px 로 쪼그라들어 글씨가 잘린다');
+    }
+    for (const r of rules) {
+      assert.ok(canvases.includes(r),
+        f + ' 에 죽은 규칙 #' + r + ' 이 남아 있다 — 그런 캔버스가 없다');
+    }
+  }
+});
+
+test('조작 패널의 텍스트 간격이 모든 시뮬에서 같다', () => {
+  /* 단진자만 margin-bottom 이 var(--sp-lg)=24px, 전자기 유도만 16px 이라
+     그 둘이 유독 헐렁했다. 나머지 열아홉 개는 6px 이다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    if (!/class="ctrl"/.test(html)) continue;
+    assert.match(html, /\.ctrl \{ margin-bottom: 6px; \}/,
+      f + ' 의 조작 칸 간격이 다르다 — 6px 로 맞춰야 한다');
+  }
+});
+
+test('대기와 기상의 구름이 밑면을 응결고도로 닫는다', () => {
+  /* 원을 격자로 찍어 그렸더니 반지름(14~21px)이 중심 간격보다 커서, 맨
+     아랫줄 원이 응결고도 아래로 삐져나가 바닥을 뚫었다. 구름이 땅에 닿은
+     것처럼 보였다. 윤곽 하나로 그리고 밑면을 closePath 로 닫는다. */
+  const aw = read(path.join(SIM_DIR, 'atmosphere-weather.html'));
+  assert.match(aw, /ctx\.closePath\(\);\s*\/\/ 밑면은 응결고도 직선/,
+    '구름 밑면이 닫혀 있지 않다');
+  assert.match(aw, /ctx\.strokeStyle = 'rgba\(120,140,165,\.9\)';\s*\/\/ 실선 윤곽/,
+    '구름 윤곽이 실선이 아니다');
+  assert.ok(!/const step = 15;\s+\/\/ 원 중심 간격/.test(aw),
+    '원 격자 방식으로 돌아갔다 — 바닥을 뚫는다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
