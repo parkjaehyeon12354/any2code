@@ -647,6 +647,23 @@ test('미리보기 칸이 베이스 색을 쓴다', () => {
     'SVG 배경에 초록빛 검정이 남아 있다 — 베이스 #14201b 로 맞춰야 한다');
 });
 
+test('시뮬레이션 목록의 카드 21개가 같은 마크업을 쓴다', () => {
+  /* 개체와 생태계·신경과 자극전달·순환과 수송·대사와 효소 네 장이
+     class="sim-body"(옛 마크업)를 썼는데, 그 클래스에는 CSS 규칙 자체가
+     없어서 브라우저 기본 여백이 그대로 나와 다른 카드보다 글자 간격이
+     떴다. 지금은 21개 전부 sim-card-body 로 통일돼야 한다. */
+  const idx = fs.readFileSync(path.join(SIM_DIR, 'index.html'), 'utf8');
+  const cardCount = (idx.match(/<article class="simulation-card/g) || []).length;
+  assert.strictEqual(cardCount, 21, '카드가 21개가 아니다');
+
+  const modernCount = (idx.match(/class="sim-card-body"/g) || []).length;
+  assert.strictEqual(modernCount, cardCount,
+    'sim-card-body 를 쓰지 않는 카드가 있다 — 그 카드만 여백이 달라진다');
+
+  assert.ok(!/class="sim-body"/.test(idx),
+    '옛 마크업(sim-body, CSS 규칙 없음)이 남아 있다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
