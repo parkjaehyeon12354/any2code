@@ -503,6 +503,23 @@ test('약관과 정책 문서가 비어 있지 않다', () => {
   }
 });
 
+test('회원가입은 약관 동의를 소셜 버튼 전에 받는다', () => {
+  /* signup.html 은 login.html 을 복사해서 만들었는데, login.html 에서
+     동의 체크박스를 뺀 이유는 서버가 /welcome 에서 강제하기 때문이었다.
+     그런데 signup.html 은 그 흐름과 별개로, "회원가입" 화면이라는 이름에
+     걸맞게 여기서도 동의를 눈에 보이게 받아야 한다 — 그래야 첫 화면부터
+     '가입 = 약관 동의' 라는 게 분명하다. */
+  const html = readRoot('signup.html');
+  assert.ok(/type="checkbox" id="agree"/.test(html), '동의 체크박스가 있어야 한다');
+  assert.ok(/href="\/terms"/.test(html) && /href="\/privacy"/.test(html),
+    '두 문서로 가는 링크가 있어야 한다');
+
+  // 소셜 버튼 클릭 핸들러 안에서 미동의를 막아야 한다
+  const handler = html.slice(html.indexOf("querySelectorAll('.btn-oauth[data-provider]')"));
+  assert.ok(/if \(!agree\.checked\)[\s\S]{0,200}return;/.test(handler.slice(0, 500)),
+    '미동의 상태에서 로그인 시작을 막아야 한다');
+});
+
 test('회원가입은 별도 화면(/signup)이다', () => {
   /* "시작하기" 버튼이 곧장 /login(소셜 버튼 나열)으로 가면 신규 사용자에게
      "가입" 이라는 개념이 화면에 없다 — 로그인이자 가입인 화면 하나뿐이었다.

@@ -126,6 +126,29 @@
   word-break: keep-all;
 }
 
+.auth-agree {
+  margin-top: var(--sp-md);
+  padding: 12px 13px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.auth-agree label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  cursor: pointer;
+}
+.auth-agree input[type="checkbox"] {
+  width: 17px; height: 17px; margin: 1px 0 0;
+  flex: 0 0 auto; accent-color: var(--primary); cursor: pointer;
+}
+.auth-agree a { color: var(--primary); font-weight: 600; text-decoration: underline; }
+.auth-agree.nudge { border-color: var(--badge-wait-fg); background: var(--badge-wait-bg); }
+
 .auth-switch {
   margin-bottom: var(--sp-lg);
   font-size: 13px;
@@ -206,6 +229,21 @@
     <!-- 약관 동의는 여기서 받지 않는다. 로그인은 순수 로그인이고, 신규
          가입자는 서버가 /welcome 으로 보내 거기서 동의를 받는다.
          기존 사용자를 매번 동의 화면 앞에 세울 이유가 없다. -->
+    <!-- 여기서 먼저 받는다. 소셜 버튼은 누르는 순간 외부 제공자로 넘어가
+         버려서, 그 뒤에 물으면 "계정이 만들어진 뒤에 묻는" 꼴이 된다.
+         체크 안 하면 버튼 자체가 안 눌리게 막는다(비활성이 아니라 이유를
+         보여주는 방식 — disabled 는 왜 안 눌리는지 알 수 없다). -->
+    <div class="auth-agree" id="agree-box">
+      <label for="agree">
+        <input type="checkbox" id="agree">
+        <span>
+          <a href="/terms" target="_blank" rel="noopener">이용약관</a>과
+          <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에
+          동의합니다. <strong>(필수)</strong>
+        </span>
+      </label>
+    </div>
+
     <p class="auth-result" id="result"></p>
   </div>
 </main>
@@ -242,8 +280,23 @@
 
   // 약관 동의는 이 화면의 일이 아니다. 신규 가입자는 서버가 /welcome 으로
   // 보내 거기서 받는다 — auth.js 콜백의 termsAcceptedAt 판정이 그 강제다.
+  const agree = document.getElementById('agree');
+  const agreeBox = document.getElementById('agree-box');
+  agree.addEventListener('change', function () {
+    if (!agree.checked) return;
+    agreeBox.classList.remove('nudge');
+    notice.classList.remove('show');
+  });
+
   document.querySelectorAll('.btn-oauth[data-provider]').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      if (!agree.checked) {
+        agreeBox.classList.add('nudge');
+        notice.textContent = '이용약관과 개인정보 처리방침에 동의해야 가입할 수 있습니다.';
+        notice.classList.add('show');
+        agree.focus();
+        return;
+      }
       const name = btn.dataset.provider;
       btn.disabled = true;
       /* 로그인 페이지 자신으로 돌아오면 곤란하다. ?to= 로 받은 곳이 있으면
