@@ -355,6 +355,16 @@
             <input type="range" id="damp" min="0" max="0.5" step="0.01" value="0">
             <span class="hint">0이면 영원히 흔들립니다. 실제 실험과 비교하려면 조금 넣어 보세요.</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="mass">추 질량</label>
+              <output id="mass-out">1.0 kg</output>
+            </div>
+            <input type="range" id="mass" min="0.1" max="2" step="0.1" value="1">
+            <span class="hint">주기는 질량과 무관합니다 — 아무리 바꿔도 측정 주기가 같은지 보세요.
+            단 공기 저항이 있으면 무거운 추일수록 진폭이 천천히 줍니다(같은 저항 힘이 질량으로 나뉨).</span>
+          </div>
         </div>
       </div>
 
@@ -436,7 +446,7 @@
     running: true
   };
 
-  const params = { L: 1, deg: 20, b: 0 };
+  const params = { L: 1, deg: 20, b: 0, m: 1 };
 
   /* 주기 측정 — 아래로 0을 지나는 순간을 잡아 그 간격을 잰다.
      최대점을 추적하지 않는 이유: 감쇠가 있으면 최대점이 매번 달라져 흔들린다.
@@ -462,7 +472,10 @@
 
   function step() {
     // 반음 오일러: 속도 먼저, 그 속도로 위치
-    const acc = -(G / params.L) * Math.sin(state.theta) - params.b * state.omega;
+    /* 저항 '힘' 은 속도에 비례하고, 가속도는 그 힘을 질량으로 나눈 것이다.
+       같은 저항에서 무거운 추는 천천히 멈춘다 — 주기(무저항)는 질량과 무관하지만
+       감쇠는 관련이 있다. m=1 이면 기존 식과 같다. */
+    const acc = -(G / params.L) * Math.sin(state.theta) - (params.b / params.m) * state.omega;
     state.omega += acc * DT;
     state.theta += state.omega * DT;
     state.t += DT;
@@ -552,10 +565,10 @@
     ctx.arc(pivotX, pivotY, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // 추 — 무대에서 가장 밝다. 눈이 여기로 오게 한다
+    // 추 — 무대에서 가장 밝다. 눈이 여기로 오게 한다 (같은 재질이면 부피 ∝ 질량, 반지름 ∝ 세제곱근)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(bobX, bobY, 15, 0, Math.PI * 2);
+    ctx.arc(bobX, bobY, 15 * Math.cbrt(params.m), 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -642,12 +655,13 @@
   }
 
   /* ── 조작 ── */
-  const lenIn = el('len'), angIn = el('ang'), dampIn = el('damp');
+  const lenIn = el('len'), angIn = el('ang'), dampIn = el('damp'), massIn = el('mass');
 
   function syncLabels() {
     el('len-out').textContent = params.L.toFixed(2) + ' m';
     el('ang-out').textContent = params.deg + '°';
     el('damp-out').textContent = params.b.toFixed(2) + ' /s';
+    el('mass-out').textContent = params.m.toFixed(1) + ' kg';
   }
 
   lenIn.addEventListener('input', function () {
@@ -668,6 +682,13 @@
     periods = []; lastCross = null;
   });
 
+  massIn.addEventListener('input', function () {
+    params.m = Number(this.value);
+    syncLabels();
+    /* 측정 주기는 초기화하지 않는다 — 질량을 움직이는 바로 그 순간에도
+       주기가 그대로인 걸 보는 게 이 슬라이더의 존재 이유다. */
+  });
+
   el('toggle').addEventListener('click', function () {
     state.running = !state.running;
     this.textContent = state.running ? '일시정지' : '이어서';
@@ -686,7 +707,8 @@
     u.search = new URLSearchParams({
       L: params.L.toFixed(2),
       a: String(params.deg),
-      b: params.b.toFixed(2)
+      b: params.b.toFixed(2),
+      m: params.m.toFixed(1)
     }).toString();
     return u.toString();
   }
@@ -738,12 +760,14 @@
     params.L = num('L', 0.2, 2, 1);
     params.deg = Math.round(num('a', 5, 90, 20));
     params.b = num('b', 0, 0.5, 0);
+    params.m = num('m', 0.1, 2, 1);
 
     lenIn.value = params.L;
     angIn.value = params.deg;
     dampIn.value = params.b;
+    massIn.value = params.m;
 
-    if (q.has('L') || q.has('a') || q.has('b')) {
+    if (q.has('L') || q.has('a') || q.has('b') || q.has('m')) {
       el('stage-said').textContent = '공유된 조건으로 시작했습니다.';
       return true;
     }

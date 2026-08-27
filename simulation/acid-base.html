@@ -470,6 +470,24 @@
           </div>
 
           <div class="ctrl">
+            <div class="ctrl-top"><label>산의 종류</label><output id="kind-out">강산</output></div>
+            <div class="chips" id="kinds">
+              <button type="button" id="kind-strong" aria-pressed="true">강산<small>100% 이온화</small></button>
+              <button type="button" id="kind-weak" aria-pressed="false">약산<small>일부만 이온화</small></button>
+            </div>
+            <span class="hint">같은 농도라도 약산은 일부만 이온화해서 pH 가 다릅니다.</span>
+          </div>
+
+          <div class="ctrl" id="pka-ctrl" hidden>
+            <div class="ctrl-top">
+              <label for="pka">약산의 pK<sub>a</sub></label>
+              <output id="pka-out">4.76</output>
+            </div>
+            <input type="range" id="pka" min="2" max="8" step="0.01" value="4.76">
+            <span class="hint">아세트산은 4.76. 작을수록 강한 약산 — 강산에 가까워집니다.</span>
+          </div>
+
+          <div class="ctrl">
             <div class="ctrl-top">
               <label for="temp">온도</label>
               <output id="temp-out">25 °C</output>
@@ -503,6 +521,7 @@
           <dl class="read">
             <div><dt>희석 후 산 농도</dt><dd id="r-ca">—</dd></div>
             <div><dt>[H⁺]</dt><dd id="r-h">—</dd></div>
+            <div><dt>이온화도</dt><dd id="r-alpha">—</dd></div>
             <div><dt>[OH⁻]</dt><dd id="r-oh">—</dd></div>
             <div><dt>pH</dt><dd id="r-ph">—</dd></div>
             <div><dt>이 온도의 중성 pH</dt><dd id="r-neutral" class="gap">—</dd></div>
@@ -576,6 +595,8 @@
      25°C pKw=13.995(중성 6.997), 60°C pKw=13.017(중성 6.508). */
 
   const S = { dil: 0, conc: -1, temp: 25 };   // dil/conc 는 로그 지수
+  let weak = false;                            // 약산 모드인가
+  S.pKa = 4.76;                                // 아세트산
   let showNaive = false;
 
   const canvas = el('canvas');
@@ -610,7 +631,24 @@
   function hExact(c) {
     return (c + Math.sqrt(c * c + 4 * Kw())) / 2;
   }
-  const phExact = () => -Math.log10(hExact(Ca()));
+
+  /* 약산 — 전하 균형 [H⁺] = [A⁻] + [OH⁻],  [A⁻] = Ka·C/([H⁺]+Ka).
+     h − Ka·C/(h+Ka) − Kw/h = 0 을 이분법으로 푼다.
+     C=0.1, Ka=1e-5 이면 h≈9.95e-4 (근사 √(Ka·C)=1e-3 과 일치). */
+  function hSolve(c) {
+    if (!weak) return hExact(c);
+    const ka = Math.pow(10, -S.pKa), kw = Kw();
+    const f = (x) => x - ka * c / (x + ka) - kw / x;
+    let lo = 1e-14, hi = Math.max(1, c + 1);
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2;
+      if (f(mid) > 0) hi = mid; else lo = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  // 이온화도 α = [A⁻]/C ≈ ([H⁺]−[OH⁻])/C
+  const alpha = () => weak ? Math.max(0, Math.min(1, (hSolve(Ca()) - Kw() / hSolve(Ca())) / Ca())) : 1;
+  const phExact = () => -Math.log10(hSolve(Ca()));
   const phNaive = () => -Math.log10(Ca());                // 물 무시 (틀린 식)
   const phNow = () => showNaive ? phNaive() : phExact();
 
@@ -640,8 +678,8 @@
 
     /* 이온 개수 — 로그 눈금으로 표현한다.
        실제 개수 비는 10¹² 배까지 벌어져 선형으로는 그릴 수 없다. */
-    const hConc = showNaive ? Ca() : hExact(Ca());
-    const ohConc = Kw() / hExact(Ca());
+    const hConc = showNaive ? Ca() : hSolve(Ca());
+    const ohConc = Kw() / hSolve(Ca());
     const dots = (c) => Math.max(0, Math.min(70, Math.round((Math.log10(c) + 14) * 5)));
     const nH = dots(hConc), nOH = dots(ohConc);
 
@@ -765,7 +803,7 @@
     for (let i = 0; i <= 160; i++) {
       const d = i / 160 * 8;
       const c = acidConc() / Math.pow(10, d);
-      const xx = X(d), yy = Y(-Math.log10(hExact(c)));
+      const xx = X(d), yy = Y(-Math.log10(hSolve(c)));
       i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
     }
     gctx.strokeStyle = '#e8615d'; gctx.lineWidth = 3; gctx.stroke();
@@ -787,13 +825,14 @@
   // ── 수치 ──
   function readout() {
     const c = Ca();
-    const h = hExact(c), oh = Kw() / h;
+    const h = hSolve(c), oh = Kw() / h;
     const real = phExact(), naive = phNaive(), neu = neutralPH();
 
     el('r-ca').textContent = c.toExponential(3) + ' mol/L';
     el('r-h').textContent = h.toExponential(3) + ' mol/L';
     el('r-oh').textContent = oh.toExponential(3) + ' mol/L';
     el('r-ph').textContent = real.toFixed(3);
+    el('r-alpha').textContent = weak ? (alpha() * 100).toFixed(1) + ' %' : '100 % (강산)';
     el('r-neutral').textContent = neu.toFixed(3) + (Math.abs(S.temp - 25) < 0.5 ? ' (25°C)' : ` (${S.temp}°C)`);
 
     el('s-real').textContent = real.toFixed(3);
@@ -803,7 +842,15 @@
 
     const gap = naive - real;
     const v = el('verdict');
-    if (naive > neu + 0.05) {
+    if (weak) {
+      /* 이 화면에서 약산의 존재 이유 — 같은 농도·같은 희석인데 pH 가 다르다 */
+      const strongPH = -Math.log10(hExact(c));
+      v.className = 'verdict';
+      v.innerHTML = `농도는 강산일 때와 똑같이 <strong>${c.toExponential(1)}</strong> mol/L 인데 ` +
+        `pH 는 강산이면 <strong>${strongPH.toFixed(2)}</strong>, 이 약산(pK<sub>a</sub> ${S.pKa.toFixed(2)})은 ` +
+        `<strong>${real.toFixed(2)}</strong> 입니다. 이온화도가 <strong>${(alpha() * 100).toFixed(1)}%</strong> 라 ` +
+        '대부분 분자 상태로 남아 있기 때문입니다. <strong>농도가 같아도 산의 세기가 다르면 pH 도 다릅니다.</strong>';
+    } else if (naive > neu + 0.05) {
       v.className = 'verdict warn';
       v.innerHTML = `물을 무시하면 pH <strong>${naive.toFixed(2)}</strong> — ` +
         `<strong>산을 넣었는데 염기성</strong>이라는 말이 됩니다. 있을 수 없는 답입니다. ` +
@@ -875,6 +922,22 @@
     });
   }
 
+  function setKind(w) {
+    weak = w;
+    el('kind-out').textContent = w ? '약산' : '강산';
+    el('kind-strong').setAttribute('aria-pressed', String(!w));
+    el('kind-weak').setAttribute('aria-pressed', String(w));
+    el('pka-ctrl').hidden = !w;
+    readout();
+  }
+  el('kind-strong').addEventListener('click', () => setKind(false));
+  el('kind-weak').addEventListener('click', () => setKind(true));
+  el('pka').addEventListener('input', function () {
+    S.pKa = Number(this.value);
+    el('pka-out').textContent = S.pKa.toFixed(2);
+    readout();
+  });
+
   el('naive').addEventListener('click', () => {
     showNaive = !showNaive;
     el('naive').textContent = showNaive ? '실제 계산으로 돌아가기' : '물의 이온화 무시해 보기';
@@ -897,7 +960,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ dil: S.dil, conc: S.conc, temp: S.temp });
+      const q = new URLSearchParams({ dil: S.dil, conc: S.conc, temp: S.temp, ...(weak ? { weak: 1, pka: S.pKa } : {}) });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -916,6 +979,15 @@
       S[k] = c; input.value = c;
       el(k + '-out').textContent = labels[k](c);
     });
+    if (q.get('weak') === '1') {
+      const pv = Number(q.get('pka'));
+      if (Number.isFinite(pv) && pv >= 2 && pv <= 8) {
+        S.pKa = pv;
+        el('pka').value = pv;
+        el('pka-out').textContent = pv.toFixed(2);
+      }
+      setKind(true);
+    }
     syncPresets();
   }
 

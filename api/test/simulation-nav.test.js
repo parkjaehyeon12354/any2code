@@ -167,6 +167,43 @@ test('심화 탐구 주제의 시뮬레이션 링크가 살아 있다', () => {
   assert.deepStrictEqual(bad, [], '알 수 없는 과목 코드: ' + bad.join(','));
 });
 
+
+test('산과 염기의 약산 모드가 실제 물리를 쓴다', () => {
+  /* 약산은 전하 균형 [H+]=[A-]+[OH-] 를 풀어야 한다.
+     sqrt(Ka*C) 근사만 쓰면 Ka 가 큰 약산(pKa 2, 이온화도 27%)에서 크게 틀린다.
+     실제로 pKa=2·C=0.1 이면 근사 pH 1.50 vs 정확 1.568 — 이분법으로 푼다. */
+  const ab = read(path.join(SIM_DIR, 'acid-base.html'));
+  assert.match(ab, /if \(!weak\) return hExact\(c\);/,
+    '강산·약산 분기가 없다 — 약산 모드가 강산 식으로 계산된다');
+  assert.match(ab, /ka \* c \/ \(x \+ ka\)/, '전하 균형식이 없다 — 근사만 쓰면 pKa 2 에서 틀린다');
+  assert.match(ab, /id="pka"/, 'pKa 슬라이더가 없다');
+  assert.match(ab, /id="r-alpha"/, '이온화도 표시가 없다');
+  assert.match(ab, /kind-weak/, '강산·약산 전환이 없다');
+});
+
+test('단진자의 질량은 주기에 들어가지 않는다', () => {
+  /* 이 슬라이더의 존재 이유다 — 주기 공식에 질량이 없다.
+     저항 항만 질량으로 나뉜다(같은 저항 힘이 질량으로 나뉨).
+     누가 주기 계산에 질량을 넣으면 오개념을 그대로 가르치게 된다. */
+  const pd = read(path.join(SIM_DIR, 'pendulum.html'));
+  const acc = pd.match(/const acc = .*;/);
+  assert.ok(acc, '가속도 식이 없다');
+  assert.ok(!/G \/ \(params\.L \* params\.m\)|params\.m \* G/.test(acc[0]),
+    '주기 항에 질량이 들어갔다 — 주기는 질량과 무관하다');
+  assert.match(pd, /params\.b \/ params\.m/, '저항이 질량으로 안 나뉜다 — 무거운 추가 더 천천히 멈춰야 한다');
+  assert.match(pd, /id="mass"/, '질량 슬라이더가 없다');
+});
+
+test('전자기 유도의 기전력은 코일 면적에 비례한다', () => {
+  /* Phi = B*A. 면적 배율이 자기선속에 곱해져야 한다. */
+  const em = read(path.join(SIM_DIR, 'electromagnetic-induction.html'));
+  /* 주석에 같은 글자가 있으면 단순 'params.area/20' 검사는
+     면적을 빼도 통과한다 — 실제로 그랬다. 곱해지는 식 전체를 본다. */
+  assert.match(em, /params\.strength\*\(params\.area\/20\)/,
+    '자기선속에 면적이 안 곱해진다 — Phi=B*A 가 아니다');
+  assert.match(em, /id="area"/, '면적 슬라이더가 없다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.

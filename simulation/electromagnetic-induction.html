@@ -258,6 +258,11 @@
             <span class="hint">감은 수가 많을수록 같은 자기선속 변화에서 더 큰 유도 기전력이 생깁니다.</span>
           </div>
           <div class="ctrl">
+            <div class="ctrl-top"><label for="area">코일 단면적</label><output id="area-out">20 cm²</output></div>
+            <input type="range" id="area" min="10" max="40" step="5" value="20">
+            <span class="hint">자기선속은 Φ = B·A — 면적을 두 배로 하면 기전력도 두 배가 되는지 보세요.</span>
+          </div>
+          <div class="ctrl">
             <div class="ctrl-top"><label>코일을 향하는 극</label><output id="pole-out">N극</output></div>
             <div class="seg" role="group" aria-label="자석 극 선택">
               <button type="button" id="pole-n" class="active" aria-pressed="true">N극</button>
@@ -308,7 +313,7 @@
 (function(){
   const el=id=>document.getElementById(id);
   const canvas=el('canvas'),ctx=canvas.getContext('2d'),graphCanvas=el('graph-canvas'),graphCtx=graphCanvas.getContext('2d');
-  const params={strength:.6,speed:1,turns:100,pole:1};
+  const params={strength:.6,speed:1,turns:100,pole:1,area:20};
   const state={running:true,t:0,x:0,prevX:0,velocity:0,flux:0,prevFlux:0,fluxRate:0,emf:0,lastMovedAt:0};
   const history={time:[],fluxRate:[],emf:[]};
   let last=performance.now(),lastSample=0;
@@ -328,7 +333,9 @@
     // 코일 중심에서 선속이 가장 크고, 어느 쪽으로 멀어져도 대칭으로 감소한다.
     // 따라서 접근할 때와 통과해 나갈 때 dΦ/dt의 부호가 바뀐다.
     const b=bounds(),distance=b.coil-x,spread=canvas.clientWidth*.14;
-    return params.pole*params.strength*Math.exp(-Math.pow(distance/spread,2));
+    /* Φ = B·A — 면적 배율(params.area/20)을 곱한다.
+       면적을 두 배로 하면 같은 자석·같은 거리에서 자기선속도 두 배. */
+    return params.pole*params.strength*(params.area/20)*Math.exp(-Math.pow(distance/spread,2));
   }
   function update(dt){
     state.t+=dt;
@@ -361,7 +368,8 @@
     ctx.fillStyle='#fff';ctx.font='700 17px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(params.pole===1?'S':'N',mx+magW*.25,floor);ctx.fillText(params.pole===1?'N':'S',mx+magW*.75,floor);
     // coil
     ctx.strokeStyle='#d7a04b';ctx.lineWidth=3;const rings=Math.max(6,Math.round(params.turns/20));
-    for(let i=0;i<rings;i++){const ox=(i-(rings-1)/2)*4;ctx.beginPath();ctx.ellipse(b.coil+ox,floor,17,66,0,0,Math.PI*2);ctx.stroke();}
+    const coilR=Math.sqrt(params.area/20);
+    for(let i=0;i<rings;i++){const ox=(i-(rings-1)/2)*4;ctx.beginPath();ctx.ellipse(b.coil+ox,floor,17*coilR,66*coilR,0,0,Math.PI*2);ctx.stroke();}
     ctx.strokeStyle='#d7a04b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.coil-rings*2,floor+66);ctx.lineTo(b.coil-rings*2,floor+92);ctx.lineTo(w*.89,floor+92);ctx.lineTo(w*.89,floor+42);ctx.stroke();
     // galvanometer
     ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.arc(w*.89,floor,40,Math.PI,0);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.stroke();
@@ -408,6 +416,7 @@
   el('strength').addEventListener('input',function(){params.strength=Number(this.value)/100;el('strength-out').textContent=this.value+'%';});
   el('speed').addEventListener('input',function(){params.speed=Number(this.value);el('speed-out').textContent=params.speed.toFixed(1)+'×';});
   el('turns').addEventListener('input',function(){params.turns=Number(this.value);el('turns-out').textContent=this.value+'회';});
+  el('area').addEventListener('input',function(){params.area=Number(this.value);el('area-out').textContent=this.value+' cm²';});
   function setPole(p){params.pole=p;el('pole-out').textContent=p===1?'N극':'S극';el('pole-n').classList.toggle('active',p===1);el('pole-s').classList.toggle('active',p===-1);el('pole-n').setAttribute('aria-pressed',p===1);el('pole-s').setAttribute('aria-pressed',p===-1);state.prevFlux=state.flux=magneticFlux(state.x);state.fluxRate=0;state.emf=0;}
   el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
   el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;pushSample();}this.textContent=state.running?'일시정지':'이어서';});
