@@ -104,7 +104,7 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
-.measurement-strip { margin: 10px 0 0; }
+.measurement-strip { margin: 6px 0 0; }
 .measurement-strip .panel-head { padding: 9px 16px; }
 .measurement-strip .panel-body { padding: 0; }
 .measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -546,7 +546,8 @@
 
   function resize() {
     const w = canvas.clientWidth;
-    const h = Math.round(w * 0.62);
+    // 무대 높이를 조금 줄여 측정값과 그래프를 첫 화면에서 더 빨리 확인한다.
+    const h = Math.round(w * 0.56);
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
