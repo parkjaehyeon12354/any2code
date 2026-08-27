@@ -481,6 +481,17 @@
             </div>
             <input type="range" id="speed" min="0" max="4" step="0.1" value="1">
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="gm">중심 천체 GM</label>
+              <output id="gm-out">398,600 km³/s² · 지구</output>
+            </div>
+            <!-- 값은 log10(GM). 4자리~9자리를 선형으로 두면 지구 근처가 슬라이더 끝에 몰린다 -->
+            <input type="range" id="gm" min="3.69" max="8.10" step="0.01" value="5.6">
+            <span class="hint">달 4,903 · 화성 42,828 · 지구 398,600 · 목성 1.27억.
+            <strong>같은 장반경이라도 중심 천체가 무거우면 더 빨리 돕니다</strong> — T ∝ 1/√GM.</span>
+          </div>
         </div>
       </div>
 
@@ -576,10 +587,12 @@
 
      수치적분 대신 케플러 궤도 해석해를 쓴다. 발산하지 않고 가볍다. */
 
-  const GM = 3.986e5;          // 지구 중력상수 (km³/s²)
+  /* 중심 천체는 조작 변수다(S.gm) — 지구로 고정하면 달·화성 궤도를 볼 수 없다.
+     슬라이더는 log10 눈금이라 S.gm 에는 실제 값을 넣는다. */
+  const GM = () => S.gm;
   const R_EARTH = 6378;        // 지구 반지름 (km)
 
-  const S = { sma: 10000, ecc: 0, speed: 1 };
+  const S = { sma: 10000, ecc: 0, speed: 1, gm: 3.986e5 };
 
   /* 근지점 고도를 최소 300km 로 유지한다.
      이 제한이 없으면 a=10000, e=0.4 같은 흔한 조합에서 근지점이 6000km 가 되어
@@ -605,8 +618,8 @@
   const W = () => canvas.width / DPR;
   const H = () => canvas.height / DPR;
 
-  const period = (a) => 2 * Math.PI * Math.sqrt(a * a * a / GM);
-  const visViva = (r, a) => Math.sqrt(GM * (2 / r - 1 / a));
+  const period = (a) => 2 * Math.PI * Math.sqrt(a * a * a / GM());
+  const visViva = (r, a) => Math.sqrt(GM() * (2 / r - 1 / a));
 
   /* 케플러 방정식 M = E − e·sinE 를 뉴턴법으로 푼다.
      6회면 e ≤ 0.7 에서 충분히 수렴한다(배정밀도 한계까지). */
@@ -623,7 +636,7 @@
   /* 시각 t 에서의 위치·속도. 근지점을 +x 축에 둔다. */
   function orbitState(time) {
     const a = S.sma, e = S.ecc;
-    const n = Math.sqrt(GM / (a * a * a));       // 평균 운동
+    const n = Math.sqrt(GM() / (a * a * a));       // 평균 운동
     const M = n * time;
     const E = solveE(M, e);
     const r = a * (1 - e * Math.cos(E));
@@ -635,8 +648,8 @@
     const x = r * Math.cos(nu), y = r * Math.sin(nu);
 
     // 속도 — 궤도면 극좌표에서 미분한 결과
-    const h = Math.sqrt(GM * a * (1 - e * e));    // 비각운동량
-    const vr = GM / h * e * Math.sin(nu);         // 지름 방향
+    const h = Math.sqrt(GM() * a * (1 - e * e));    // 비각운동량
+    const vr = GM() / h * e * Math.sin(nu);         // 지름 방향
     const vt = h / r;                             // 접선 방향
     const cn = Math.cos(nu), sn = Math.sin(nu);
     const vx = vr * cn - vt * sn;
@@ -771,7 +784,7 @@
 
     // 중력 벡터 — 꺼져 있으면 안 그린다
     if (gravityOn) {
-      const gmag = GM / (st.r * st.r);
+      const gmag = GM() / (st.r * st.r);
       const ux = -st.x / st.r, uy = -st.y / st.r;
       vector(sx, sy, ux * gmag, uy * gmag, scale * 9.0e5, '#f6bd60', '중력');
     } else {
@@ -871,7 +884,7 @@
     gctx.strokeStyle = '#e07a5f'; gctx.lineWidth = 2.6; gctx.stroke();
 
     // 면적속도 — 평평한 선
-    const hMom = Math.sqrt(GM * a * (1 - e * e));
+    const hMom = Math.sqrt(GM() * a * (1 - e * e));
     const areaY = pad.t + gh * 0.5;
     gctx.setLineDash([6, 5]);
     gctx.strokeStyle = '#2a9d8f'; gctx.lineWidth = 2.2;
@@ -893,7 +906,7 @@
     // 현재 위치
     const st = current();
     if (gravityOn) {
-      const n = Math.sqrt(GM / (a * a * a));
+      const n = Math.sqrt(GM() / (a * a * a));
       const frac = ((n * t) % (Math.PI * 2)) / (Math.PI * 2);
       gctx.beginPath(); gctx.arc(X(frac), Yv(st.v), 5.5, 0, Math.PI * 2);
       gctx.fillStyle = '#111'; gctx.fill();
@@ -913,7 +926,7 @@
     el('r-vel').textContent = st.v.toFixed(3) + ' km/s';
     el('r-period').textContent = gravityOn ? (T / 60).toFixed(1) + ' 분' : '— (궤도 아님)';
     el('r-acc').textContent = gravityOn
-      ? (GM / (st.r * st.r)).toFixed(3) + ' m/s² 상당'
+      ? (GM() / (st.r * st.r)).toFixed(3) + ' m/s² 상당'
       : '0 (중력 꺼짐)';
     el('r-area').textContent = Math.round(areaRate(st)).toLocaleString() + ' km²/s';
 
@@ -957,7 +970,14 @@
   const labels = {
     sma: (v) => Number(v).toLocaleString() + ' km',
     ecc: (v) => Number(v).toFixed(2),
-    speed: (v) => Number(v).toFixed(1) + '×'
+    speed: (v) => Number(v).toFixed(1) + '×',
+    /* 숫자만 보면 42828 이 무슨 값인지 모른다. 가까운 천체 이름을 붙인다.
+       인자는 실제 GM 값이다(슬라이더의 로그 값이 아니라). */
+    gm: (v) => {
+      const bodies = [['달', 3.690], ['화성', 4.632], ['지구', 5.600], ['목성', 8.103]];
+      const hit = bodies.find(([, lg]) => Math.abs(Math.log10(v) - lg) <= 0.05);
+      return Math.round(v).toLocaleString() + ' km³/s² · ' + (hit ? hit[0] : '가상');
+    }
   };
 
   function resetMotion() {
@@ -966,10 +986,11 @@
     freeState = null;
   }
 
-  ['sma', 'ecc', 'speed'].forEach((k) => {
+  ['sma', 'ecc', 'speed', 'gm'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
-      S[k] = Number(input.value);
+      // gm 슬라이더만 log10 눈금이다 — 상태에는 실제 값을 넣는다
+      S[k] = k === 'gm' ? Math.pow(10, Number(input.value)) : Number(input.value);
       if (k === 'sma' || k === 'ecc') {
         clampEcc();
         el('ecc').value = S.ecc;
@@ -1035,7 +1056,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ sma: S.sma, ecc: S.ecc, speed: S.speed });
+      const q = new URLSearchParams({ sma: S.sma, ecc: S.ecc, speed: S.speed, gm: Math.log10(S.gm).toFixed(3) });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -1046,13 +1067,15 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['sma', 'ecc', 'speed'].forEach((k) => {
+    ['sma', 'ecc', 'speed', 'gm'].forEach((k) => {
       const v = Number(q.get(k));
       if (q.get(k) === null || !Number.isFinite(v)) return;
       const input = el(k);
       const c = Math.max(Number(input.min), Math.min(Number(input.max), v));
-      S[k] = c; input.value = c;
-      el(k + '-out').textContent = labels[k](c);
+      input.value = c;
+      // 주소의 gm 은 로그 값이다 — 상태에는 실제 값으로 넣는다
+      S[k] = k === 'gm' ? Math.pow(10, c) : c;
+      el(k + '-out').textContent = labels[k](S[k]);
     });
     clampEcc();
     el('ecc').value = S.ecc;

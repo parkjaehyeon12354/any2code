@@ -479,6 +479,16 @@
             <input type="range" id="enz" min="0.2" max="2" step="0.1" value="1">
             <span class="hint">이건 넣는 만큼 그대로 빨라집니다. 기질과 다릅니다.</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="km">K<sub>m</sub> (효소 친화력)</label>
+              <output id="km-out">2.0 mM</output>
+            </div>
+            <input type="range" id="km" min="0.5" max="10" step="0.1" value="2">
+            <span class="hint">K<sub>m</sub> 은 속도가 V<sub>max</sub> 의 절반이 되는 기질 농도입니다.
+            <strong>작을수록 기질과 잘 붙는 효소</strong>라 낮은 농도에서도 빠릅니다.</span>
+          </div>
         </div>
       </div>
 
@@ -577,13 +587,15 @@
      ⚠ K3 가 "55°C 에서 변성 없다면 633" 이라 했는데 실제로는 575.8 이다.
         A(55)=6.3333 을 과대평가했다. 화면에는 계산값을 쓴다. */
 
-  const Km = 2.0;        // mM
+  /* Km 은 조작 변수다(S.km) — 곡선 모양을 정하는 값인데 상수라 못 만졌다.
+     기본 2.0 이라 기존 검증값(25°C·S=4 → 66.65 등)이 그대로 유지된다. */
+  const Km = () => S.km;
   const KCAT25 = 100;    // s⁻¹ (25°C 기준)
   const EA_R = 50000 / 8.314;   // Ea/R = 6013.95 K
   const T_HALF = 50;     // 절반이 변성되는 온도 (°C)
   const D_STEEP = 3;     // 변성이 얼마나 급한가
 
-  const S = { temp: 25, sub: 4, enz: 1 };
+  const S = { temp: 25, sub: 4, enz: 1, km: 2.0 };
   let running = true;
   let anim = 0;
   let molecules = [];
@@ -597,9 +609,9 @@
   const arrhenius = (T) => Math.exp(EA_R * (1 / 298 - 1 / (T + 273)));
   const intact = (T) => 1 / (1 + Math.exp((T - T_HALF) / D_STEEP));
   const vmaxAt = (T) => KCAT25 * arrhenius(T) * intact(T) * S.enz;
-  const rateAt = (T, sub) => vmaxAt(T) * sub / (Km + sub);
+  const rateAt = (T, sub) => vmaxAt(T) * sub / (Km() + sub);
   // 변성이 없다고 가정한 속도 — 학생이 머릿속에 그리는 선
-  const idealAt = (T, sub) => KCAT25 * arrhenius(T) * S.enz * sub / (Km + sub);
+  const idealAt = (T, sub) => KCAT25 * arrhenius(T) * S.enz * sub / (Km() + sub);
 
   const rate = () => rateAt(S.temp, S.sub);
   const ideal = () => idealAt(S.temp, S.sub);
@@ -809,7 +821,7 @@
   function readout() {
     optT = optimalTemp();
     const v = rate(), iv = ideal(), f = intact(S.temp);
-    const sat = S.sub / (Km + S.sub);
+    const sat = S.sub / (Km() + S.sub);
 
     el('r-v').textContent = v.toFixed(2) + ' µM/s';
     el('r-vmax').textContent = vmaxAt(S.temp).toFixed(2) + ' µM/s';
@@ -848,7 +860,7 @@
     }
 
     el('note').textContent =
-      `K\u2098 = ${Km} mM (반쯤 찼을 때의 농도), 절반이 변성되는 온도 ${T_HALF}°C. ` +
+      `K\u2098 = ${Km().toFixed(1)} mM (반쯤 찼을 때의 농도), 절반이 변성되는 온도 ${T_HALF}°C. ` +
       `지금 살아있는 효소 비율 ${(f * 100).toFixed(1)}% × 아레니우스 ${arrhenius(S.temp).toFixed(2)}배 ` +
       `= 유효 V\u2098\u2090\u2093 ${vmaxAt(S.temp).toFixed(1)}.`;
   }
@@ -857,10 +869,11 @@
   const labels = {
     temp: (v) => Number(v) + ' °C',
     sub: (v) => Number(v).toFixed(1) + ' mM',
-    enz: (v) => Number(v).toFixed(1) + ' µM'
+    enz: (v) => Number(v).toFixed(1) + ' µM',
+    km: (v) => Number(v).toFixed(1) + ' mM'
   };
 
-  ['temp', 'sub', 'enz'].forEach((k) => {
+  ['temp', 'sub', 'enz', 'km'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -873,7 +886,7 @@
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
       S.temp = Number(b.dataset.t); S.sub = Number(b.dataset.s); S.enz = Number(b.dataset.e);
-      ['temp', 'sub', 'enz'].forEach((k) => {
+      ['temp', 'sub', 'enz', 'km'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
@@ -897,7 +910,7 @@
   });
   el('reset').addEventListener('click', () => {
     S.temp = 25; S.sub = 4; S.enz = 1;
-    ['temp', 'sub', 'enz'].forEach((k) => {
+    ['temp', 'sub', 'enz', 'km'].forEach((k) => {
       el(k).value = S[k];
       el(k + '-out').textContent = labels[k](S[k]);
     });
@@ -909,7 +922,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ t: S.temp, s: S.sub, e: S.enz });
+      const q = new URLSearchParams({ t: S.temp, s: S.sub, e: S.enz, k: S.km });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -920,7 +933,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    const map = { t: 'temp', s: 'sub', e: 'enz' };
+    const map = { t: 'temp', s: 'sub', e: 'enz', k: 'km' };
     Object.entries(map).forEach(([key, id]) => {
       const v = Number(q.get(key));
       if (q.get(key) === null || !Number.isFinite(v)) return;

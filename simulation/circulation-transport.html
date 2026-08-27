@@ -477,6 +477,16 @@
             <input type="range" id="aorta" min="1" max="4" step="0.1" value="2">
             <span class="hint">굵을수록 대동맥에서는 느려집니다 — 같은 양이 넓은 길로 가니까요.</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="capD">모세혈관 지름</label>
+              <output id="capD-out">8.0 µm</output>
+            </div>
+            <input type="range" id="capD" min="4" max="12" step="0.5" value="8">
+            <span class="hint">총단면적은 개수 × 한 개의 단면적입니다.
+            <strong>지름이 2배면 단면적은 4배</strong> — 개수만큼이나 크게 듣습니다.</span>
+          </div>
         </div>
       </div>
 
@@ -569,11 +579,14 @@
        대동맥 3.14cm² 26.53cm/s / 모세혈관 1568cm² 0.053cm/s / 통과 1.88초
      교과서: 모세혈관 유속 0.03~0.1cm/s, 통과 1~2초. */
 
-  const CAP_R = 4e-4;              // 모세혈관 반지름 cm (지름 8µm)
+  /* 모세혈관 지름은 조작 변수다(S.capD, µm). 총단면적을 정하는 두 값 중
+     개수만 만질 수 있었다. 지름 8µm 이면 반지름 4e-4 cm 로 기존값과 같다. */
+  const CAP_R = () => S.capD / 2 / 10000;
   const CAP_LEN = 0.1;             // 모세혈관 길이 cm (1mm)
-  const CAP_AREA1 = Math.PI * CAP_R * CAP_R;
+  // CAP_R 이 가변이라 이것도 상수로 두면 그림과 숫자가 어긋난다
+  const CAP_AREA1 = () => Math.PI * CAP_R() * CAP_R();
 
-  const S = { ncap: 31, flow: 5, aorta: 2.0 };
+  const S = { ncap: 31, flow: 5, aorta: 2.0, capD: 8 };
   let running = true;
   let cells = [];
   let o2dots = [];
@@ -586,7 +599,7 @@
 
   const Q = () => S.flow * 1000 / 60;                 // cm³/s
   const aortaArea = () => Math.PI * Math.pow(S.aorta / 2, 2);
-  const capArea = () => S.ncap * 1e8 * CAP_AREA1;     // 슬라이더 1 = 1억
+  const capArea = () => S.ncap * 1e8 * CAP_AREA1();     // 슬라이더 1 = 1억
   const venaArea = () => 2 * Math.PI * Math.pow(S.aorta * 1.4 / 2, 2);
 
   const vAorta = () => Q() / aortaArea();
@@ -827,9 +840,10 @@
   const labels = {
     ncap: (v) => (Number(v) / 10).toFixed(1) + ' 억',
     flow: (v) => Number(v).toFixed(1) + ' L/분',
-    aorta: (v) => Number(v).toFixed(1) + ' cm'
+    aorta: (v) => Number(v).toFixed(1) + ' cm',
+    capD: (v) => Number(v).toFixed(1) + ' µm'
   };
-  ['ncap', 'flow', 'aorta'].forEach((k) => {
+  ['ncap', 'flow', 'aorta', 'capD'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -842,7 +856,7 @@
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
       S.ncap = Number(b.dataset.n); S.flow = Number(b.dataset.f); S.aorta = Number(b.dataset.a);
-      ['ncap', 'flow', 'aorta'].forEach((k) => {
+      ['ncap', 'flow', 'aorta', 'capD'].forEach((k) => {
         el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
       });
       syncPresets(); readout();
@@ -863,7 +877,7 @@
   });
   el('reset').addEventListener('click', () => {
     S.ncap = 31; S.flow = 5; S.aorta = 2.0;
-    ['ncap', 'flow', 'aorta'].forEach((k) => {
+    ['ncap', 'flow', 'aorta', 'capD'].forEach((k) => {
       el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
     });
     seed(); syncPresets(); readout();
@@ -874,7 +888,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ n: S.ncap, f: S.flow, a: S.aorta });
+      const q = new URLSearchParams({ n: S.ncap, f: S.flow, a: S.aorta, d: S.capD });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -885,7 +899,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    const map = { n: 'ncap', f: 'flow', a: 'aorta' };
+    const map = { n: 'ncap', f: 'flow', a: 'aorta', d: 'capD' };
     Object.entries(map).forEach(([key, id]) => {
       const raw = q.get(key);
       if (raw === null) return;

@@ -114,10 +114,15 @@ test('생명과학 상수가 코드에 실제로 있다', () => {
   assert.match(neu, /V_PEAK = 30/, '정점 +30mV');
 
   const cir = read(path.join(SIM_DIR, 'circulation-transport.html'));
-  assert.match(cir, /CAP_R = 4e-4/, '모세혈관 반지름 4e-4 cm');
+  /* 반지름은 상수에서 지름 슬라이더로 바뀌었다. 기본 8µm 이어야
+     반지름 4e-4 cm 라는 기존 검증값이 유지된다. */
+  assert.match(cir, /capD: 8 \}/, '모세혈관 지름 기본값 8µm (= 반지름 4e-4 cm)');
+  assert.match(cir, /id="capD"[^>]*value="8"/, '모세혈관 지름 슬라이더 기본값 8');
 
   const enz = read(path.join(SIM_DIR, 'metabolism-enzyme.html'));
-  assert.match(enz, /Km = 2\.0/, '미카엘리스 상수 2.0 mM');
+  /* Km 도 슬라이더가 됐다. 기본 2.0 이어야 25°C·S=4 → 66.65 가 유지된다. */
+  assert.match(enz, /km: 2\.0 \}/, '미카엘리스 상수 기본값 2.0 mM');
+  assert.match(enz, /id="km"[^>]*value="2"/, 'Km 슬라이더 기본값 2');
   assert.match(enz, /T_HALF = 50/, '절반 변성 온도 50도');
 });
 
@@ -274,6 +279,47 @@ test('화학 반응의 온도가 평형 상수를 바꾼다', () => {
      kr 도 아레니우스로 따로 올리면 K 가 어긋난다. */
   assert.match(cr, /const krEff = \(\) => kfEff\(\) \/ Kconst\(\);/,
     '역반응 속도상수가 K 를 안 따라간다 — 평형이 반트호프와 어긋난다');
+});
+
+
+test('천체 운동의 중심 천체가 조작 변수다', () => {
+  /* GM 이 지구로 고정이라 달·화성 궤도를 볼 수 없었다.
+     T = 2pi*sqrt(a^3/GM). 실측(a=10000km): 지구 166.0분, 달 1496.3분,
+     목성 9.3분 — 손계산과 일치.
+     주의: 본문 공식 표기 'T = 2pi(a^3/GM)' 는 텍스트라 건드리면 안 된다.
+     식별자를 일괄 치환하면 화면에 GM() 이라고 찍힌다. */
+  const om = read(path.join(SIM_DIR, 'orbital-motion.html'));
+  assert.match(om, /id="gm"/, '중심 천체 슬라이더가 없다');
+  assert.match(om, /const GM = \(\) => S\.gm;/, 'GM 이 상수로 돌아갔다');
+  assert.match(om, /Math\.sqrt\(a \* a \* a \/ GM\(\)\)/, '주기 계산이 GM 을 안 읽는다');
+  /* 슬라이더는 log10 눈금이다. 상태에 로그 값을 그대로 넣으면 GM 이 5.6 이 된다. */
+  assert.match(om, /S\[k\] = k === 'gm' \? Math\.pow\(10, Number\(input\.value\)\)/,
+    '로그 슬라이더 값을 실제 GM 으로 변환하지 않는다');
+  assert.match(om, /T = 2π√\(a³\/GM\) —/, '본문 공식 표기가 깨졌다');
+});
+
+test('순환의 모세혈관 지름이 총단면적을 바꾼다', () => {
+  /* 총단면적 = 개수 x 한 개 단면적인데 개수만 조작할 수 있었다.
+     실측: 지름 4/8/12um -> 총단면적 390/1558/3506 cm2 (지름 제곱 비례),
+     유속은 0.2139/0.0535/0.0238 cm/s 로 반비례. */
+  const ct = read(path.join(SIM_DIR, 'circulation-transport.html'));
+  assert.match(ct, /id="capD"/, '모세혈관 지름 슬라이더가 없다');
+  assert.match(ct, /const CAP_R = \(\) => S\.capD \/ 2 \/ 10000;/, '반지름이 상수로 돌아갔다');
+  /* 단면적도 함께 함수여야 한다. 상수로 두면 지름을 바꿔도 총단면적이 안 변한다. */
+  assert.match(ct, /const CAP_AREA1 = \(\) => Math\.PI \* CAP_R\(\) \* CAP_R\(\);/,
+    '단면적이 상수라 지름 변경이 반영되지 않는다');
+  assert.match(ct, /CAP_AREA1\(\);/, '총단면적 계산이 옛 상수를 쓴다');
+});
+
+test('대사와 효소의 Km 이 조작 변수다', () => {
+  /* 미카엘리스-멘텐 곡선 모양을 정하는 값인데 상수였다.
+     v = Vmax*S/(Km+S). 실측(25도, S=4, E=1): Km 0.5/2/10 -> 88.87/66.65/28.56,
+     S=Km=4 에서 49.99 = Vmax(99.98)/2 로 정확히 절반. */
+  const me = read(path.join(SIM_DIR, 'metabolism-enzyme.html'));
+  assert.match(me, /id="km"/, 'Km 슬라이더가 없다');
+  assert.match(me, /const Km = \(\) => S\.km;/, 'Km 이 상수로 돌아갔다');
+  assert.match(me, /vmaxAt\(T\) \* sub \/ \(Km\(\) \+ sub\)/, '반응 속도가 Km 을 안 읽는다');
+  assert.match(me, /S\.sub \/ \(Km\(\) \+ S\.sub\)/, '포화도가 Km 을 안 읽는다');
 });
 
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
