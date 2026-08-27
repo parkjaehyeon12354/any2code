@@ -64,6 +64,17 @@
     .science-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #d97706); }
     .science-intro h1 { font-family: var(--font-display); color: var(--ink); font-size: clamp(32px, 5vw, 48px); line-height: 1.25; letter-spacing: -.5px; margin: 0 0 14px; }
     .science-intro p { color: var(--body); font-size: 17px; line-height: 1.7; margin: 0; word-break: keep-all; }
+    .recent-simulations { margin: 0 0 18px; padding: 16px 18px; background: var(--surface-soft); border: 1px solid var(--hairline); border-radius: 16px; }
+    .recent-simulations-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+    .recent-simulations-head h2 { margin: 0; color: var(--ink); font-family: var(--font-display); font-size: 18px; }
+    .recent-simulations-head a { color: var(--primary); font-size: 12.5px; font-weight: 700; text-decoration: none; }
+    .recent-simulation-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+    .recent-simulation-card { display: grid; gap: 4px; min-width: 0; padding: 11px 12px; color: var(--body); background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px; text-decoration: none; }
+    .recent-simulation-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+    .recent-simulation-card strong { overflow: hidden; color: var(--ink); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-simulation-meta { color: var(--muted); font-size: 11.5px; }
+    .recent-simulation-action { color: var(--primary); font-size: 12px; font-weight: 700; }
+    .recent-simulation-empty { margin: 0; padding: 10px 12px; color: var(--muted); background: var(--canvas); border-radius: 10px; font-size: 13px; line-height: 1.55; }
     .science-layout { width: 100%; margin: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
     .science-tips, .science-chat { background: var(--surface-soft); border: 1px solid var(--hairline); border-radius: 16px; box-shadow: 0 8px 30px rgba(19, 42, 35, .05); }
     .science-tips { padding: 22px; }
@@ -151,8 +162,8 @@
     .chat-form button:hover { background: var(--primary-active); }
     .chat-form button:disabled { opacity: .55; cursor: wait; }
     .chat-note { color: var(--muted); font-size: 12px; line-height: 1.5; padding: 0 20px 16px; margin: 0; }
-    @media (max-width: 720px) { .science-page { padding: 42px 0 64px; } .science-layout { grid-template-columns: 1fr; } .science-tips { order: 2; } .tip-list { grid-template-columns: repeat(2, 1fr); } .messages { height: 330px; } }
-    @media (max-width: 440px) { .chat-head { align-items: flex-start; flex-direction: column; } .tip-list { grid-template-columns: 1fr; } .chat-form { padding: 12px; } .chat-form button { padding: 0 13px; } }
+    @media (max-width: 720px) { .science-page { padding: 42px 0 64px; } .recent-simulation-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .science-layout { grid-template-columns: 1fr; } .science-tips { order: 2; } .tip-list { grid-template-columns: repeat(2, 1fr); } .messages { height: 330px; } }
+    @media (max-width: 440px) { .recent-simulation-list { grid-template-columns: 1fr; } .chat-head { align-items: flex-start; flex-direction: column; } .tip-list { grid-template-columns: 1fr; } .chat-form { padding: 12px; } .chat-form button { padding: 0 13px; } }
   </style>
 </head>
 <body>
@@ -229,6 +240,15 @@
         <div class="science-kicker">AI SCIENCE HELPER</div>
         <h1>궁금한 과학을<br>함께 풀어봐요</h1>
         <p>개념부터 실험 결과 해석까지, 이해하기 쉬운 말로 차근차근 설명해 드려요.</p>
+      </section>
+
+      <section class="recent-simulations" aria-labelledby="recent-simulations-title">
+        <div class="recent-simulations-head">
+          <h2 id="recent-simulations-title">최근 방문한 시뮬레이션</h2>
+          <a href="/simulation/">전체 보기</a>
+        </div>
+        <div class="recent-simulation-list" id="recent-simulation-list" hidden></div>
+        <p class="recent-simulation-empty" id="recent-simulation-empty">아직 방문 기록이 없어요. 시뮬레이션을 체험하면 최근 6개가 여기에 표시됩니다.</p>
       </section>
 
       <div class="suspended" id="suspended" hidden>
@@ -347,6 +367,7 @@
   <script src="/assets/js/session.js"></script>
   <script src="/assets/js/nav-user.js"></script>
   <script src="/assets/js/mobile-menu.js"></script>
+  <script src="/assets/js/recent-simulations.js"></script>
   <script src="/assets/js/llm.js"></script>
   <script>
   /* 제재 배너 · 소명 — community.html 의 흐름을 그대로 가져왔다.
