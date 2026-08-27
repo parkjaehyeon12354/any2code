@@ -310,6 +310,26 @@ async function purgeIfExpired(user) {
   return true;
 }
 
+/* 로그인마다 부르는 진입점. 삭제 예약 상태를 한 번의 조회로 전부 처리한다.
+
+     유예를 넘겼다 → 완전 삭제한다 (purged: true)
+     유예 안인데 예약 중이다 → 로그인 자체가 취소 행위다 (cancelled: true).
+       "재로그인하면 취소된다" 를 버튼으로 만들면 사람이 그 사실을 몰라서
+       그냥 다시 쓰다가 7일 뒤 계정이 사라지는 사고가 난다.
+     예약이 없다 → 할 일 없음. */
+async function checkDeletionOnLogin(user) {
+  const doc = await read(user.sub);
+  if (!doc || !doc.deletionScheduledAt) return { purged: false, cancelled: false };
+
+  if (Date.now() - Date.parse(doc.deletionScheduledAt) >= DELETION_GRACE_MS) {
+    await purge(user.sub);
+    return { purged: true, cancelled: false };
+  }
+
+  await cancelDeletion(user.sub);
+  return { purged: false, cancelled: true };
+}
+
 /* 완전 삭제.
 
    user·credit·sanction·appeal 은 sub 가 파티션 키라 곧장 지운다.
@@ -349,5 +369,5 @@ async function purge(sub) {
 // NAME_MIN·NAME_MAX 는 화면이 input 의 minlength/maxlength 에 그대로 쓴다 (functions/profile.js)
 module.exports = {
   ensure, read, save, view, displayName, discipline, acceptTerms, NAME_MIN, NAME_MAX,
-  scheduleDeletion, cancelDeletion, purgeIfExpired, purge, DELETION_GRACE_MS
+  scheduleDeletion, cancelDeletion, purgeIfExpired, purge, checkDeletionOnLogin, DELETION_GRACE_MS
 };

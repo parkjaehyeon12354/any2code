@@ -124,7 +124,13 @@ app.http('profileScheduleDeletion', {
 
     try {
       const purgeAt = await profile.scheduleDeletion(user.sub);
-      return { status: 202, jsonBody: { deletionScheduledAt: new Date().toISOString(), purgeAt } };
+      // 예약 즉시 강제 로그아웃한다. 세션 쿠키가 14일 살아있으면 삭제를
+      // 눌러 놓고도 그 세션으로 계속 글을 쓰는 이상한 상태가 된다.
+      return {
+        status: 202,
+        jsonBody: { deletionScheduledAt: new Date().toISOString(), purgeAt },
+        cookies: [session.clear()]
+      };
     } catch (e) {
       context.error('계정 삭제 예약 실패:', e.message);
       return dbFail(e, '삭제를 예약하지 못했습니다.');

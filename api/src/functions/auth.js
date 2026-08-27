@@ -103,13 +103,14 @@ app.http('authCallback', {
         context.error('사용자 문서 갱신 실패:', e.message);
       }
 
-      /* 삭제 예약 중이던 계정이 유예(7일)를 넘겼으면 여기서 완전히 지운다.
-         크론이 아니라 로그인 시점에 확인한다 — 이 사람이 방금 다시 로그인했으니
-         "재가입" 절차로 자연스럽게 이어진다. 삭제되면 위 ensure() 가 만든 문서도
-         함께 지워지므로, 아래에서 다시 read() 하면 새 사용자처럼 termsAcceptedAt
-         이 비어 있어 /welcome 으로 간다 — 새 계정과 똑같이 취급된다. */
+      /* 삭제 예약 중이던 계정을 여기서 한 번에 처리한다.
+         유예(7일)를 넘겼으면 완전히 지운다 — 삭제되면 위 ensure() 가 만든
+         문서도 함께 지워지므로, 아래에서 다시 read() 하면 새 사용자처럼
+         termsAcceptedAt 이 비어 있어 /welcome 으로 간다(새 계정과 동일 취급).
+         유예 안이면 로그인 자체가 취소 행위다 — "재로그인하면 취소" 를
+         버튼으로 만들면 사람이 그 사실을 몰라 그냥 쓰다가 계정이 사라진다. */
       try {
-        const purged = await profile.purgeIfExpired(user);
+        const { purged } = await profile.checkDeletionOnLogin(user);
         if (purged) await profile.ensure(user);
       } catch (e) {
         context.error('삭제 유예 확인 실패:', e.message);

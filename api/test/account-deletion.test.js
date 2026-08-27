@@ -53,6 +53,32 @@ test('7일이 지나면 purgeIfExpired 가 완전히 지운다', async () => {
   assert.strictEqual(await profile.read(ME.sub), null, '사용자 문서가 지워져야 한다');
 });
 
+test('checkDeletionOnLogin: 예약이 없으면 아무 일도 안 한다', async () => {
+  await profile.ensure(ME);
+  const r = await profile.checkDeletionOnLogin(ME);
+  assert.deepStrictEqual(r, { purged: false, cancelled: false });
+});
+
+test('checkDeletionOnLogin: 유예 안이면 자동 취소한다', async () => {
+  await profile.ensure(ME);
+  await profile.scheduleDeletion(ME.sub);
+  const r = await profile.checkDeletionOnLogin(ME);
+  assert.deepStrictEqual(r, { purged: false, cancelled: true });
+  const doc = await profile.read(ME.sub);
+  assert.strictEqual(doc.deletionScheduledAt, null, '재로그인으로 취소되어야 한다');
+});
+
+test('checkDeletionOnLogin: 유예를 넘겼으면 완전 삭제한다', async () => {
+  await profile.ensure(ME);
+  await profile.scheduleDeletion(ME.sub);
+  const doc = state.docs.find((d) => d.id === 'user:' + ME.sub);
+  doc.deletionScheduledAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+
+  const r = await profile.checkDeletionOnLogin(ME);
+  assert.deepStrictEqual(r, { purged: true, cancelled: false });
+  assert.strictEqual(await profile.read(ME.sub), null);
+});
+
 test('완전 삭제는 크레딧·제재 문서도 함께 지운다', async () => {
   await profile.ensure(ME);
   state.docs.push({ id: 'credit:' + ME.sub, type: 'credit', pk: ME.sub, balance: 5 });
@@ -94,3 +120,35 @@ test('이미 삭제된 글은 다시 건드리지 않는다', async () => {
   const post = state.docs.find((d) => d.id === 'post:2');
   assert.strictEqual(post.authorName, '이미 지운 사람', '이미 삭제된 글은 건드리지 않아야 한다');
 });
+
+/* ── 라우트/로그인 배선 — 소스 정적 검사 ──
+   실제 HTTP 핸들러를 fake-container 로 실행하려면 @azure/functions 목킹이
+   또 필요하다. profile.test.js 가 이미 그 패턴을 쓰지만, 이 파일은 lib
+   단위 테스트로 남기고 배선 확인만 소스에서 본다 — 중복 인프라를 새로
+   만들 이유가 없다. */
+const fs = require('node:fs');
+const path = require('node:path');
+const PROFILE_FN_SRC = fs.readFileSync(path.join(__dirname, '../src/functions/profile.js'), 'utf8');
+const AUTH_SRC = fs.readFileSync(path.join(__dirname, '../src/functions/auth.js'), 'utf8');
+
+test('삭제 예약 응답이 세션 쿠키를 지운다(강제 로그아웃)', () => {
+  /* 사용자가 요청한 것: "삭제하면 강제 로그아웃". 세션 쿠키가 14일 살아있는데
+     응답에서 안 지우면, 삭제를 예약해 놓고도 그 세션으로 계속 로그인 상태로
+     남는다. */
+  const start = PROFILE_FN_SRC.indexOf("app.http('profileScheduleDeletion'");
+  const end = PROFILE_FN_SRC.indexOf("app.http('profileCancelDeletion'", start);
+  const body = PROFILE_FN_SRC.slice(start, end);
+  assert.ok(/cookies:\s*\[session\.clear\(\)\]/.test(body),
+    '삭제 예약 응답에 session.clear() 쿠키가 없다 — 로그아웃되지 않는다');
+});
+
+test('로그인 콜백이 재로그인을 삭제 취소로 처리한다', () => {
+  /* 사용자가 요청한 것: "로그인했다 자동으로 계정삭제 취소로 바꿔".
+     버튼으로 취소하게 하면 사용자가 그 존재를 몰라 그냥 로그인해서 쓰다가
+     7일 뒤 계정이 사라지는 사고가 난다 — 로그인 자체가 취소 행위여야 한다. */
+  assert.ok(/checkDeletionOnLogin/.test(AUTH_SRC),
+    'auth 콜백이 checkDeletionOnLogin 을 호출하지 않는다');
+  // 삭제 취소 버튼 흐름(profileCancelDeletion)이 남아있는지는 안 본다 —
+  // 로그인 배선이 있으면 버튼 없이도 취소되므로 없어도 정상이다.
+});
+

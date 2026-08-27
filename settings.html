@@ -426,23 +426,25 @@
       </div>
     </div>
 
-    <!-- 맨 아래에 둔다. 실수로 누르는 걸 최대한 어렵게 하는 위치다. -->
+    <!-- 맨 아래에 둔다. 실수로 누르는 걸 최대한 어렵게 하는 위치다.
+
+         예약과 동시에 강제 로그아웃되므로(서버가 세션 쿠키를 지운다),
+         "예약됨" 상태를 이 화면에서 볼 일은 없다 — 그 상태를 보려면 로그인이
+         돼 있어야 하는데, 로그인하는 순간 서버가 자동으로 취소해 버린다.
+         그래서 취소 버튼도, 남은 날짜 카운트다운도 여기 없다. -->
     <div class="card" id="danger-card">
       <div class="card-head">
         <h2>계정 삭제</h2>
-        <p>글·답변·프로필이 지워집니다. 7일 안에는 다시 로그인해 취소할 수 있습니다.</p>
+        <p>글·답변·프로필이 지워집니다.</p>
       </div>
-      <div class="card-body" id="danger-normal">
-        <span class="hint">삭제를 누르면 계정이 <strong>7일 뒤</strong> 완전히 사라집니다.
-        그 전까지 로그인하면 자동으로 취소됩니다. 7일이 지나면 같은 소셜 계정으로
-        새로 가입할 수 있습니다.</span>
-      </div>
-      <div class="card-body" id="danger-pending" hidden>
-        <span class="hint" id="danger-countdown"></span>
+      <div class="card-body">
+        <span class="hint">삭제를 누르면 <strong>즉시 로그아웃</strong>되고, 계정이
+        <strong>7일 뒤</strong> 완전히 사라집니다. 그 전에 다시 로그인하면 삭제는
+        자동으로 취소됩니다(따로 누를 것 없이 로그인 자체가 취소입니다). 7일이
+        지나면 같은 소셜 계정으로 새로 가입할 수 있습니다.</span>
       </div>
       <div class="foot">
         <button type="button" class="btn btn-danger" id="danger-delete">계정 삭제</button>
-        <button type="button" class="btn btn-primary" id="danger-cancel" hidden>삭제 취소</button>
       </div>
     </div>
   </div>
@@ -678,59 +680,24 @@
     say('불러온 값으로 되돌렸습니다. 저장하지는 않았습니다.');
   });
 
-  /* 계정 삭제. deletionScheduledAt 은 /api/me 가 준다(Session.refresh 응답) —
-     /api/profile 은 이름·생일만 다루는 좁은 엔드포인트라 여기 없다. */
-  const dangerNormal = el('danger-normal');
-  const dangerPending = el('danger-pending');
-  const dangerCountdown = el('danger-countdown');
+  /* 계정 삭제. 예약 즉시 서버가 세션 쿠키를 지운다(강제 로그아웃) —
+     그 상태는 로그인해야 볼 수 있는데, 로그인하는 순간 서버가 자동으로
+     취소해 버리므로 이 화면이 "예약 중" 상태를 그릴 일이 없다. */
   const deleteBtn = el('danger-delete');
-  const cancelBtn = el('danger-cancel');
-  const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
-
-  function renderDanger(user) {
-    const scheduled = user && user.deletionScheduledAt;
-    dangerNormal.hidden = !!scheduled;
-    dangerPending.hidden = !scheduled;
-    deleteBtn.hidden = !!scheduled;
-    cancelBtn.hidden = !scheduled;
-    if (!scheduled) return;
-
-    const purgeAt = Date.parse(scheduled) + GRACE_MS;
-    const daysLeft = Math.max(0, Math.ceil((purgeAt - Date.now()) / 86400000));
-    dangerCountdown.innerHTML = '삭제가 예약되어 있습니다. <strong>' + daysLeft +
-      '일 뒤</strong> 완전히 삭제됩니다. 그 전까지 로그인하면 자동으로 취소됩니다.';
-  }
 
   deleteBtn.addEventListener('click', async function () {
-    if (!confirm('계정을 삭제하시겠습니까?\n\n글·답변·프로필이 7일 뒤 완전히 사라집니다. ' +
-      '그 전까지는 다시 로그인하면 취소됩니다.')) return;
+    if (!confirm('계정을 삭제하시겠습니까?\n\n즉시 로그아웃되고, 글·답변·프로필이 ' +
+      '7일 뒤 완전히 사라집니다. 그 전에 다시 로그인하면 자동으로 취소됩니다.')) return;
 
     deleteBtn.disabled = true;
     try {
       const res = await fetch('/api/profile/delete', { method: 'POST', credentials: 'same-origin' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '삭제를 예약하지 못했습니다.');
-      const me = await Session.refresh();
-      renderDanger(me);
-      say('삭제를 예약했습니다. 7일 안에 로그인하면 취소됩니다.');
+      // 서버가 이미 세션 쿠키를 지웠다. 화면도 로그아웃 상태로 맞춘다.
+      location.replace('/');
     } catch (e) {
       say('삭제를 예약하지 못했습니다: ' + e.message, true);
-    } finally {
       deleteBtn.disabled = false;
-    }
-  });
-
-  cancelBtn.addEventListener('click', async function () {
-    cancelBtn.disabled = true;
-    try {
-      const res = await fetch('/api/profile/delete', { method: 'DELETE', credentials: 'same-origin' });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '취소하지 못했습니다.');
-      const me = await Session.refresh();
-      renderDanger(me);
-      say('계정 삭제를 취소했습니다.');
-    } catch (e) {
-      say('취소하지 못했습니다: ' + e.message, true);
-    } finally {
-      cancelBtn.disabled = false;
     }
   });
 
@@ -739,7 +706,6 @@
   Session.refresh().then(function (user) {
     if (!user) { el('gate').hidden = false; return; }
     el('panel').hidden = false;
-    renderDanger(user);
     load();
   });
 })();
