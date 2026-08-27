@@ -477,6 +477,13 @@
             </div>
             <input type="range" id="speed" min="0.25" max="4" step="0.25" value="1">
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><label>아이소톱</label></div>
+            <div class="chips" id="iso-chips"></div>
+            <span class="hint">버튼의 숫자는 <strong>실제 반감기</strong>입니다 — 8일에서 5,730년까지 범위가 엄청나게 다릅니다.
+            위 '반감기' 슬라이더는 화면에 보이는 시간 축일 뿐, 이 값과는 별개입니다.</span>
+          </div>
         </div>
       </div>
 
@@ -855,6 +862,29 @@
     });
   });
 
+  /* ISO 테이블이 코드에는 있었는데 고를 수단이 없었다. 실제 반감기 범위가
+     8일~5730년으로 얼마나 다른지는 숫자를 나란히 봐야 와닿는다. */
+  const chipBox = el('iso-chips');
+  Object.keys(ISO).forEach((key) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.iso = key;
+    b.innerHTML = ISO[key].name + ' <small>' + ISO[key].half.toLocaleString() + ISO[key].unit + '</small>';
+    b.addEventListener('click', () => {
+      S.iso = key;
+      // 시간 축은 S.half 슬라이더가 맡는다. 시드는 그대로 두고 표시만 바꾼다
+      syncIsoChips(); readout();
+    });
+    chipBox.appendChild(b);
+  });
+
+  function syncIsoChips() {
+    chipBox.querySelectorAll('button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.iso === S.iso));
+    });
+  }
+  syncIsoChips();
+
   const presetBox = el('presets');
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
@@ -915,6 +945,7 @@
       el(id + '-out').textContent = labels[id](c);
     });
     if (ISO[q.get('iso')]) S.iso = q.get('iso');
+    syncIsoChips();   // 복원값을 버튼 눌림 상태에도 반영
     syncPresets();
   }
 

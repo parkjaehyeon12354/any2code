@@ -109,7 +109,9 @@ test('생명과학 상수가 코드에 실제로 있다', () => {
 
   const neu = read(path.join(SIM_DIR, 'neural-signal.html'));
   assert.match(neu, /TAU = 10\.0/, '막 시상수 10ms');
-  assert.match(neu, /VTH = 15\.0/, '역치 15mV');
+  /* 역치는 상수에서 슬라이더로 바뀌었다. 기본 15 여야 -55mV 라는 교과서 값이 나온다. */
+  assert.match(neu, /vth: 15 \}/, '역치 기본값 15 (= -55mV)');
+  assert.match(neu, /id="vth"[^>]*value="15"/, '역치 슬라이더 기본값 15');
   assert.match(neu, /V_REST = -70/, '휴지전위 -70mV');
   assert.match(neu, /V_PEAK = 30/, '정점 +30mV');
 
@@ -320,6 +322,47 @@ test('대사와 효소의 Km 이 조작 변수다', () => {
   assert.match(me, /const Km = \(\) => S\.km;/, 'Km 이 상수로 돌아갔다');
   assert.match(me, /vmaxAt\(T\) \* sub \/ \(Km\(\) \+ sub\)/, '반응 속도가 Km 을 안 읽는다');
   assert.match(me, /S\.sub \/ \(Km\(\) \+ S\.sub\)/, '포화도가 Km 을 안 읽는다');
+});
+
+
+test('신경의 역치가 조작 변수이고 자극과 독립이다', () => {
+  /* 측정 패널에 '역치 -55mV' 를 보여주면서 못 만지게 하고 있었다.
+     ⚠ 여기서 한 번 틀렸다: drive 를 S.vth * I / ITH 로 두면 t = -TAU*ln(1 - S.vth/drive)
+     에서 S.vth 가 약분돼 사라진다. 역치를 8 로 내리든 25 로 올리든 충전 시간이
+     13.86ms 로 똑같았다. 자극이 만드는 탈분극은 역치와 무관해야 한다.
+     실측(고친 뒤): 역치15·자극80 → 13.86ms, 역치8·자극80 → 5.11ms,
+     역치20·자극80 → 영영 못 닿음, 역치20·자극100 → 16.09ms. 봉우리는 늘 100mV. */
+  const ns = read(path.join(SIM_DIR, 'neural-signal.html'));
+  assert.match(ns, /id="vth"/, '역치 슬라이더가 없다');
+  assert.match(ns, /const VTH0 = 15\.0;/, '자극 환산 기준값이 없다');
+  assert.ok(!/drive\w* = S\.vth \* I \/ ITH/.test(ns),
+    '자극 세기가 역치에 비례한다 — 역치가 약분돼 슬라이더가 아무 일도 못 한다');
+  assert.match(ns, /var drive = VTH0 \* I \/ ITH/, '자극이 만드는 탈분극이 기준값을 안 쓴다');
+  assert.match(ns, /state\.v >= S\.vth/, '발화 판정이 역치를 안 읽는다');
+  /* 그래프의 역치선도 따라와야 한다. -55 로 박아 두면 역치를 올려도 선이 그대로다. */
+  assert.match(ns, /const vthMv = V_REST \+ S\.vth;/, '그래프 역치선이 고정값이다');
+});
+
+test('방사능의 아이소톱을 고를 수 있다', () => {
+  /* ISO 테이블(탄소-14 5730년, 요오드-131 8.02일, 세슘-137 30.17년)이 코드에
+     있는데 화면에 고르는 수단이 없었다. 반감기 범위가 얼마나 다른지는
+     숫자를 나란히 봐야 와닿는다. */
+  const rd = read(path.join(SIM_DIR, 'radioactivity.html'));
+  assert.match(rd, /id="iso-chips"/, '아이소톱 선택 UI 가 없다');
+  assert.match(rd, /Object\.keys\(ISO\)\.forEach/, 'ISO 테이블에서 버튼을 만들지 않는다');
+  assert.match(rd, /function syncIsoChips\(\)/, '선택 상태 표시가 없다');
+});
+
+test('지구 계절의 근일점 날짜가 조작 변수다', () => {
+  /* '태양에 가장 가까운 때는 1월' 이라고 해놓고 그 1월을 못 바꿨다.
+     7월로 옮겨도 계절의 원인은 자전축 기울기라는 게 이 변수의 존재 이유다.
+     ⚠ (day - 79) 는 춘분 기준이라 다른 값이다. 같이 바꾸면 낮 길이가 깨진다.
+     실측: 4일 → 1월 4일, 186일 → 7월 5일, 365일 → 12월 31일. */
+  const es = read(path.join(SIM_DIR, 'earth-seasons.html'));
+  assert.match(es, /id="peri"/, '근일점 슬라이더가 없다');
+  assert.ok(!/- 4\) \/ 365\.24/.test(es), '근일점이 아직 상수로 남아 있다');
+  assert.match(es, /\(day - S\.peri\) \/ 365\.24/, '궤도 각도가 근일점을 안 읽는다');
+  assert.match(es, /- 79\) \/ 365\.24/, '춘분 기준까지 바꿔 버렸다 — 낮 길이가 깨진다');
 });
 
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {

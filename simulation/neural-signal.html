@@ -443,7 +443,7 @@
         <span><i style="background:#e63946"></i>활동전위</span>
         <span><i style="background:#7bdff2"></i>차오르는 중</span>
         <span><i style="background:#8a8f98"></i>불응기 (아무것도 못 함)</span>
-        <span><i style="background:#ffd166"></i>역치 −55mV</span>
+        <span><i style="background:#ffd166"></i>역치 <span id="lg-vth">−55</span>mV</span>
       </div>
     </div>
 
@@ -477,6 +477,17 @@
             </div>
             <input type="range" id="myelin" min="0" max="1" step="1" value="1">
             <span class="hint">축삭을 감싼 절연층. 있으면 신호가 <strong>건너뛰며</strong> 갑니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="vth">역치</label>
+              <output id="vth-out">−55 mV (탈분극 15)</output>
+            </div>
+            <input type="range" id="vth" min="8" max="22" step="0.5" value="15">
+            <span class="hint">역치를 20 으로 올리고 자극을 80% 로 두면 <strong>아예 안 터집니다.</strong>
+            자극을 100% 까지 올려야 터지죠. <strong>봉우리 높이는 그대로입니다</strong> —
+            역치는 터지는 조건만 바꿉니다.</span>
           </div>
         </div>
       </div>
@@ -578,7 +589,12 @@
      확인한 값(tref=5): 61%→21.7Hz / 70%→40.9Hz / 90%→62.6Hz / 100%→70.6Hz
                         60% 이하는 0Hz. 진폭은 언제나 100mV. */
 
-  const TAU = 10.0, VTH = 15.0, ITH = 60;
+  const TAU = 10.0, ITH = 60;
+  /* VTH0 는 "자극 세기 → 탈분극량" 환산의 기준값이지 역치가 아니다.
+     역치(S.vth)를 이 자리에 쓰면 drive = S.vth*I/ITH 가 되어 S.vth 가 약분돼
+     사라진다 — 역치를 올려도 충전 시간이 똑같은 이상한 화면이 된다.
+     자극이 만드는 탈분극은 역치와 무관해야 한다. */
+  const VTH0 = 15.0;
   const V_REST = -70, V_PEAK = 30;
 
   // ---------------------------------------------------------------
@@ -589,8 +605,8 @@
   // ---------------------------------------------------------------
   function chargeTime(I) {
     if (I <= ITH) return Infinity;
-    var drive = VTH * I / ITH;              // 자극 세기에 비례하는 목표(평형) 탈분극량
-    return -TAU * Math.log(1 - VTH / drive);
+    var drive = VTH0 * I / ITH;              // 자극 세기에 비례하는 목표(평형) 탈분극량
+    return -TAU * Math.log(1 - S.vth / drive);
   }
 
   // ---------------------------------------------------------------
@@ -678,7 +694,7 @@
       //    I = ITH 일 때도 VTH 에 '점근'할 뿐이라 발화 안 함
       //    → chargeTime(ITH) = Infinity 와 정확히 대응됨
       if (I <= ITH) {
-        var driveSub = (I > 0) ? VTH * I / ITH : 0;
+        var driveSub = (I > 0) ? VTH0 * I / ITH : 0;
         state.v = driveSub + (state.v - driveSub) * Math.exp(-remaining / TAU);
         state.t += remaining;
         remaining = 0;
@@ -687,13 +703,13 @@
       }
 
       // 3) 역치 이상: VTH 도달 시각을 해석적으로 계산 (정확하고 루프 불필요)
-      var drive = VTH * I / ITH;
+      var drive = VTH0 * I / ITH;
       var tToFire;
-      if (state.v >= VTH) {
+      if (state.v >= S.vth) {
         tToFire = 0;                        // 부동소수점 경계에서 이미 도달한 드문 경우
       } else {
         // v(t) = drive + (v0 - drive)·e^(-t/TAU) = VTH 를 t 에 대해 푼 식
-        tToFire = -TAU * Math.log((VTH - drive) / (state.v - drive));
+        tToFire = -TAU * Math.log((S.vth - drive) / (state.v - drive));
       }
 
       if (tToFire >= remaining) {
@@ -734,7 +750,7 @@
   }
 
 
-  const S = { stim: 80, tref: 5, myelin: 1 };
+  const S = { stim: 80, tref: 5, myelin: 1, vth: 15 };
   let running = true;
   let sim = { t: 0, lastSpike: null, spikes: [], phase: 'rest', v: 0 };
   let trace = [];                  // 화면에 흐르는 막전위 기록
@@ -774,7 +790,9 @@
     ctx.setLineDash([4, 4]);
     ctx.strokeStyle = 'rgba(255,209,102,.65)';
     ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(pad, Y(-55)); ctx.lineTo(w - pad, Y(-55)); ctx.stroke();
+    // 역치선은 슬라이더를 따라와야 한다. -55 로 박아 두면 역치를 올려도 선이 그대로다
+    const vthMv = V_REST + S.vth;
+    ctx.beginPath(); ctx.moveTo(pad, Y(vthMv)); ctx.lineTo(w - pad, Y(vthMv)); ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,.22)';
     ctx.beginPath(); ctx.moveTo(pad, Y(-70)); ctx.lineTo(w - pad, Y(-70)); ctx.stroke();
     ctx.setLineDash([]);
@@ -973,6 +991,7 @@
     el('r-amp').textContent = fires ? '100 mV (−70 → +30)' : '없음';
     el('r-freq').textContent = fires ? f.toFixed(1) + ' Hz' : '0 Hz';
     el('r-charge').textContent = isFinite(c) ? c.toFixed(2) + ' ms' : '영영 못 닿음';
+    el('lg-vth').textContent = (V_REST + S.vth).toString().replace('-', '−');
     el('r-speed').textContent = conduction() + ' m/s';
     el('r-count').textContent = totalSpikes.toLocaleString() + ' 번';
 
@@ -1004,9 +1023,11 @@
   const labels = {
     stim: (v) => Number(v) + ' %',
     tref: (v) => Number(v) + ' ms',
-    myelin: (v) => (Number(v) ? '있음' : '없음')
+    myelin: (v) => (Number(v) ? '있음' : '없음'),
+    // 탈분극량만 보이면 -55mV 라는 교과서 값과 연결이 안 된다
+    vth: (v) => (V_REST + Number(v)) + ' mV (탈분극 ' + Number(v) + ')'
   };
-  ['stim', 'tref', 'myelin'].forEach((k) => {
+  ['stim', 'tref', 'myelin', 'vth'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -1019,7 +1040,7 @@
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
       S.stim = Number(b.dataset.s); S.tref = Number(b.dataset.t); S.myelin = Number(b.dataset.m);
-      ['stim', 'tref', 'myelin'].forEach((k) => {
+      ['stim', 'tref', 'myelin', 'vth'].forEach((k) => {
         el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
       });
       syncPresets(); readout();
@@ -1040,7 +1061,7 @@
   });
   el('reset').addEventListener('click', () => {
     S.stim = 80; S.tref = 5; S.myelin = 1;
-    ['stim', 'tref', 'myelin'].forEach((k) => {
+    ['stim', 'tref', 'myelin', 'vth'].forEach((k) => {
       el(k).value = S[k]; el(k + '-out').textContent = labels[k](S[k]);
     });
     reset(); syncPresets(); readout();
@@ -1051,7 +1072,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ s: S.stim, t: S.tref, m: S.myelin });
+      const q = new URLSearchParams({ s: S.stim, t: S.tref, m: S.myelin, v: S.vth });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -1062,7 +1083,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    const map = { s: 'stim', t: 'tref', m: 'myelin' };
+    const map = { s: 'stim', t: 'tref', m: 'myelin', v: 'vth' };
     Object.entries(map).forEach(([key, id]) => {
       const raw = q.get(key);
       if (raw === null) return;

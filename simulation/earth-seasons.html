@@ -439,6 +439,16 @@
             </div>
             <input type="range" id="speed" min="0" max="3" step="0.1" value="1">
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="peri">근일점 날짜</label>
+              <output id="peri-out">1월 4일</output>
+            </div>
+            <input type="range" id="peri" min="1" max="365" step="1" value="4">
+            <span class="hint"><strong>7월로 옮겨 보세요.</strong> 태양에 가장 가까운 때가
+            북반구 여름과 겹쳐도, 계절을 만드는 건 여전히 자전축 기울기입니다.</span>
+          </div>
         </div>
       </div>
 
@@ -516,7 +526,7 @@
     { id: 'reykjavik', name: '레이캬비크', lat: 64.1 }
   ];
 
-  const S = { tilt: 23.5, ecc: 0.017, speed: 1, city: 'seoul' };
+  const S = { tilt: 23.5, ecc: 0.017, speed: 1, city: 'seoul', peri: 4 };
   let running = true;
   let dayOfYear = 80;      // 춘분 언저리에서 시작
 
@@ -561,7 +571,7 @@
      "여름에 가깝다" 가 틀렸다는 것을 숫자로 보여주는 부분. */
   function sunDistance(day) {
     const a = 149.6;             // 백만 km
-    const theta = 2 * Math.PI * (day - 4) / 365.24;
+    const theta = 2 * Math.PI * (day - S.peri) / 365.24;
     return a * (1 - S.ecc * S.ecc) / (1 + S.ecc * Math.cos(theta));
   }
 
@@ -623,12 +633,12 @@
     ctx.beginPath(); ctx.arc(sx, sy, 13, 0, Math.PI * 2); ctx.fill();
 
     // 지구 위치 — 근일점(1/4)에서 시작해 반시계로 돈다
-    const th = 2 * Math.PI * (dayOfYear - 4) / 365.24;
+    const th = 2 * Math.PI * (dayOfYear - S.peri) / 365.24;
     const ex = cx + a * Math.cos(th), ey = cy + bAxis * Math.sin(th);
 
     // 계절 표시점 — 춘분·하지·추분·동지
     [[79, '춘분'], [172, '하지'], [265, '추분'], [355, '동지']].forEach(([d, label]) => {
-      const t2 = 2 * Math.PI * (d - 4) / 365.24;
+      const t2 = 2 * Math.PI * (d - S.peri) / 365.24;
       const px = cx + a * Math.cos(t2), py = cy + bAxis * Math.sin(t2);
       ctx.fillStyle = 'rgba(255,255,255,.3)';
       ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
@@ -868,9 +878,16 @@
   const labels = {
     tilt: (v) => Number(v).toFixed(1) + '°',
     ecc: (v) => Number(v).toFixed(3),
-    speed: (v) => Number(v).toFixed(1) + '×'
+    speed: (v) => Number(v).toFixed(1) + '×',
+    /* 155일 이라고만 쓰면 언제인지 감이 안 온다. 월/일로 환산한다(윤년 무시). */
+    peri: (v) => {
+      const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      let d = Number(v), m = 0;
+      while (d > md[m]) { d -= md[m]; m++; }
+      return (m + 1) + '월 ' + d + '일';
+    }
   };
-  ['tilt', 'ecc', 'speed'].forEach((k) => {
+  ['tilt', 'ecc', 'speed', 'peri'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -906,7 +923,7 @@
          내가 보여주려던 날이 아니게 된다. */
       const q = new URLSearchParams({
         tilt: S.tilt, ecc: S.ecc, city: S.city,
-        day: Math.round(dayOfYear), speed: S.speed
+        day: Math.round(dayOfYear), speed: S.speed, peri: S.peri
       });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
@@ -918,7 +935,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['tilt', 'ecc', 'speed'].forEach((k) => {
+    ['tilt', 'ecc', 'speed', 'peri'].forEach((k) => {
       const v = Number(q.get(k));
       if (q.get(k) === null || !Number.isFinite(v)) return;
       const input = el(k);
