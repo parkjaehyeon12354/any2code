@@ -158,7 +158,13 @@ test('심화 탐구 주제의 시뮬레이션 링크가 살아 있다', () => {
   const js = read(path.join(ROOT, 'assets/js/research-topics.js'));
   assert.ok(!js.includes('\ufffd'), 'research-topics.js 에 깨진 문자(U+FFFD)가 있다');
   const links = [...js.matchAll(/link:'(\/simulation\/[a-z-]+\.html)'/g)].map((m) => m[1]);
-  assert.ok(links.length >= 17, '시뮬레이션 연결 주제가 17개 미만이다');
+  assert.ok(links.length >= 22, '시뮬레이션 연결 주제가 22개 미만이다');
+  /* 스물한 개 시뮬 전부에 주제가 하나씩은 있어야 한다 — 하나라도 빠지면
+     그 시뮬은 심화 탐구에서 도달할 수 없다. */
+  const files = fs.readdirSync(SIM_DIR).filter((x) => x.endsWith('.html') && x !== 'index.html');
+  const linked = new Set(links.map((l) => path.basename(l)));
+  const missing = files.filter((f) => !linked.has(f));
+  assert.deepStrictEqual(missing, [], '주제가 없는 시뮬레이션: ' + missing.join(','));
   for (const l of links) {
     assert.ok(fs.existsSync(path.join(ROOT, l)), l + ' 파일이 없다');
   }
