@@ -143,6 +143,35 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.share-strip {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.share-strip .panel-head {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.share-strip .panel-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 12px;
+}
+.share-strip .share { flex: 1 1 auto; min-width: 220px; }
+.share-strip .share input { flex: 1 1 260px; }
+.share-strip .note { flex: 0 1 auto; margin: 0; }
+.share-strip + .analysis-panel { margin-top: 10px; }
+@media (max-width: 700px) {
+  .share-strip { grid-template-columns: 1fr; }
+  .share-strip .panel-head { border-right: 0; border-bottom: 1px solid var(--hairline); }
+  .share-strip .panel-body { align-items: flex-start; flex-direction: column; }
+  .share-strip .share { width: 100%; min-width: 0; }
+}
 /* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
 .share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
 .share input {
@@ -529,18 +558,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>공유</h2></div>
-        <div class="panel-body">
-          <div class="share">
-            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
-            <span class="share-said" id="share-said"></span>
-            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
-          </div>
-          <p class="note">지금 조건이 담긴 주소를 만듭니다.
-          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
-        </div>
-      </div>
+
     </div>
   </div>
 
@@ -557,6 +575,19 @@
           <p class="note" id="note"></p>
     </div>
   </section>
+
+  <div class="panel share-strip">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">입사각에 따른 굴절각</h2><p>직선이 아니라 휘어진 곡선입니다. 굴절각은 입사각에 <strong>비례하지 않습니다</strong> — sin 값끼리 비례합니다. n₁ &gt; n₂ 이면 곡선이 90°에 닿는 지점이 임계각입니다.</p></div>

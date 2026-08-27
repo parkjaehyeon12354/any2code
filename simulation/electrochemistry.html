@@ -143,6 +143,35 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.share-strip {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.share-strip .panel-head {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.share-strip .panel-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 12px;
+}
+.share-strip .share { flex: 1 1 auto; min-width: 220px; }
+.share-strip .share input { flex: 1 1 260px; }
+.share-strip .note { flex: 0 1 auto; margin: 0; }
+.share-strip + .analysis-panel { margin-top: 10px; }
+@media (max-width: 700px) {
+  .share-strip { grid-template-columns: 1fr; }
+  .share-strip .panel-head { border-right: 0; border-bottom: 1px solid var(--hairline); }
+  .share-strip .panel-body { align-items: flex-start; flex-direction: column; }
+  .share-strip .share { width: 100%; min-width: 0; }
+}
 /* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
 .share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
 .share input {
@@ -539,18 +568,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>공유</h2></div>
-        <div class="panel-body">
-          <div class="share">
-            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
-            <span class="share-said" id="share-said"></span>
-            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
-          </div>
-          <p class="note">지금 조건이 담긴 주소를 만듭니다.
-          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
-        </div>
-      </div>
+
     </div>
   </div>
 
@@ -567,6 +585,19 @@
           <p class="note" id="note"></p>
     </div>
   </section>
+
+  <div class="panel share-strip">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">농도비와 전압</h2><p>가로축은 두 용액의 농도비(로그 눈금), 세로축은 전압입니다. 직선인 이유는 네른스트 식에 <strong>log</strong> 가 들어 있기 때문입니다. 농도비를 10배 벌릴 때마다 전압은 <strong>29.6 mV 씩만</strong> 올라갑니다 — 100배로 벌려도 2배밖에 안 됩니다. 전극 크기를 아무리 바꿔도 <strong>점은 제자리</strong>입니다.</p></div>

@@ -143,6 +143,35 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.share-strip {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.share-strip .panel-head {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.share-strip .panel-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 12px;
+}
+.share-strip .share { flex: 1 1 auto; min-width: 220px; }
+.share-strip .share input { flex: 1 1 260px; }
+.share-strip .note { flex: 0 1 auto; margin: 0; }
+.share-strip + .analysis-panel { margin-top: 10px; }
+@media (max-width: 700px) {
+  .share-strip { grid-template-columns: 1fr; }
+  .share-strip .panel-head { border-right: 0; border-bottom: 1px solid var(--hairline); }
+  .share-strip .panel-body { align-items: flex-start; flex-direction: column; }
+  .share-strip .share { width: 100%; min-width: 0; }
+}
 /* 공유 — 평소에는 주소를 건드리지 않고, 누를 때만 링크를 만든다 */
 .share { display: flex; gap: var(--sp-sm); flex-wrap: wrap; align-items: center; }
 .share input {
@@ -529,18 +558,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>공유</h2></div>
-        <div class="panel-body">
-          <div class="share">
-            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
-            <span class="share-said" id="share-said"></span>
-            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
-          </div>
-          <p class="note">지금 조건이 담긴 주소를 만듭니다.
-          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
-        </div>
-      </div>
+
     </div>
   </div>
 
@@ -557,6 +575,19 @@
           <p class="note" id="note"></p>
     </div>
   </section>
+
+  <div class="panel share-strip">
+        <div class="panel-head"><h2>공유</h2></div>
+        <div class="panel-body">
+          <div class="share">
+            <button type="button" class="btn btn-ghost" id="share">공유 링크 만들기</button>
+            <span class="share-said" id="share-said"></span>
+            <input type="text" id="share-url" readonly hidden aria-label="공유 링크">
+          </div>
+          <p class="note">지금 조건이 담긴 주소를 만듭니다.
+          <strong>링크 만들기는 로그인이 필요합니다.</strong></p>
+        </div>
+      </div>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
