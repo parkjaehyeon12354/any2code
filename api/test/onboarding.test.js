@@ -294,14 +294,19 @@ test('판구조론 — 섭입 판정과 화면 지형 설명이 어긋나지 않
 
 test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () => {
   /* 이 두 페이지만 nav-dropdown.js 를 안 읽고 있었다. 드롭다운 마크업도 없어서
-     과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다". */
+     과목을 누르면 그냥 /simulation/ 로 이동해버렸다 — "안 열리고 목록으로 튄다".
+     지금은 과목 넷을 「시뮬레이션」 하나로 접고 그 안에 과목별 열로 넣었다.
+     트리거가 /simulation/ 인 것은 의도한 것이다 — hover·focus 로 열리고,
+     클릭하면 목록으로 간다(심화 탐구와 같은 방식). */
   for (const f of ['simulation/pendulum.html', 'simulation/electromagnetic-induction.html']) {
     const html = readRoot(f);
     assert.ok(/nav-dropdown\.js/.test(html), `${f} 가 nav-dropdown.js 를 읽어야 한다`);
-    assert.ok(/data-dropdown="physics"/.test(html), `${f} 에 드롭다운 마크업이 있어야 한다`);
-    // 트리거가 실제 경로면 드롭다운이 열리기 전에 이동해버린다
-    assert.ok(/<a href="#" data-dropdown="physics">/.test(html),
-      `${f} 의 드롭다운 트리거는 href="#" 이어야 한다`);
+    assert.ok(/data-dropdown="simulation"/.test(html), `${f} 에 드롭다운 마크업이 있어야 한다`);
+    /* 과목 넷이 최상위에 남아 있으면 네비가 다시 다섯 갈래로 벌어진다. */
+    for (const old of ['physics', 'chemistry', 'biology', 'earthscience']) {
+      assert.ok(!new RegExp(`data-dropdown="${old}"`).test(html),
+        `${f} 에 옛 과목 드롭다운(${old})이 남아 있다`);
+    }
   }
 });
 

@@ -383,10 +383,12 @@ test('시뮬레이션 목록 페이지에 네비로 갈 수 있다', () => {
   for (const [name, file] of pages) {
     const html = read(file);
     if (!html.includes('mega-dropdown')) continue;
-    /* 과목 드롭다운 4개 + 모바일 메뉴 1개. 한쪽만 고치면 데스크톱과 모바일이
+    /* 드롭다운 트리거 1개 + 모바일 메뉴 1개. 한쪽만 고치면 데스크톱과 모바일이
        서로 다른 사이트가 된다 — 실제로 그렇게 갈라진 적이 있다. */
-    const n = (html.match(/href="\/simulation\/">/g) || []).length;
-    assert.strictEqual(n, 5, name + ' 의 목록 링크가 ' + n + '개다 (드롭다운 4 + 모바일 1 이어야 한다)');
+    const n = (html.match(/href="\/simulation\/"/g) || []).length;
+    assert.strictEqual(n, 2, name + ' 의 목록 링크가 ' + n + '개다 (드롭다운 트리거 1 + 모바일 1 이어야 한다)');
+    /* 과목 넷은 시뮬레이션 하나로 접혔다. 열 제목으로만 남아야 한다. */
+    assert.match(html, /<p class="mega-label">물리학<\/p>/, name + ' 에 과목 열이 없다');
   }
 });
 
