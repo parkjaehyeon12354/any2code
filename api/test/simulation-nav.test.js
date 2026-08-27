@@ -151,6 +151,22 @@ test('시뮬레이션 묶대는 디자인 시스템 토큰으로 통일했다', 
   }
 });
 
+
+test('심화 탐구 주제의 시뮬레이션 링크가 살아 있다', () => {
+  /* 주제 카드의 '시뮬레이션 열기' 버튼이 404 로 가면 학생은 탐구를 못 시작한다.
+     주제를 추가할 때 링크를 잘못 적으면 이 검사가 막는다. */
+  const js = read(path.join(ROOT, 'assets/js/research-topics.js'));
+  assert.ok(!js.includes('\ufffd'), 'research-topics.js 에 깨진 문자(U+FFFD)가 있다');
+  const links = [...js.matchAll(/link:'(\/simulation\/[a-z-]+\.html)'/g)].map((m) => m[1]);
+  assert.ok(links.length >= 17, '시뮬레이션 연결 주제가 17개 미만이다');
+  for (const l of links) {
+    assert.ok(fs.existsSync(path.join(ROOT, l)), l + ' 파일이 없다');
+  }
+  const bad = [...js.matchAll(/\{s:'([a-z]+)'/g)].map((m) => m[1])
+    .filter((s) => !['physics', 'chemistry', 'biology', 'earth'].includes(s));
+  assert.deepStrictEqual(bad, [], '알 수 없는 과목 코드: ' + bad.join(','));
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
