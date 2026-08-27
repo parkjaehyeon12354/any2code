@@ -32,11 +32,57 @@
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
+
+  /* 캔버스 그래프용 팔레트.
+
+     캔버스는 CSS 를 못 받으니 색을 JS 로 넘겨야 한다. 예전에는 그래프마다
+     '#f7f7f5' 같은 값을 박아 놔서, 다크 모드로 바꿔도 하얀 박스가 그대로
+     떠 있었다. 여기서 토큰을 읽어 주면 두 모드가 각자 색을 갖는다.
+
+     getComputedStyle 은 :root 에 걸린 값을 그대로 준다 — data-theme 이든
+     prefers-color-scheme 이든 이미 반영된 뒤다. */
+  function graphPalette() {
+    var cs = getComputedStyle(root);
+    var t = function (name, fallback) {
+      var v = cs.getPropertyValue(name).trim();
+      return v || fallback;
+    };
+    var dark = isDark();
+    return {
+      dark: dark,
+      bg: t('--surface-dark', dark ? '#080808' : '#14201b'),
+      ink: dark ? 'rgba(242,242,242,.92)' : 'rgba(238,244,240,.92)',
+      muted: dark ? 'rgba(154,154,154,.9)' : 'rgba(190,205,196,.85)',
+      grid: dark ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.18)',
+      line: dark ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.32)',
+      panel: dark ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.035)'
+    };
+  }
+
+  var listeners = [];
+  function notify() {
+    for (var i = 0; i < listeners.length; i++) {
+      try { listeners[i](); } catch (e) { /* 한 곳이 실패해도 나머지는 그린다 */ }
+    }
+  }
+
+  window.GraphTheme = {
+    palette: graphPalette,
+    isDark: isDark,
+    /* 모드가 바뀌면 다시 그려야 한다. 시뮬마다 draw 함수 이름이 달라서
+       콜백을 등록받는다. */
+    onChange: function (fn) {
+      if (typeof fn !== 'function') return;
+      listeners.push(fn);
+    }
+  };
+
   function toggle() {
     var next = isDark() ? 'light' : 'dark';
     try { localStorage.setItem(KEY, next); } catch (e) { /* 저장만 못 할 뿐 화면은 바뀐다 */ }
     apply(next);
     paint();
+    notify();          // 캔버스 그래프도 새 팔레트로 다시 그린다
   }
 
   var btn = null;
@@ -104,7 +150,7 @@
   /* 저장값이 없는 사람은 기기 설정을 따르므로, OS 에서 바꾸면 아이콘도 따라가야 한다 */
   if (window.matchMedia) {
     var mq = window.matchMedia('(prefers-color-scheme: dark)');
-    var onChange = function () { if (!read()) paint(); };
+    var onChange = function () { if (!read()) { paint(); notify(); } };
     if (mq.addEventListener) mq.addEventListener('change', onChange);
     else if (mq.addListener) mq.addListener(onChange);
   }

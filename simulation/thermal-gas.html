@@ -778,10 +778,13 @@
 
   // ── 분포 그래프 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
-    gctx.fillStyle = '#f7f7f5';
+    gctx.fillStyle = P.bg;
     gctx.fillRect(0, 0, w, h);
 
     const pad = { l: 52, r: 20, t: 20, b: 38 };
@@ -801,10 +804,10 @@
     const Y = (f) => pad.t + gh - f / peak * gh * 0.92;
 
     // 눈금
-    gctx.strokeStyle = 'rgba(128,128,128,.2)';
+    gctx.strokeStyle = P.grid;
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = P.muted;
     gctx.textAlign = 'center';
     const step = vMax > 3000 ? 1000 : (vMax > 1200 ? 500 : 200);
     for (let v = 0; v <= vMax; v += step) {
@@ -842,7 +845,7 @@
       gctx.fillText(`${d.M.toFixed(1)} g/mol · ${Math.round(v).toLocaleString()} m/s`, X(v) + 5, pad.t + 16);
     });
 
-    gctx.fillStyle = 'rgba(120,120,120,.9)';
+    gctx.fillStyle = P.muted;
     gctx.textAlign = 'right';
     gctx.font = '11px ui-sans-serif, system-ui';
     gctx.fillText('입자 수', pad.l - 8, pad.t + 12);
@@ -1017,8 +1020,8 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.52) * DPR;
-    canvas.style.height = Math.round(w * 0.52) + 'px';
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
     graph.height = 360 * DPR;
@@ -1028,6 +1031,7 @@
   seed();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

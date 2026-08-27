@@ -722,6 +722,9 @@
   const g = graph.getContext('2d');
 
   function drawCompare() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     const gw = graph.width / DPR, gh = graph.height / DPR;
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
     g.clearRect(0, 0, gw, gh);
@@ -732,7 +735,7 @@
     const rowH = Math.min(30, (gh - pad.t - pad.b) / rows.length);
 
     g.font = '600 13px system-ui';
-    g.fillStyle = 'rgba(255,255,255,.9)';
+    g.fillStyle = P.ink;
     g.textAlign = 'center';
     g.fillText('동물 세포', pad.l + colW * .5, 26);
     g.fillText('식물 세포', pad.l + colW * 1.5, 26);
@@ -741,7 +744,7 @@
       const y = pad.t + i * rowH + rowH / 2;
       g.font = '12.5px system-ui';
       g.textAlign = 'right';
-      g.fillStyle = 'rgba(255,255,255,.8)';
+      g.fillStyle = P.ink;
       g.fillText(o.name, pad.l - 14, y + 4);
 
       [false, true].forEach((isPlant, ci) => {
@@ -751,7 +754,7 @@
           g.fillStyle = o.color;
           g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill();
         } else {
-          g.strokeStyle = 'rgba(255,255,255,.22)';
+          g.strokeStyle = P.grid;
           g.lineWidth = 1.6;
           g.beginPath();
           g.moveTo(x - 5, y - 5); g.lineTo(x + 5, y + 5);
@@ -762,7 +765,7 @@
     });
 
     // 가운데 구분선
-    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1;
+    g.strokeStyle = P.grid; g.lineWidth = 1;
     g.beginPath(); g.moveTo(pad.l + colW, pad.t - 12); g.lineTo(pad.l + colW, pad.t + rows.length * rowH); g.stroke();
   }
 
@@ -893,8 +896,8 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.58) * DPR;
-    canvas.style.height = Math.round(w * 0.58) + 'px';
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
     graph.height = 360 * DPR;
@@ -903,6 +906,7 @@
   applyQuery();
   renderList(); showFact(); updateKindNote();
   resize();
+  window.GraphTheme.onChange(drawCompare);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

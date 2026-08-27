@@ -884,6 +884,9 @@
 
   // ── 수온-염분 도표 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
@@ -897,7 +900,7 @@
     /* 예전에는 배경이 #f7f7f5 하드코딩이라 어두운 graph-wrap 위에 하얀 박스가
        떠 보였다. 랩은 밝기 모드와 무관하게 어두우니(surface-dark) 캔버스도 어둡게 —
        한 팔레트로 두 모드에서 다 맞는다. */
-    gctx.fillStyle = '#12181f';
+    gctx.fillStyle = P.bg;
     gctx.fillRect(0, 0, w, h);
 
     // 밀도 등고선
@@ -925,10 +928,10 @@
     }
 
     // 축
-    gctx.strokeStyle = 'rgba(255,255,255,.22)';
+    gctx.strokeStyle = P.grid;
     gctx.lineWidth = 1;
     gctx.textAlign = 'center';
-    gctx.fillStyle = 'rgba(225,232,240,.9)';
+    gctx.fillStyle = P.ink;
     for (let T = 0; T <= 30; T += 10) {
       gctx.beginPath(); gctx.moveTo(X(T), pad.t); gctx.lineTo(X(T), pad.t + gh); gctx.stroke();
       gctx.fillText(T + '°C', X(T), h - 12);
@@ -957,7 +960,7 @@
     gctx.beginPath();
     gctx.arc(X(S.temp), Y(S.salt), 7, 0, Math.PI * 2);
     gctx.fillStyle = '#e06c3a'; gctx.fill();
-    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.5; gctx.stroke();
+    gctx.strokeStyle = P.bg; gctx.lineWidth = 2.5; gctx.stroke();
     gctx.fillStyle = '#ff9d6b';
     gctx.font = '600 12px ui-sans-serif, system-ui';
     gctx.fillText('지금 물 ' + density(S.temp, S.salt).toFixed(1), X(S.temp) + 11, Y(S.salt) - 9);
@@ -1140,6 +1143,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

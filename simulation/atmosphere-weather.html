@@ -892,6 +892,9 @@
 
   // ── 그래프: 높이에 따른 기온·이슬점 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
@@ -912,10 +915,10 @@
     gctx.fillRect(0, 0, w, h);
 
     // 눈금
-    gctx.strokeStyle = 'rgba(128,128,128,.22)';
+    gctx.strokeStyle = P.grid;
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
-    gctx.fillStyle = 'rgba(120,120,120,.95)';
+    gctx.fillStyle = P.muted;
     gctx.textAlign = 'right';
     for (let km = 0; km <= maxH + 0.001; km += Math.max(0.5, Math.round(maxH / 5 * 2) / 2)) {
       const y = Y(km);
@@ -926,7 +929,7 @@
     const step = (hi - lo) > 40 ? 10 : 5;
     for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) {
       const xx = X(t);
-      gctx.strokeStyle = 'rgba(128,128,128,.14)';
+      gctx.strokeStyle = P.grid;
       gctx.beginPath(); gctx.moveTo(xx, pad.t); gctx.lineTo(xx, pad.t + gh); gctx.stroke();
       gctx.fillText(t + '°', xx, h - 12);
     }
@@ -934,9 +937,9 @@
     // 구름 영역
     const c = lcl();
     if (c < maxH) {
-      gctx.fillStyle = 'rgba(156,163,175,.22)';
+      gctx.fillStyle = P.grid;
       gctx.fillRect(pad.l, pad.t, gw, Y(c) - pad.t);
-      gctx.fillStyle = 'rgba(90,95,105,.85)';
+      gctx.fillStyle = P.muted;
       gctx.textAlign = 'left';
       gctx.fillText('구름 (기온 = 이슬점)', pad.l + 8, Y(c) - 8);
     }
@@ -963,12 +966,12 @@
     const hNow = heightAt(x);
     gctx.beginPath();
     gctx.arc(X(tempAt(x)), Y(hNow), 5, 0, Math.PI * 2);
-    gctx.fillStyle = '#111';
+    gctx.fillStyle = P.ink;
     gctx.fill();
-    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2; gctx.stroke();
+    gctx.strokeStyle = P.bg; gctx.lineWidth = 2; gctx.stroke();
 
     gctx.textAlign = 'left';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = P.muted;
     gctx.fillText('실선 = 올라갈 때 · 점선 = 내려올 때(더 따뜻함)', pad.l + 8, pad.t + 14);
   }
 
@@ -1158,6 +1161,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

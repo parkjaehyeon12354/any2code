@@ -819,10 +819,13 @@
 
   // ── 그래프 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
-    gctx.fillStyle = '#f7f7f5';
+    gctx.fillStyle = P.bg;
     gctx.fillRect(0, 0, w, h);
 
     const pad = { l: 52, r: 24, t: 20, b: 40 };
@@ -830,10 +833,10 @@
     const X = (logd) => pad.l + logd / 8 * gw;
     const Y = (ph) => pad.t + gh - Math.max(0, Math.min(14, ph)) / 14 * gh;
 
-    gctx.strokeStyle = 'rgba(128,128,128,.2)';
+    gctx.strokeStyle = P.grid;
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = P.muted;
     gctx.textAlign = 'center';
     for (let d = 0; d <= 8; d++) {
       gctx.beginPath(); gctx.moveTo(X(d), pad.t); gctx.lineTo(X(d), pad.t + gh); gctx.stroke();
@@ -864,7 +867,7 @@
       const xx = X(d), yy = Y(-Math.log10(c));
       i ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
     }
-    gctx.strokeStyle = 'rgba(120,120,130,.85)'; gctx.lineWidth = 2;
+    gctx.strokeStyle = P.muted; gctx.lineWidth = 2;
     gctx.setLineDash([7, 5]); gctx.stroke(); gctx.setLineDash([]);
 
     // 실제 곡선
@@ -887,8 +890,8 @@
     // 현재 위치
     gctx.beginPath();
     gctx.arc(X(S.dil), Y(phNow()), 6, 0, Math.PI * 2);
-    gctx.fillStyle = '#111'; gctx.fill();
-    gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.4; gctx.stroke();
+    gctx.fillStyle = P.ink; gctx.fill();
+    gctx.strokeStyle = P.bg; gctx.lineWidth = 2.4; gctx.stroke();
   }
 
   // ── 수치 ──
@@ -1070,8 +1073,8 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.5) * DPR;
-    canvas.style.height = Math.round(w * 0.5) + 'px';
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
     graph.height = 360 * DPR;
@@ -1080,6 +1083,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

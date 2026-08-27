@@ -804,6 +804,9 @@
   const g2 = graph.getContext('2d');
 
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     const gw = graph.width / DPR, gh = graph.height / DPR;
     g2.setTransform(DPR, 0, 0, DPR, 0, 0);
     g2.clearRect(0, 0, gw, gh);
@@ -812,7 +815,7 @@
     const x = pad.l, y = pad.t, w = gw - pad.l - pad.r, h = gh - pad.t - pad.b;
 
     // 눈금 — 왼쪽 낮 길이(0~24h), 오른쪽 고도(0~90도)
-    g2.strokeStyle = 'rgba(255,255,255,.12)'; g2.lineWidth = 1;
+    g2.strokeStyle = P.grid; g2.lineWidth = 1;
     g2.font = '12px system-ui';
     for (let i = 0; i <= 4; i++) {
       const py = y + h * i / 4;
@@ -824,11 +827,11 @@
     }
 
     // 월 구분
-    g2.fillStyle = 'rgba(255,255,255,.6)'; g2.textAlign = 'center';
+    g2.fillStyle = P.muted; g2.textAlign = 'center';
     for (let m = 0; m < 12; m += 2) {
       const day = m * 30.4 + 1;
       const px = x + w * day / 365;
-      g2.strokeStyle = 'rgba(255,255,255,.08)';
+      g2.strokeStyle = P.grid;
       g2.beginPath(); g2.moveTo(px, y); g2.lineTo(px, y + h); g2.stroke();
       g2.fillText((m + 1) + '월', px, y + h + 18);
     }
@@ -849,7 +852,7 @@
 
     // 지금 위치
     const nx = x + w * dayOfYear / 365;
-    g2.strokeStyle = 'rgba(255,255,255,.5)'; g2.setLineDash([5, 4]); g2.lineWidth = 1.5;
+    g2.strokeStyle = P.muted; g2.setLineDash([5, 4]); g2.lineWidth = 1.5;
     g2.beginPath(); g2.moveTo(nx, y); g2.lineTo(nx, y + h); g2.stroke();
     g2.setLineDash([]);
     [[dayLength(dayOfYear), 24, '#7cc4ff'], [noonAltitude(dayOfYear), 90, '#ffb35c']]
@@ -869,12 +872,12 @@
 
     // 기울기 0이면 계절이 없다는 것을 글로도 알려준다
     if (S.tilt < 0.6) {
-      g2.fillStyle = 'rgba(255,255,255,.8)'; g2.textAlign = 'center';
+      g2.fillStyle = P.ink; g2.textAlign = 'center';
       g2.font = '600 14px system-ui';
       g2.fillText('기울기가 0이라 1년 내내 같습니다 — 계절이 없습니다', x + w / 2, y + h / 2);
     }
 
-    g2.strokeStyle = 'rgba(255,255,255,.55)'; g2.lineWidth = 1;
+    g2.strokeStyle = P.muted; g2.lineWidth = 1;
     g2.beginPath(); g2.moveTo(x, y); g2.lineTo(x, y + h); g2.lineTo(x + w, y + h); g2.stroke();
   }
 
@@ -1050,6 +1053,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

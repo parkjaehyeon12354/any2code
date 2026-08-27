@@ -426,15 +426,17 @@
     const moving=state.velocity;if(Math.abs(moving)>.05)drawArrow(state.x,floor-55,state.x+(moving>0?32:-32),'rgba(255,255,255,.65)');
   }
   function drawGraph(){
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. */
+    const P = window.GraphTheme.palette();
     const g=graphCtx,cw=graphCanvas.clientWidth,ch=graphCanvas.height/(window.devicePixelRatio||1),x=72,w=cw-96,plotH=125;
     g.clearRect(0,0,cw,ch);g.font='12px system-ui';g.textBaseline='middle';
     const minT=Math.max(0,state.t-6),maxT=Math.max(minT+.001,state.t);
     const chart=(values,top,color,title,unit,scale)=>{
-      g.fillStyle='rgba(255,255,255,.035)';g.fillRect(x,top,w,plotH);
-      g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=1;
-      for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle='rgba(255,255,255,.7)';g.textAlign='right';g.fillText(value.toFixed(2),x-9,py);}
-      for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle='rgba(255,255,255,.7)';g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
-      g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();
+      g.fillStyle=P.panel;g.fillRect(x,top,w,plotH);
+      g.strokeStyle=P.grid;g.lineWidth=1;
+      for(let j=0;j<=4;j++){const py=top+j/4*plotH,value=scale*(1-j/2);g.beginPath();g.moveTo(x,py);g.lineTo(x+w,py);g.stroke();g.fillStyle=P.muted;g.textAlign='right';g.fillText(value.toFixed(2),x-9,py);}
+      for(let j=0;j<=6;j++){const px=x+j/6*w,tick=minT+(maxT-minT)*j/6;g.beginPath();g.moveTo(px,top);g.lineTo(px,top+plotH);g.stroke();if(top>180){g.fillStyle=P.muted;g.textAlign='center';g.fillText(tick.toFixed(1),px,top+plotH+16);}}
+      g.strokeStyle=P.muted;g.beginPath();g.moveTo(x,top);g.lineTo(x,top+plotH);g.lineTo(x+w,top+plotH);g.stroke();
       g.fillStyle=color;g.font='600 13px system-ui';g.textAlign='left';g.fillText(`${title}  현재 ${values.length?values[values.length-1].toFixed(4):'0.0000'} ${unit}`,x,top-14);g.font='12px system-ui';
       if(values.length>1){
         g.save();g.beginPath();g.rect(x+1,top+1,w-2,plotH-2);g.clip();
@@ -469,7 +471,9 @@
   el('pole-n').addEventListener('click',()=>setPole(1));el('pole-s').addEventListener('click',()=>setPole(-1));
   el('toggle').addEventListener('click',function(){state.running=!state.running;if(!state.running){state.prevX=state.x;state.prevFlux=state.flux;state.velocity=0;state.fluxRate=0;state.emf=0;pushSample();}this.textContent=state.running?'일시정지':'이어서';});
   el('reset').addEventListener('click',()=>{reset();state.running=true;el('toggle').textContent='일시정지';});
-  resize();reset();window.addEventListener('resize',()=>{resize();reset();});requestAnimationFrame(frame);
+  resize();reset();window.addEventListener('resize',()=>{resize();reset();});
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>

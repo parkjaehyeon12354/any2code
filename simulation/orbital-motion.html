@@ -900,13 +900,16 @@
 
   // ── 그래프 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
     const pad = { l: 58, r: 58, t: 20, b: 34 };
     const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
 
-    gctx.fillStyle = '#f7f7f5';
+    gctx.fillStyle = P.bg;
     gctx.fillRect(0, 0, w, h);
 
     const a = S.sma, e = S.ecc;
@@ -919,10 +922,10 @@
     const Yr = (r) => pad.t + gh - r / rMax * gh;
 
     // 눈금
-    gctx.strokeStyle = 'rgba(128,128,128,.2)';
+    gctx.strokeStyle = P.grid;
     gctx.font = '11px ui-sans-serif, system-ui';
     gctx.textAlign = 'center';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = P.muted;
     for (let i = 0; i <= 4; i++) {
       const xx = X(i / 4);
       gctx.beginPath(); gctx.moveTo(xx, pad.t); gctx.lineTo(xx, pad.t + gh); gctx.stroke();
@@ -978,8 +981,8 @@
       const n = Math.sqrt(GM() / (a * a * a));
       const frac = ((n * t) % (Math.PI * 2)) / (Math.PI * 2);
       gctx.beginPath(); gctx.arc(X(frac), Yv(st.v), 5.5, 0, Math.PI * 2);
-      gctx.fillStyle = '#111'; gctx.fill();
-      gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.2; gctx.stroke();
+      gctx.fillStyle = P.ink; gctx.fill();
+      gctx.strokeStyle = P.bg; gctx.lineWidth = 2.2; gctx.stroke();
     }
   }
 
@@ -1184,8 +1187,8 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 900;
     canvas.width = w * DPR;
-    canvas.height = Math.round(w * 0.6) * DPR;
-    canvas.style.height = Math.round(w * 0.6) + 'px';
+    canvas.height = Math.round(w * 0.54) * DPR;
+    canvas.style.height = Math.round(w * 0.54) + 'px';
     const gw = graph.clientWidth || 900;
     graph.width = gw * DPR;
     graph.height = 360 * DPR;
@@ -1194,6 +1197,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

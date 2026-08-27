@@ -878,6 +878,9 @@
 
   // ── 그래프: 입사각 → 굴절각 ──
   function drawGraph() {
+    /* 캔버스는 CSS 를 못 받으니 색을 여기서 받아온다. 예전에는 '#f7f7f5' 를
+       박아 놔서 다크 모드에서도 하얀 박스가 그대로 떠 있었다. */
+    const P = window.GraphTheme.palette();
     gctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     const w = graph.width / DPR, h = graph.height / DPR;
     gctx.clearRect(0, 0, w, h);
@@ -887,13 +890,13 @@
     const X = (t) => pad.l + t / 90 * gw;
     const Y = (t) => pad.t + gh - t / 90 * gh;
 
-    gctx.fillStyle = '#f7f7f5';
+    gctx.fillStyle = P.bg;
     gctx.fillRect(0, 0, w, h);
 
-    gctx.strokeStyle = 'rgba(128,128,128,.2)';
+    gctx.strokeStyle = P.grid;
     gctx.lineWidth = 1;
     gctx.font = '11px ui-sans-serif, system-ui';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = P.muted;
     gctx.textAlign = 'center';
     for (let t = 0; t <= 90; t += 15) {
       gctx.beginPath(); gctx.moveTo(X(t), pad.t); gctx.lineTo(X(t), pad.t + gh); gctx.stroke();
@@ -947,8 +950,8 @@
     const cur = refract(S.angle, S.n1, S.n2);
     if (cur !== null) {
       gctx.beginPath(); gctx.arc(X(S.angle), Y(cur), 6, 0, Math.PI * 2);
-      gctx.fillStyle = '#111'; gctx.fill();
-      gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.5; gctx.stroke();
+      gctx.fillStyle = P.ink; gctx.fill();
+      gctx.strokeStyle = P.bg; gctx.lineWidth = 2.5; gctx.stroke();
     }
 
     gctx.fillStyle = 'rgba(150,110,110,.95)';
@@ -1122,6 +1125,7 @@
   applyQuery();
   readout();
   resize();
+  window.GraphTheme.onChange(drawGraph);   // 밝기 모드가 바뀌면 새 팔레트로 다시 그린다
   window.addEventListener('resize', resize);
   requestAnimationFrame(frame);
 })();

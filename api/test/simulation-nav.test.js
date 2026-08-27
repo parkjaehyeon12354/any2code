@@ -526,7 +526,7 @@ test('해양과 순환의 나침반과 그래프가 어두운 묵대와 맞는�
   assert.match(oc, /ctx\.fillStyle = 'rgba\(255,255,255,\.92\)';[\s\S]{0,120}ctx\.fillText\('북'/, '나침반 글자가 밝지 않다');
   assert.ok(!/ctx\.fillStyle = 'rgba\(60,70,80/.test(oc.replace(/\/\*[\s\S]*?\*\//g, '')),
     '나침반 글자가 어두운 회색으로 돌아갔다');
-  assert.match(oc, /gctx\.fillStyle = '#12181f';/, '그래프 배경이 어둡지 않다');
+  assert.match(oc, /gctx\.fillStyle = P\.bg;/, '그래프 배경이 팔레트를 안 쓴다');
   assert.ok(!/#f7f7f5/.test(oc.replace(/\/\*[\s\S]*?\*\//g, '')),
     '그래프 배경이 하얀색 하드코딩으로 돌아갔다');
 });
@@ -597,6 +597,54 @@ test('대기와 기상의 구름이 밑면을 응결고도로 닫는다', () => 
     '구름 윤곽이 실선이 아니다');
   assert.ok(!/const step = 15;\s+\/\/ 원 중심 간격/.test(aw),
     '원 격자 방식으로 돌아갔다 — 바닥을 뚫는다');
+});
+
+
+test('그래프가 밝기 모드마다 다른 색을 쓴다', () => {
+  /* 캔버스는 CSS 를 못 받으니 색을 JS 로 넘겨야 한다. 예전에는 '#f7f7f5' 를
+     박아 놔서 다크 모드로 바꿔도 하얀 박스가 그대로 떠 있었다.
+     theme.js 의 GraphTheme.palette() 가 --surface-dark 토큰을 읽어 주는데,
+     그 토큰이 밝은 모드 #14201b · 다크 #080808 로 서로 다르다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    /* theme.js 가 없으면 GraphTheme 자체가 없어서 그래프가 못 그려진다 —
+       실제로 네 파일에서 'Cannot read properties of undefined' 가 났다. */
+    assert.match(html, /<script src="\/assets\/js\/theme\.js"><\/script>/,
+      f + ' 에 theme.js 가 없다 — 다크 모드도, 그래프 팔레트도 안 걸린다');
+    const graphs = [...html.matchAll(/<canvas id="([a-zA-Z-]+)"/g)]
+      .map((m) => m[1]).filter((id) => id !== 'canvas');
+    if (!graphs.length) continue;
+    assert.match(html, /window\.GraphTheme\.palette\(\)/,
+      f + ' 의 그래프가 팔레트를 안 받는다 — 두 모드가 같은 색이 된다');
+    assert.match(html, /window\.GraphTheme\.onChange\(/,
+      f + ' 가 모드 변경에 다시 안 그린다 — 토글해도 옛 색이 남는다');
+  }
+});
+
+test('무대 비율이 모든 시뮬에서 같다', () => {
+  /* 0.46 부터 0.62 까지 제각각이라 시뮬마다 그래프가 앉는 높이가 달랐다.
+     같은 자리에 있어야 옮겨 다녀도 눈이 헤매지 않는다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    const m = html.match(/canvas\.height = Math\.round\(w \* ([\d.]+)\) \* DPR;/);
+    if (!m) continue;
+    assert.strictEqual(m[1], '0.54',
+      f + ' 의 무대 비율이 ' + m[1] + ' 다 — 0.54 로 맞춰야 한다');
+  }
+});
+
+test('미리보기 칸이 베이스 색을 쓴다', () => {
+  /* 과목별 파스텔(하늘·노랑·연두·보라)을 깔아 놨는데 그 위에 얹히는 SVG 는
+     전부 어두운 그림이라, 테두리에 파스텔 띠가 남아 겉돌았다. */
+  const idx = read(path.join(SIM_DIR, 'index.html'));
+  assert.match(idx, /\.simulation-card \.sim-preview \{ background: var\(--surface-dark\); \}/,
+    '미리보기 칸이 베이스 색을 안 쓴다');
+  assert.ok(!/\.simulation-card\.(?:physics|chemistry|biology|earth) \.sim-preview \{ background: linear-gradient/.test(idx),
+    '과목별 파스텔 배경이 남아 있다');
+  assert.ok(!/fill="#0b1714"/.test(idx),
+    'SVG 배경에 초록빛 검정이 남아 있다 — 베이스 #14201b 로 맞춰야 한다');
 });
 
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
