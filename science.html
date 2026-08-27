@@ -178,13 +178,121 @@
         </svg>
         Ans2Quest
       </a>
-      <ul class="nav-links" id="nav-links" aria-label="주요 메뉴">
-        <li><a href="/simulation/pendulum.html">시뮬레이션</a></li>
-        <li><a href="/community">커뮤니티</a></li>
-        <li class="active"><a href="/science" aria-current="page">AI 과학 도우미</a></li>
-        <li><a href="/guide">가이드</a></li>
-      </ul>
-      <div class="nav-cta" id="nav-cta"><a href="/login">시작하기</a></div>
+      <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="/simulation/" data-dropdown="simulation">시뮬레이션</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=physics">물리학</a></p>
+            <a href="/simulation/pendulum.html">단진자</a>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+            <a href="/simulation/wave-interference.html">빛과 파동</a>
+            <a href="/simulation/orbital-motion.html">천체의 운동</a>
+            <a href="/simulation/thermal-gas.html">열과 통계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=chemistry">화학</a></p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <a href="/simulation/chemical-reaction.html">화학 반응</a>
+            <a href="/simulation/acid-base.html">산과 염기</a>
+            <a href="/simulation/electrochemistry.html">전기화학</a>
+            <a href="/simulation/radioactivity.html">방사능</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=biology">생명과학</a></p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <a href="/simulation/ecology-population.html">개체와 생태계</a>
+            <a href="/simulation/neural-signal.html">신경과 자극전달</a>
+            <a href="/simulation/circulation-transport.html">순환과 수송</a>
+            <a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=earth">지구과학</a></p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="/research" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="/research/topics">주제 탐색</a>
+            <a href="/research/hypothesis">가설 설정 가이드</a>
+            <a href="/research/experiment">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="/research/record">세특 작성 가이드</a>
+            <a href="/research/report">보고서 템플릿</a>
+            <a href="/research/examples">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+
+
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login">시작하기</a>
+    </div>
+    <button class="hamburger" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── Mobile Menu ── -->
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-header">
+    <span class="nav-brand" style="color: var(--ink);">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+        <line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="11.5" cy="17" r="1.2" fill="#d97706" opacity="0.9"/>
+        <circle cx="15" cy="19" r="0.9" fill="#167a63" opacity="0.8"/>
+      </svg>
+      Ans2Quest
+    </span>
+    <button class="mobile-menu-close" aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+  <!-- 항목은 위 데스크톱 네비(#nav-links)와 반드시 일치시킬 것.
+       한쪽만 고치면 두 화면이 서로 다른 사이트가 된다 (실제로 그렇게 갈라진 적 있음) -->
+  <nav>
+    <!-- 모바일엔 드롭다운이 없다. 과목별 href="#" 4개를 두면 눌러도 아무 일이
+         없으므로, 실제로 갈 수 있는 시뮬레이션 목록 하나로 접는다. -->
+    <a href="/simulation/">시뮬레이션 전체 목록</a>
+    <a href="/simulation/pendulum.html">단진자</a>
+    <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+    <a href="/simulation/wave-interference.html">빛과 파동</a>
+    <a href="/simulation/orbital-motion.html">천체의 운동</a>
+    <a href="/simulation/thermal-gas.html">열과 통계</a>
+    <a href="/simulation/particle-motion.html">입자의 운동</a>
+    <a href="/simulation/chemical-bond.html">화학 결합</a><a href="/simulation/chemical-reaction.html">화학 반응</a><a href="/simulation/acid-base.html">산과 염기</a><a href="/simulation/electrochemistry.html">전기화학</a><a href="/simulation/radioactivity.html">방사능</a>
+    <a href="/simulation/cell-structure.html">세포의 구조</a>
+    <a href="/simulation/genetics-evolution.html">유전과 진화</a><a href="/simulation/ecology-population.html">개체와 생태계</a><a href="/simulation/neural-signal.html">신경과 자극전달</a><a href="/simulation/circulation-transport.html">순환과 수송</a><a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+    <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+    <a href="/simulation/earth-seasons.html">외권과 천체</a>
+    <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+    <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+    <a href="/community">커뮤니티</a>
+    <a href="/science">AI 과학 도우미</a>
+    <a href="/research">심화 탐구</a>
+    <a href="/guide">가이드</a>
+  </nav>
+  <div class="mobile-menu-actions" id="mobile-cta">
+    <a href="/login" class="btn btn-primary" style="width:100%">시작하기</a>
+  </div>
+</div>
     <button class="hamburger" aria-label="메뉴 열기">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
