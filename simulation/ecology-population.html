@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -408,6 +421,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="초원에서 피식자와 포식자의 수가 번갈아 오르내리는 모습"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 두 수를 한 점으로 찍으면</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -521,7 +535,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>
     <div class="graph-wrap"><canvas id="phase-graph" aria-label="피식자와 포식자 수를 두 축으로 한 궤적"></canvas></div>
   </section>

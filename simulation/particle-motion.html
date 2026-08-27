@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -327,6 +340,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="기체 입자의 운동"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 속력 분포</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -404,7 +418,7 @@
     </div>
   </section>
 
-  <section class="analysis-panel" aria-labelledby="kmt-graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="kmt-graph-title">
     <div class="analysis-head"><h2 id="kmt-graph-title">속력 분포</h2><p>막대는 지금 이 순간 각 속력 구간에 있는 입자 수이고, 선은 맥스웰–볼츠만 분포입니다. 세로 점선이 평균 속력입니다. <strong>이 화면은 2차원 평면 모형이라 분포식이 f(v) ∝ v·exp(−v²/2a²)입니다</strong> — 교과서의 3차원 분포 f(v) ∝ v²·exp(−mv²/2kT)와 봉우리 모양이 조금 다릅니다. 온도가 오르면 봉우리가 오른쪽으로 옮겨가며 낮고 넓어진다는 성질은 3차원과 같습니다.</p></div>
     <div class="graph-wrap"><canvas id="speed-graph" aria-label="입자 속력 분포 그래프"></canvas></div>
   </section>

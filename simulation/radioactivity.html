@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -407,6 +420,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="무작위로 붕괴하는 방사성 원자들"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 개별 원자는 무작위, 집단은 규칙적</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -516,7 +530,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">개별 원자는 무작위, 집단은 규칙적</h2><p>위쪽은 원자 <strong>여덟 개를 골라</strong> 각각 언제 터졌는지 표시한 것입니다 — 아무 규칙이 없습니다. 아래쪽은 <strong>전체 집단</strong>이고, 가로축은 시간이 아니라 <strong>지나간 반감기 횟수</strong>입니다. 개별은 예측할 수 없지만 집단은 (1/2)ⁿ 을 따릅니다. 원자 수를 줄이면 점들이 회색 이론선에서 벗어납니다.</p></div>
     <div class="graph-wrap"><canvas id="decay-graph" aria-label="개별 원자의 붕괴 시점과 집단의 감소"></canvas></div>
   </section>

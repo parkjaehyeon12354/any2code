@@ -257,6 +257,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Top Nav ── */
+/* 고정 헤더가 56px 이라 앵커로 뛰면 제목이 그 밑에 깔린다.
+   scroll-margin 은 JS 없이 이걸 해결하는 네이티브 속성이다. */
+[id] { scroll-margin-top: 72px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
 .top-nav {
   position: sticky;
   top: 0;

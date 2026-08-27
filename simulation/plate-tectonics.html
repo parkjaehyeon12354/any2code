@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -377,6 +390,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="판의 경계와 지각 변동"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 지진이 일어나는 깊이</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -439,7 +453,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="quake-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="quake-title">
     <div class="analysis-head"><h2 id="quake-title">지진이 일어나는 깊이</h2><p>가로는 위치, 세로는 깊이입니다. 섭입대에서는 판이 비스듬히 들어가면서 진원이 점점 깊어집니다 — 이것을 베니오프대라고 합니다.</p></div>
     <div class="graph-wrap"><canvas id="quake-graph" aria-label="위치별 지진 발생 깊이"></canvas></div>
   </section>
@@ -620,19 +634,42 @@
 
   /* 맨틀 대류 — 판이 왜 움직이는지의 답 */
   function drawConvection(surface) {
+    /* 예전에는 옅은 열린 호만 돌아서 "이게 도는 건지 그냥 곡선인지" 알 수 없었다.
+       바탕에 흐린 전체 원을 깔아 궤도를 보이고, 그 위를 도는 밝은 호와
+       진행 끝의 화살촉으로 방향을 준다. */
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,170,120,.22)';
-    ctx.lineWidth = 2;
     const rows = 2;
     for (let r = 0; r < rows; r++) {
       const cy = surface + (H() - surface) * (0.35 + r * 0.4);
       for (let i = 0; i < 4; i++) {
         const cx = W() * (0.14 + i * 0.24);
-        const ph = (t * 0.4 + i * 0.25 + r * 0.5) % 1;
         const rad = (H() - surface) * 0.13;
+        const cw = (i + r) % 2 === 0;                   // 이웃끼리 반대로 돈다
+        const ph = (t * 0.4 + i * 0.25 + r * 0.5) % 1;
+        const a0 = (cw ? ph : -ph) * Math.PI * 2;
+
+        // 궤도(흐리게)
+        ctx.strokeStyle = 'rgba(255,170,120,.14)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
+
+        // 도는 호(밝게)
+        ctx.strokeStyle = 'rgba(255,190,140,.55)';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(cx, cy, rad, ph * Math.PI * 2, ph * Math.PI * 2 + Math.PI * 1.1);
+        ctx.arc(cx, cy, rad, a0, a0 + (cw ? 1 : -1) * Math.PI * 0.8, !cw);
         ctx.stroke();
+
+        // 진행 끝 화살촉 — 이게 있어야 방향이 읽힌다
+        const ae = a0 + (cw ? 1 : -1) * Math.PI * 0.8;
+        const hx = cx + Math.cos(ae) * rad, hy = cy + Math.sin(ae) * rad;
+        const tan = ae + (cw ? Math.PI / 2 : -Math.PI / 2);
+        ctx.fillStyle = 'rgba(255,190,140,.8)';
+        ctx.beginPath();
+        ctx.moveTo(hx + Math.cos(tan) * 7, hy + Math.sin(tan) * 7);
+        ctx.lineTo(hx + Math.cos(tan + 2.5) * 6, hy + Math.sin(tan + 2.5) * 6);
+        ctx.lineTo(hx + Math.cos(tan - 2.5) * 6, hy + Math.sin(tan - 2.5) * 6);
+        ctx.closePath(); ctx.fill();
       }
     }
     ctx.restore();
@@ -752,9 +789,13 @@
     ctx.lineTo(trenchX + W() * 0.05, surface);
     ctx.closePath(); ctx.fill();
 
-    // 무거운 판 — 비스듬히 내려가는 판
-    const len = H() * 0.55;
+    /* 무거운 판 — 비스듬히 내려가는 판.
+       ⚠ 길이를 H() 비율로만 잡으면 판 끝이 캔버스 오른쪽/아래로 삐져나가
+       잘린 채 멈춘 것처럼 보였다. 가로 여유로도 한 번 더 자른다. */
+    const room = goesLeft ? trenchX : W() - trenchX;   // 들어갈 가로 여유
+    const len = Math.min(H() * 0.55, (H() - surface) * 0.9, room / 0.7);
     ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W(), H()); ctx.clip();   // 캔버스 밖으로 못 나가게
     ctx.fillStyle = heavy.color;
     ctx.beginPath();
     const x0 = goesLeft ? 0 : W();
@@ -838,10 +879,16 @@
       const y = surface + q.depth * scale;
       const a = Math.max(0, 1 - q.age / 6);
       if (a <= 0) return;
-      ctx.fillStyle = `rgba(255,220,120,${a * .85})`;
+      /* 갈색 맨틀 위의 옅은 주황은 거의 안 보였다. 흰 테두리를 둘러
+         배경이 무엇이든 점이 뜨게 한다. 크기도 키웠다. */
+      const rr = q.mag * 2.4;
       ctx.beginPath();
-      ctx.arc(q.x, y, q.mag * 1.8, 0, Math.PI * 2);
+      ctx.arc(q.x, y, rr, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,214,64,${a})`;
       ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(255,255,255,${a * .9})`;
+      ctx.stroke();
     });
   }
 
@@ -872,8 +919,10 @@
       const px = x + w * (0.5 + (q.x - mid) / W() * 0.9);
       const py = y + h * (q.depth / 700);
       if (px < x || px > x + w) return;
-      g2.fillStyle = 'rgba(255,220,120,.8)';
-      g2.beginPath(); g2.arc(px, py, q.mag * 1.6, 0, Math.PI * 2); g2.fill();
+      // 무대와 같은 이유로 테두리를 둘러 대비를 준다
+      g2.beginPath(); g2.arc(px, py, q.mag * 2.1, 0, Math.PI * 2);
+      g2.fillStyle = 'rgba(255,214,64,.95)'; g2.fill();
+      g2.lineWidth = 1.4; g2.strokeStyle = 'rgba(255,255,255,.85)'; g2.stroke();
     });
 
     // 지표면

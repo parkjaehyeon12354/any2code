@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -407,6 +420,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="효소가 기질을 생성물로 바꾸는 모습과 고온에서의 변성"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 온도를 올리면 어떻게 되나</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -521,7 +535,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
     <div class="graph-wrap"><canvas id="temp-graph" aria-label="온도에 따른 반응 속도"></canvas></div>
   </section>

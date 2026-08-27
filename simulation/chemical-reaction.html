@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -407,6 +420,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="A와 B 입자가 서로 전환되는 가역 반응"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 시간에 따른 농도 변화</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -538,7 +552,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">시간에 따른 농도 변화</h2><p>두 곡선이 평평해진 지점이 평형입니다. 하지만 <strong>평평한 것은 '순 변화'뿐</strong>입니다 — 아래 초록 선이 초당 전환 횟수인데, 평형 후에도 <strong>0으로 떨어지지 않습니다</strong>. 촉매를 넣으면 곡선이 왼쪽으로 당겨질 뿐 <strong>도착점은 같습니다</strong>.</p></div>
     <div class="graph-wrap"><canvas id="conc-graph" aria-label="시간에 따른 A와 B의 농도 변화"></canvas></div>
   </section>

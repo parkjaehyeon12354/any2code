@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -408,6 +421,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="바람과 표층 해류, 용승과 침강"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 수온·염분과 밀도</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -524,7 +538,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="density-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="density-title">
     <div class="analysis-head"><h2 id="density-title">수온·염분과 밀도</h2><p>가로축은 수온, 세로축은 염분입니다. 등고선은 같은 밀도를 잇습니다. 오른쪽 아래(덥고 싱거움)일수록 가볍고, 왼쪽 위(차고 짬)일수록 무겁습니다.</p></div>
     <div class="graph-wrap"><canvas id="ts-graph" aria-label="수온-염분 도표와 밀도 등고선"></canvas></div>
   </section>

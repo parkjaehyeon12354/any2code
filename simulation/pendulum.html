@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -292,6 +305,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="단진자 운동"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 시간에 따른 각도와 각속도</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -381,7 +395,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="pendulum-graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="pendulum-graph-title">
     <div class="analysis-head"><h2 id="pendulum-graph-title">시간에 따른 각도와 각속도</h2><p>파란선은 각도 θ, 주황선은 각속도 ω이며 오른쪽 끝 점이 현재 값입니다.</p></div>
     <div class="graph-wrap"><canvas id="pendulum-graph" aria-label="시간에 따른 단진자 각도와 각속도 그래프"></canvas></div>
   </section>

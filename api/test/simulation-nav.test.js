@@ -392,6 +392,36 @@ test('시뮬레이션 목록 페이지에 네비로 갈 수 있다', () => {
   }
 });
 
+
+test('분석 그래프로 건너뛰는 링크가 모든 시뮬에 있다', () => {
+  /* 그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+     새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 링크 한 줄을 얹었다.
+     고정 헤더가 56px 이라 scroll-margin-top 이 없으면 제목이 헤더에 깔린다. */
+  const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    assert.match(html, /class="graph-jump" href="#analysis"/, f + ' 에 그래프 점프 링크가 없다');
+    assert.match(html, /<section class="analysis-panel" id="analysis"/, f + ' 에 앵커 대상이 없다');
+    assert.match(html, /\.graph-jump \{/, f + ' 에 점프 링크 스타일이 없다');
+  }
+  const css = read(path.join(ROOT, 'assets/css/styles.css'));
+  assert.match(css, /\[id\] \{ scroll-margin-top/,
+    '앵커 여백이 없다 — 헤더가 제목을 가린다');
+});
+
+test('판과 지각 변동의 침강판이 캔버스를 벗어나지 않는다', () => {
+  /* 길이를 H() 비율로만 잡아 판 끝이 오른쪽·아래로 삐져나가 잘린 채
+     멈춘 것처럼 보였다. 가로 여유로도 자르고 clip 으로 막는다. */
+  const pt = read(path.join(SIM_DIR, 'plate-tectonics.html'));
+  assert.match(pt, /const room = goesLeft \? trenchX : W\(\) - trenchX;/,
+    '가로 여유를 안 본다 — 판이 옆으로 삐져나간다');
+  assert.match(pt, /ctx\.rect\(0, 0, W\(\), H\(\)\); ctx\.clip\(\);/,
+    '캔버스 클리핑이 없다');
+  /* 진원은 갈색 맨틀 위에 찍혀서 옅은 주황으로는 안 보였다. 테두리로 대비를 준다. */
+  assert.match(pt, /strokeStyle = `rgba\(255,255,255,\$\{a \* \.9\}\)`/,
+    '진원 점에 테두리가 없다 — 맨틀 배경에 묻힌다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.

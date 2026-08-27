@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -407,6 +420,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="자극 세기에 따른 막전위 변화와 활동전위 발생"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 세기를 올리면 무엇이 변하나</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -521,7 +535,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">세기를 올리면 무엇이 변하나</h2><p>가로축이 자극 세기입니다. <strong>빨간 선(봉우리 높이)은 완전히 평평합니다</strong> — 역치를 넘는 순간 100mV 로 튀어오르고, 그 뒤로는 아무리 세게 눌러도 그대로입니다. 반면 <strong>파란 선(1초당 횟수)은 계속 올라갑니다.</strong> 뇌는 &quot;얼마나 센가&quot;를 크기가 아니라 <strong>빈도로</strong> 읽습니다.</p></div>
     <div class="graph-wrap"><canvas id="response-graph" aria-label="자극 세기에 따른 활동전위 크기와 빈도"></canvas></div>
   </section>

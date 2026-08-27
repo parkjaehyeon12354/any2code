@@ -65,6 +65,19 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
+/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
+   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
+   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
+.graph-jump {
+  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--hairline); background: var(--surface-soft);
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
+.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
+
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -409,6 +422,7 @@
       <div class="stage">
         <canvas id="canvas" aria-label="두 매질 경계에서 꺾이는 빛과 파면"></canvas>
         <div class="stage-foot">
+          <a class="graph-jump" href="#analysis">↓ 입사각에 따른 굴절각</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -511,7 +525,7 @@
     </div>
   </div>
 
-  <section class="analysis-panel" aria-labelledby="graph-title">
+  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">입사각에 따른 굴절각</h2><p>직선이 아니라 휘어진 곡선입니다. 굴절각은 입사각에 <strong>비례하지 않습니다</strong> — sin 값끼리 비례합니다. n₁ &gt; n₂ 이면 곡선이 90°에 닿는 지점이 임계각입니다.</p></div>
     <div class="graph-wrap"><canvas id="angle-graph" aria-label="입사각에 따른 굴절각 곡선"></canvas></div>
   </section>
