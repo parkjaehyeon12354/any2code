@@ -647,6 +647,33 @@ test('미리보기 칸이 베이스 색을 쓴다', () => {
     'SVG 배경에 초록빛 검정이 남아 있다 — 베이스 #14201b 로 맞춰야 한다');
 });
 
+test('시뮬레이션 목록에서 물리학 카드도 과목 딱지를 단다', () => {
+  /* 단진자·전자기 유도 두 장만 sim-subject(과목 딱지)가 아예 없었다 —
+     다른 19장은 전부 filter-dot + 과목명이 붙어 있는데 이 둘만 빠져서
+     "물리학 딱지가 안 붙어있다" 로 눈에 띄었다. */
+  const idx = read(path.join(SIM_DIR, 'index.html'));
+  for (const topic of ['mechanics', 'electromagnetism']) {
+    const m = idx.match(new RegExp('data-topic="' + topic + '">([\\s\\S]*?)</article>'));
+    assert.ok(m, topic + ' 카드를 찾지 못했다');
+    assert.ok(/class="sim-subject"/.test(m[1]),
+      topic + ' 카드에 과목 딱지가 없다');
+  }
+});
+
+test('순환과 수송의 적혈구가 혈관 다발 선과 같은 칸 수를 쓴다', () => {
+  /* 적혈구 위치(laneY)와 모세혈관 다발 선(lanes)이 서로 다른 칸 수로
+     계산되고 있었다 — 선은 3~11(모세혈관 수에 따라 가변), 적혈구는
+     고정 5칸. 칸 수가 안 맞으면 적혈구가 실제로 그려진 가는 선
+     사이·바깥으로 떨어져 "혈관을 넘어간다" 처럼 보인다. */
+  const html = read(path.join(SIM_DIR, 'circulation-transport.html'));
+  const laneYCount = (html.match(/laneY\(/g) || []).length;
+  assert.ok(laneYCount >= 2,
+    '적혈구·산소점이 하나의 laneY() 함수를 공유해야 한다');
+  const code = html.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(!/capBandH \/ 5\b/.test(code),
+    '고정 5칸으로 되돌아갔다 — 다발 선의 lanes 와 다시 어긋난다');
+});
+
 test('시뮬레이션 목록의 카드 21개가 같은 마크업을 쓴다', () => {
   /* 개체와 생태계·신경과 자극전달·순환과 수송·대사와 효소 네 장이
      class="sim-body"(옛 마크업)를 썼는데, 그 클래스에는 CSS 규칙 자체가
