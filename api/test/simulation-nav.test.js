@@ -445,6 +445,62 @@ test('측정값이 그래프 위 가로 스트립으로 나온다', () => {
   }
 });
 
+
+test('입자의 운동은 크기가 이미 질량에 연동돼 있다', () => {
+  /* '입자 지름 슬라이더를 넣자'는 제안이 있었는데, 코드를 보니 반지름이
+     이미 질량에서 나온다 — Math.cbrt(S.mass). 게다가 그 r 을 벽 충돌과
+     입자 충돌 판정에 그대로 쓴다. 지름 슬라이더를 따로 넣으면 질량과
+     크기가 어긋나 '무거운데 작은 입자' 같은 게 생긴다.
+     이 검사는 그 연결이 끊기는 것을 막는다. */
+  const pm = read(path.join(SIM_DIR, 'particle-motion.html'));
+  assert.match(pm, /return 2\.2 \+ Math\.cbrt\(S\.mass\) \* 0\.55;/,
+    '입자 반지름이 질량에서 나오지 않는다');
+  /* 그리기용으로만 쓰고 충돌은 고정값으로 하면 크기 변화가 물리에 반영되지 않는다. */
+  assert.match(pm, /p\.x - r < b\.x/, '벽 충돌 판정이 반지름을 안 쓴다');
+  assert.match(pm, /const cell = r \* 2\.2;/, '입자 충돌 격자가 반지름을 안 쓴다');
+  assert.ok(!/id="psize"|id="diameter"/.test(pm),
+    '지름 슬라이더가 따로 생겼다 — 질량과 크기가 어긋난다');
+});
+
+
+test('전기화학의 네른스트 계수가 온도를 따른다', () => {
+  /* 본문이 '농도비를 10배 벌리면 29.6 mV' 라고 설명하는데 그게 25°C 값이라는 걸
+     볼 수 없었다. 계수는 2.303RT/F 로 온도에 비례한다.
+     실측: 0°C 27.10 · 25°C 29.58 · 50°C 32.06 · 100°C 37.03 mV — 손계산과 일치.
+     ⚠ 그래프 축(vMax)까지 같이 안 움직이면 선이 잘린다. 화면 수식의 0.0592 도
+     하드코딩이라 온도를 바꿔도 그대로였다. */
+  const ec = read(path.join(SIM_DIR, 'electrochemistry.html'));
+  assert.match(ec, /id="temp"/, '온도 슬라이더가 없다');
+  assert.match(ec, /const NERNST = \(\) => 2\.303 \* 8\.314 \* \(S\.temp \+ 273\.15\) \/ 96485;/,
+    '네른스트 계수가 온도를 안 읽는다');
+  assert.ok(!/NERNST \/ N_ELECTRON/.test(ec),
+    '계수를 함수로 안 부르는 자리가 남았다 — 그 자리만 25°C 로 굳는다');
+  assert.match(ec, /const vMax = \(NERNST\(\) \/ N_ELECTRON\) \* LMAX;/,
+    '그래프 축이 온도를 안 따른다 — 선이 잘린다');
+  /* 화면에 찍히는 계산 수식은 온도를 따라야 한다.
+     ⚠ 공식 표기(formula-main), 힌트, 주석의 0.0592 는 "교과서의 25°C 값"을
+     가리키는 서술이라 그대로 둔다. 템플릿 문자열 안의 계산값만 본다. */
+  assert.match(ec, /`E = E° − \(\$\{NERNST\(\)\.toFixed\(4\)\}\//,
+    '화면 수식이 온도를 안 따른다');
+  /* N_ELECTRON 은 Cu2+ 의 전자 수라 물리 상수다. */
+  assert.match(ec, /const N_ELECTRON = 2;/, '전자 수까지 건드렸다');
+  assert.match(ec, /t: 'temp'/, '공유 링크로 온도가 복원되지 않는다');
+});
+
+test('빛과 파동의 파장이 조작 변수다', () => {
+  /* 본문이 'v = fλ 에서 f 가 고정' 이라 설명하고 측정 패널에 λ₂/λ₁ 비도 있는데
+     정작 원래 파장을 못 바꿨다. 파장을 바꿔도 비는 그대로라는 게 요점이다 —
+     굴절을 정하는 건 파장이 아니라 굴절률이다.
+     실측: 20·34·60px 어디서든 λ₂/λ₁ = 0.667 (n1=1, n2=1.5). */
+  const wi = read(path.join(SIM_DIR, 'wave-interference.html'));
+  assert.match(wi, /id="wl"/, '파장 슬라이더가 없다');
+  assert.match(wi, /const basePx = S\.wl;/, '파면 간격이 파장을 안 읽는다');
+  assert.match(wi, /\['angle', 'n1', 'n2', 'wl'\]/, '파장이 배선에 빠졌다');
+  /* 비는 굴절률만으로 정해져야 한다. 파장이 끼면 물리가 틀린다. */
+  assert.match(wi, /el\('r-lam'\)\.textContent = \(S\.n1 \/ S\.n2\)\.toFixed\(3\);/,
+    '파장 비가 굴절률만으로 계산되지 않는다');
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.
@@ -460,7 +516,7 @@ test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => 
       /13\.017/                                   // 60°C pKw
     ],
     'electrochemistry.html': [
-      /NERNST = 0\.0592/,          // 25°C 네른스트 계수
+      /temp: 25 \}/,                // 기본 25°C — 계수 59.2 mV 로 교과서 값과 같다
       /N_ELECTRON = 2/             // Cu²⁺ + 2e⁻
     ],
     'radioactivity.html': [

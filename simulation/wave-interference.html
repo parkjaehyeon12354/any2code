@@ -488,6 +488,16 @@
             <input type="range" id="n2" min="1" max="2.5" step="0.01" value="1.5">
             <span class="hint">n이 클수록 빛이 느려집니다. n₁ &gt; n₂ 로 만들면 전반사도 볼 수 있습니다.</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="wl">파장</label>
+              <output id="wl-out">34 px</output>
+            </div>
+            <input type="range" id="wl" min="20" max="60" step="1" value="34">
+            <span class="hint">파장을 바꿔도 <strong>파장 비 λ₂/λ₁ 은 그대로입니다.</strong>
+            굴절을 정하는 건 파장이 아니라 굴절률입니다.</span>
+          </div>
         </div>
       </div>
 
@@ -583,7 +593,7 @@
        v2(n=1.5) = 2.00e8 / 임계각(물→공기) = 48.75도 */
 
   const C = 3.0e8;                    // 진공에서의 광속 (m/s)
-  const S = { angle: 30, n1: 1.0, n2: 1.5 };
+  const S = { angle: 30, n1: 1.0, n2: 1.5, wl: 34 };
   let running = true;
   let phase = 0;                      // 파면 애니메이션 위상
 
@@ -753,7 +763,7 @@
         즉 경계면을 따라가는 위상 변화율이 양쪽에서 같다. 이 값을 공통으로
         쓰면 파면이 저절로 이어진다. 이것이 스넬 법칙의 실제 유도이기도 하다. */
   function drawWavefronts(hitX, by, t1, t2, w, h) {
-    const basePx = 34;                       // 매질1 파장(픽셀) 기준
+    const basePx = S.wl;                     // 매질1 파장(픽셀) — 슬라이더로 연다
     const lam1 = basePx / S.n1;
     const lam2 = basePx / S.n2;
 
@@ -948,10 +958,11 @@
   const labels = {
     angle: (v) => Number(v).toFixed(1) + '°',
     n1: (v) => Number(v).toFixed(2),
-    n2: (v) => Number(v).toFixed(2)
+    n2: (v) => Number(v).toFixed(2),
+    wl: (v) => Number(v) + ' px'
   };
 
-  ['angle', 'n1', 'n2'].forEach((k) => {
+  ['angle', 'n1', 'n2', 'wl'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -967,7 +978,7 @@
       S.n1 = Number(b.dataset.n1);
       S.n2 = Number(b.dataset.n2);
       S.angle = Number(b.dataset.a);
-      ['angle', 'n1', 'n2'].forEach((k) => {
+      ['angle', 'n1', 'n2', 'wl'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
@@ -991,7 +1002,7 @@
   });
   el('reset').addEventListener('click', () => {
     S.angle = 30; S.n1 = 1.0; S.n2 = 1.5;
-    ['angle', 'n1', 'n2'].forEach((k) => {
+    ['angle', 'n1', 'n2', 'wl'].forEach((k) => {
       el(k).value = S[k];
       el(k + '-out').textContent = labels[k](S[k]);
     });
@@ -1004,7 +1015,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ angle: S.angle, n1: S.n1, n2: S.n2 });
+      const q = new URLSearchParams({ angle: S.angle, n1: S.n1, n2: S.n2, wl: S.wl });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -1015,7 +1026,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['angle', 'n1', 'n2'].forEach((k) => {
+    ['angle', 'n1', 'n2', 'wl'].forEach((k) => {
       const v = Number(q.get(k));
       if (q.get(k) === null || !Number.isFinite(v)) return;
       const input = el(k);

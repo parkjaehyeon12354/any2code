@@ -498,6 +498,16 @@
             <span class="hint">양쪽 다 구리, 양쪽 다 황산구리 용액입니다. 표준 전위 차이는
             <strong>정확히 0</strong>인데도 <strong>농도만 다르면 전압이 생깁니다.</strong></span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">온도</label>
+              <output id="temp-out">25 °C (계수 59.2 mV)</output>
+            </div>
+            <input type="range" id="temp" min="0" max="100" step="1" value="25">
+            <span class="hint">교과서의 <strong>0.0592 는 25°C 값</strong>입니다.
+            온도를 올리면 같은 농도차에서도 전압이 커집니다.</span>
+          </div>
         </div>
       </div>
 
@@ -591,10 +601,13 @@
      검증(직접 계산): 10배차 → 29.6mV, 100배차 → 59.2mV,
                       0.20/0.80 → 17.82mV, 같은 농도 → 0. */
 
-  const NERNST = 0.0592;     // 25°C 교과서 계수 (정확값 0.05916)
+  /* 교과서의 0.0592 는 25°C 값일 뿐이고, 원래 계수는 2.303RT/F 로 온도에 비례한다.
+     상수로 두면 "온도를 올리면 같은 농도차에서도 전압이 커진다"를 볼 수 없다.
+     0°C 54.21 · 25°C 59.17 · 50°C 64.13 · 100°C 74.05 mV. */
+  const NERNST = () => 2.303 * 8.314 * (S.temp + 273.15) / 96485;
   const N_ELECTRON = 2;      // Cu²⁺ + 2e⁻ → Cu
 
-  const S = { sizeA: 1, sizeB: 1, concA: 0.1, concB: 1 };
+  const S = { sizeA: 1, sizeB: 1, concA: 0.1, concB: 1, temp: 25 };
   let running = true;
   let anim = 0;
 
@@ -609,7 +622,7 @@
      ⚠ 전극 크기는 이 식 어디에도 들어가지 않는다 — 그게 이 화면의 핵심이다. */
   function cellVoltage() {
     const Q = S.concA / S.concB;
-    return -(NERNST / N_ELECTRON) * Math.log10(Q);
+    return -(NERNST() / N_ELECTRON) * Math.log10(Q);
   }
   const Qval = () => S.concA / S.concB;
 
@@ -765,7 +778,7 @@
     const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
     const LMAX = 2.4;                                   // log Q 범위
     const X = (lq) => pad.l + (lq + LMAX) / (2 * LMAX) * gw;
-    const vMax = (NERNST / N_ELECTRON) * LMAX;
+    const vMax = (NERNST() / N_ELECTRON) * LMAX;
     const Y = (v) => pad.t + gh / 2 - v / vMax * (gh / 2);
 
     gctx.strokeStyle = 'rgba(128,128,128,.2)';
@@ -793,8 +806,8 @@
 
     // 네른스트 직선
     gctx.beginPath();
-    gctx.moveTo(X(-LMAX), Y(-(NERNST / N_ELECTRON) * (-LMAX)));
-    gctx.lineTo(X(LMAX), Y(-(NERNST / N_ELECTRON) * LMAX));
+    gctx.moveTo(X(-LMAX), Y(-(NERNST() / N_ELECTRON) * (-LMAX)));
+    gctx.lineTo(X(LMAX), Y(-(NERNST() / N_ELECTRON) * LMAX));
     gctx.strokeStyle = '#e07a5f'; gctx.lineWidth = 3; gctx.stroke();
 
     // 29.6mV 눈금 안내
@@ -802,7 +815,7 @@
     gctx.strokeStyle = 'rgba(200,120,90,.5)'; gctx.lineWidth = 1.4;
     [-1, 1].forEach((lq) => {
       gctx.beginPath();
-      gctx.moveTo(X(lq), Y(0)); gctx.lineTo(X(lq), Y(-(NERNST / N_ELECTRON) * lq));
+      gctx.moveTo(X(lq), Y(0)); gctx.lineTo(X(lq), Y(-(NERNST() / N_ELECTRON) * lq));
       gctx.stroke();
     });
     gctx.setLineDash([]);
@@ -826,7 +839,7 @@
   // ── 수치 ──
   function readout() {
     const E = cellVoltage(), Q = Qval();
-    const nern = -(NERNST / N_ELECTRON) * Math.log10(Q);
+    const nern = -(NERNST() / N_ELECTRON) * Math.log10(Q);
 
     el('r-e').textContent = (E * 1000).toFixed(2) + ' mV (' + E.toFixed(5) + ' V)';
     el('r-e0').textContent = '0.000 V (같은 금속)';
@@ -860,7 +873,7 @@
     }
 
     el('note').textContent =
-      `E = E° − (0.0592/${N_ELECTRON})·log Q = 0 − ${(NERNST/N_ELECTRON).toFixed(4)} × ` +
+      `E = E° − (${NERNST().toFixed(4)}/${N_ELECTRON})·log Q = 0 − ${(NERNST()/N_ELECTRON).toFixed(4)} × ` +
       `${Math.log10(Q).toFixed(4)} = ${E.toFixed(5)} V. ` +
       `이 식에 전극 크기 항이 없습니다.`;
   }
@@ -870,10 +883,11 @@
     sizeA: (v) => Number(v).toFixed(1) + '배',
     sizeB: (v) => Number(v).toFixed(1) + '배',
     concA: (v) => Number(v).toFixed(2) + ' mol/L',
-    concB: (v) => Number(v).toFixed(2) + ' mol/L'
+    concB: (v) => Number(v).toFixed(2) + ' mol/L',
+    temp: (v) => Number(v) + ' °C (계수 ' + (2.303 * 8.314 * (Number(v) + 273.15) / 96485 * 1000).toFixed(1) + ' mV)'
   };
 
-  ['sizeA', 'sizeB', 'concA', 'concB'].forEach((k) => {
+  ['sizeA', 'sizeB', 'concA', 'concB', 'temp'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -888,7 +902,7 @@
     b.addEventListener('click', () => {
       S.concA = Number(b.dataset.ca); S.concB = Number(b.dataset.cb);
       S.sizeA = Number(b.dataset.sa); S.sizeB = Number(b.dataset.sb);
-      ['sizeA', 'sizeB', 'concA', 'concB'].forEach((k) => {
+      ['sizeA', 'sizeB', 'concA', 'concB', 'temp'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
@@ -913,7 +927,7 @@
   });
   el('reset').addEventListener('click', () => {
     S.sizeA = 1; S.sizeB = 1; S.concA = 0.1; S.concB = 1;
-    ['sizeA', 'sizeB', 'concA', 'concB'].forEach((k) => {
+    ['sizeA', 'sizeB', 'concA', 'concB', 'temp'].forEach((k) => {
       el(k).value = S[k];
       el(k + '-out').textContent = labels[k](S[k]);
     });
@@ -925,7 +939,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ ca: S.concA, cb: S.concB, sa: S.sizeA, sb: S.sizeB });
+      const q = new URLSearchParams({ ca: S.concA, cb: S.concB, sa: S.sizeA, sb: S.sizeB, t: S.temp });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -936,7 +950,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    const map = { ca: 'concA', cb: 'concB', sa: 'sizeA', sb: 'sizeB' };
+    const map = { ca: 'concA', cb: 'concB', sa: 'sizeA', sb: 'sizeB', t: 'temp' };
     Object.entries(map).forEach(([key, id]) => {
       const v = Number(q.get(key));
       if (q.get(key) === null || !Number.isFinite(v)) return;
