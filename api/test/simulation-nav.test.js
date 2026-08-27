@@ -137,6 +137,20 @@ test('신경 시뮬의 불응기 비교는 부동소수점 안전값을 쓴다',
   assert.match(neu, /refLeft > 1e-9/, '임계값 비교가 있어야 한다');
 });
 
+
+test('시뮬레이션 묶대는 디자인 시스템 토큰으로 통일했다', () => {
+  /* --stage-bg (#0b100e)는 디자인 시스템에 없는 고립 색이었다.
+     다크에서 --surface-dark (#080808)와 미묘하게 어긋나 푸터와 묶대가 다른
+     어둠이 됐다. 묶대 배경은 --surface-dark 로 통일하고 토큰은 없앴다.
+     새 시뮬을 만들 때 낡은 토큰을 다시 가져오면 이 검사가 막는다. */
+  const css = read(path.join(ROOT, 'assets/css/styles.css'));
+  assert.ok(!css.includes('--stage-bg:'), 'styles.css 에 --stage-bg 정의가 되돌아왔다');
+  for (const f of fs.readdirSync(SIM_DIR).filter((x) => x.endsWith('.html') && x !== 'index.html')) {
+    const h = read(path.join(SIM_DIR, f));
+    assert.ok(!h.includes('--stage-bg'), f + ' 가 --stage-bg 를 쓴다 — --surface-dark 로 바꿀 것');
+  }
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.

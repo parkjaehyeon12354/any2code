@@ -78,13 +78,13 @@ test('새 시뮬레이션이 공용 스크립트를 읽는다', () => {
 });
 
 test('시뮬레이션 캔버스가 테마와 무관하게 같은 그림을 그린다', () => {
-  /* 무대는 --stage-bg 로 항상 어둡고 캔버스는 흰 계열로 그린다.
+  /* 무대는 --surface-dark 로 항상 어둡고 캔버스는 흰 계열로 그린다.
      기존 두 시뮬레이션과 같은 규칙이다 — 캔버스 색을 토큰에서 읽어오게
      만들면 다크/라이트에서 대비가 뒤집혀 한쪽이 안 보인다. */
   for (const f of ['simulation/particle-motion.html', 'simulation/chemical-bond.html']) {
     const html = readRoot(f);
-    assert.ok(/background: var\(--stage-bg\)/.test(html),
-      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+    assert.ok(/background: var\(--surface-dark\)/.test(html),
+      `${f} 의 무대가 --surface-dark 를 써야 한다`);
   }
 });
 
@@ -113,8 +113,8 @@ test('생명과학 시뮬레이션이 공용 스크립트를 읽는다', () => {
       assert.ok(html.includes(js), `${f} 가 ${js} 를 안 읽는다`);
     }
     assert.ok(/id="mobile-menu"/.test(html), `${f} 에 모바일 메뉴가 없다`);
-    assert.ok(/background: var\(--stage-bg\)/.test(html),
-      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+    assert.ok(/background: var\(--surface-dark\)/.test(html),
+      `${f} 의 무대가 --surface-dark 를 써야 한다`);
   }
 });
 
@@ -176,8 +176,8 @@ test('지구과학 시뮬레이션이 공용 스크립트를 읽는다', () => {
       assert.ok(html.includes(js), `${f} 가 ${js} 를 안 읽는다`);
     }
     assert.ok(/id="mobile-menu"/.test(html), `${f} 에 모바일 메뉴가 없다`);
-    assert.ok(/background: var\(--stage-bg\)/.test(html),
-      `${f} 의 무대가 --stage-bg 를 써야 한다`);
+    assert.ok(/background: var\(--surface-dark\)/.test(html),
+      `${f} 의 무대가 --surface-dark 를 써야 한다`);
   }
 });
 
