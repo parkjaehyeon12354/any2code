@@ -51,6 +51,8 @@ const publicPost = (p, full = false, viewerSub = null) => ({
   createdAt: p.createdAt,
   score: p.score || 0,
   answers: p.answers || 0,
+  // 화면의 "수정됨" 표시용. 없으면 한 번도 고친 적 없는 글이다
+  ...(p.updatedAt ? { updatedAt: p.updatedAt } : {}),
   ...(full
     ? { body: p.body }
     : { excerpt: p.body.length > EXCERPT_LEN ? p.body.slice(0, EXCERPT_LEN) + '…' : p.body })
@@ -551,6 +553,129 @@ app.http('commentsDelete', {
       return { status: 200, jsonBody: { ok: true } };
     } catch (e) {
       context.error('댓글 삭제 실패:', e.message);
+      return dbFail(e, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  }
+});
+
+
+/* ── 글 수정 ──
+   자기 글만, 차단·삭제되지 않은 글만. 과목(파티션 키)은 못 바꾼다 —
+   pk 를 바꾸면 문서를 새로 만들어야 하는데 답변·투표가 옛 pk 를 가리키는
+   채로 남는다. */
+app.http('postsUpdate', {
+  route: 'posts/{id}',
+  methods: ['PATCH'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
+
+    const postId = request.params.id;
+    const c = container();
+
+    try {
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: postId }]
+      }))[0];
+      if (!post) return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      if (post.authorSub !== user.sub) return { status: 403, jsonBody: { error: '본인 글만 수정할 수 있습니다.' } };
+      if (post.status === 'blocked') return { status: 403, jsonBody: { error: '차단된 글은 수정할 수 없습니다.' } };
+      if (post.status === 'deleted') return { status: 403, jsonBody: { error: '삭제된 글은 수정할 수 없습니다.' } };
+
+      let body;
+      try { body = await request.json(); } catch { return bad('요청 형식이 잘못됐습니다.'); }
+
+      const title = String(body.title || '').trim();
+      const text = String(body.body || '').trim();
+      if (!title) return bad('제목을 입력해 주세요.');
+      if (title.length > LIMIT.title) return bad(`제목은 ${LIMIT.title}자까지 쓸 수 있습니다.`);
+      if (!text) return bad('내용을 입력해 주세요.');
+      if (text.length > LIMIT.body) return bad(`내용은 ${LIMIT.body}자까지 쓸 수 있습니다.`);
+
+      const cfg = await settings.get();
+      const hits = findBanned(title + '\n' + text, cfg.bannedWords);
+      const newStatus = hits.length ? 'held' : 'public';
+      const now = new Date().toISOString();
+
+      /* set 을 쓴다 — updatedAt/heldWords 는 문서에 없을 수 있다
+         (commentsUpdate 의 주석 참고). replace/remove 로는 503 이 난다. */
+      const ops = [
+        { op: 'set', path: '/title', value: title },
+        { op: 'set', path: '/body', value: text },
+        { op: 'set', path: '/status', value: newStatus },
+        { op: 'set', path: '/updatedAt', value: now }
+      ];
+      if (hits.length) ops.push({ op: 'set', path: '/heldWords', value: hits });
+      else if (post.heldWords !== undefined) ops.push({ op: 'remove', path: '/heldWords' });
+
+      await c.item(post.id, post.pk).patch(ops);
+
+      return {
+        status: 200,
+        jsonBody: newStatus === 'held'
+          ? { held: true, message: '부적절한 표현이 감지되어 검토 대기 중입니다. 오탐이면 곧 공개됩니다.' }
+          : { held: false, post: publicPost({ ...post, title, body: text, status: newStatus, updatedAt: now }, true, user.sub) }
+      };
+    } catch (e) {
+      context.error('글 수정 실패:', e.message);
+      return dbFail(e, '수정하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  }
+});
+
+/* ── 글 삭제 ──
+   자기 글만. 문서는 지우지 않고 status 만 'deleted' 로 — 답변도 함께 지운다.
+   글만 지우면 답변들이 부모 없는 문서로 DB 에 영구히 남아 신고·제재 집계가
+   그 문서들을 계속 집어간다. */
+app.http('postsDelete', {
+  route: 'posts/{id}',
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+
+    const postId = request.params.id;
+    const c = container();
+
+    try {
+      const post = (await query({
+        query: "SELECT * FROM c WHERE c.type = 'post' AND c.id = @id",
+        parameters: [{ name: '@id', value: postId }]
+      }))[0];
+      if (!post) return { status: 404, jsonBody: { error: '없는 글입니다.' } };
+      if (post.authorSub !== user.sub) return { status: 403, jsonBody: { error: '본인 글만 삭제할 수 있습니다.' } };
+      if (post.status === 'deleted') return { status: 400, jsonBody: { error: '이미 삭제된 글입니다.' } };
+
+      const now = new Date().toISOString();
+
+      // 답변 먼저 — 글을 먼저 지우고 여기서 실패하면 답변만 남는다
+      const comments = await query({
+        query: "SELECT * FROM c WHERE c.type = 'comment' AND c.pk = @p AND c.status != 'deleted'",
+        parameters: [{ name: '@p', value: postId }]
+      });
+      for (const cm of comments) {
+        await c.item(cm.id, postId).patch([
+          { op: 'set', path: '/status', value: 'deleted' },
+          { op: 'set', path: '/body', value: '(삭제된 답변입니다.)' },
+          { op: 'set', path: '/deletedAt', value: now }
+        ]);
+      }
+
+      await c.item(post.id, post.pk).patch([
+        { op: 'set', path: '/status', value: 'deleted' },
+        { op: 'set', path: '/body', value: '(삭제된 글입니다.)' },
+        { op: 'set', path: '/deletedAt', value: now }
+      ]);
+
+      return { status: 200, jsonBody: { ok: true } };
+    } catch (e) {
+      context.error('글 삭제 실패:', e.message);
       return dbFail(e, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }

@@ -51,9 +51,11 @@ test('COSMOS_CONNECTION 이 없으면 원인을 알려준다', async () => {
   }
 });
 
-test('여섯 엔드포인트가 등록된다', () => {
+test('열 개의 엔드포인트가 등록된다', () => {
   assert.deepStrictEqual(Object.keys(routes).sort(),
-    ['commentsCreate', 'commentsDelete', 'commentsList', 'commentsUpdate', 'postsCreate', 'postsGet', 'postsList', 'postsVote']);
+    ['commentsCreate', 'commentsDelete', 'commentsList', 'commentsUpdate', 'postsCreate', 'postsDelete', 'postsGet', 'postsList', 'postsUpdate', 'postsVote']);
+  assert.strictEqual(routes.postsUpdate.route, 'posts/{id}');
+  assert.strictEqual(routes.postsDelete.route, 'posts/{id}');
   assert.strictEqual(routes.postsVote.route, 'posts/{id}/vote');
   assert.strictEqual(routes.commentsList.route, 'posts/{id}/comments');
 });
@@ -765,4 +767,100 @@ test('mine 플래그 — 작성자 식별자를 노출하지 않고 자기 글�
   const cAuthor = await routes.commentsList.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
   assert.strictEqual(cAuthor.jsonBody.comments[0].mine, true);
   assert.ok(!JSON.stringify(cAuthor.jsonBody).includes('discord:1'), 'sub 는 여전히 안 나간다');
+});
+
+// ── 글 수정·삭제 ──
+
+test('글 수정 — 비로그인 401, 남의 글 403', async () => {
+  const post = await seedPost();
+  const anon = await routes.postsUpdate.handler(
+    req({ body: { title: 't', body: 'b' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(anon.status, 401);
+
+  const other = await routes.postsUpdate.handler(
+    req({ cookie: login({ sub: 'discord:2' }), body: { title: 't', body: 'b' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(other.status, 403);
+
+  const del = await routes.postsDelete.handler(
+    req({ cookie: login({ sub: 'discord:2' }), params: { id: post.id } }), ctx);
+  assert.strictEqual(del.status, 403);
+});
+
+test('글 수정 — 제목과 내용이 바뀌고 updatedAt 이 생긴다', async () => {
+  const post = await seedPost();
+  const res = await routes.postsUpdate.handler(
+    req({ cookie: login(), body: { title: '고친 제목', body: '고친 내용입니다.' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.jsonBody.held, false);
+  assert.strictEqual(res.jsonBody.post.title, '고친 제목');
+  assert.ok(res.jsonBody.post.updatedAt, '수정됨 표시에 필요한 updatedAt 이 없다');
+
+  const got = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(got.jsonBody.post.title, '고친 제목');
+  assert.strictEqual(got.jsonBody.post.body, '고친 내용입니다.');
+});
+
+test('글 수정 — 빈 제목·빈 내용·길이 초과는 거부한다', async () => {
+  const post = await seedPost();
+  for (const body of [
+    { title: '  ', body: '내용' },
+    { title: '제목', body: '' },
+    { title: 'ㄱ'.repeat(121), body: '내용' },
+    { title: '제목', body: 'ㄱ'.repeat(4001) }
+  ]) {
+    const res = await routes.postsUpdate.handler(
+      req({ cookie: login(), body, params: { id: post.id } }), ctx);
+    assert.strictEqual(res.status, 400);
+  }
+});
+
+test('글 수정 — 금칙어가 들어가면 보류되고 목록에서 사라진다', async () => {
+  const post = await seedPost();
+  const settingsLib = require('../src/lib/settings');
+  const cfg = await settingsLib.get();
+  const word = cfg.bannedWords[0];
+  if (!word) return;  // 금칙어 목록이 비어 있으면 이 검사는 건너뛴다
+
+  const res = await routes.postsUpdate.handler(
+    req({ cookie: login(), body: { title: okPost.title, body: '이건 ' + word + ' 입니다' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(res.jsonBody.held, true);
+
+  const list = await routes.postsList.handler(req({}), ctx);
+  assert.deepStrictEqual(list.jsonBody.posts, [], '보류된 글이 목록에 남아 있다');
+  const got = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(got.status, 404, '보류된 글이 주소로 열린다');
+});
+
+test('글 삭제 — 글과 답변이 함께 지워지고 목록·조회에서 사라진다', async () => {
+  const post = await seedPost();
+  // 답변 두 개 (내 것 하나, 남의 것 하나)
+  await routes.commentsCreate.handler(
+    req({ cookie: login(), body: { body: '내 답변' }, params: { id: post.id } }), ctx);
+  await routes.commentsCreate.handler(
+    req({ cookie: login({ sub: 'discord:2' }), body: { body: '남의 답변' }, params: { id: post.id } }), ctx);
+
+  const res = await routes.postsDelete.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
+  assert.strictEqual(res.status, 200);
+
+  const list = await routes.postsList.handler(req({}), ctx);
+  assert.deepStrictEqual(list.jsonBody.posts, [], '삭제된 글이 목록에 남아 있다');
+  const got = await routes.postsGet.handler(req({ params: { id: post.id } }), ctx);
+  assert.strictEqual(got.status, 404);
+
+  /* 글만 지우고 답변을 남기면 부모 없는 문서가 DB 에 영구히 남는다.
+     신고·제재 집계가 그 문서들을 계속 집어가므로 함께 지운다. */
+  const orphans = state.docs.filter((d) => d.type === 'comment' && d.pk === post.id && d.status !== 'deleted');
+  assert.deepStrictEqual(orphans, [], '부모 없는 답변이 남아 있다');
+
+  // 재삭제는 400
+  const again = await routes.postsDelete.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
+  assert.strictEqual(again.status, 400);
+});
+
+test('글 수정 — 삭제된 글은 고칠 수 없다', async () => {
+  const post = await seedPost();
+  await routes.postsDelete.handler(req({ cookie: login(), params: { id: post.id } }), ctx);
+  const res = await routes.postsUpdate.handler(
+    req({ cookie: login(), body: { title: 't', body: 'b' }, params: { id: post.id } }), ctx);
+  assert.strictEqual(res.status, 403);
 });

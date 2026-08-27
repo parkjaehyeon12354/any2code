@@ -155,6 +155,22 @@
 .answer-edit-form .row { display: flex; gap: var(--sp-sm); margin-top: var(--sp-sm); justify-content: flex-end; }
 .answer-edit-form .hint { font-size: 12.5px; color: var(--muted); align-self: center; }
 
+/* ── 글 수정 폼 ──
+   답변 수정 폼의 스타일을 빌리되, 제목 입력칸과 라벨은 여기서 둔다. */
+.post-edit-form { max-width: 720px; }
+.post-edit-form .field { margin-bottom: var(--sp-md); }
+.post-edit-form label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--body); }
+.post-edit-form input {
+  width: 100%; padding: 10px 12px;
+  font-family: var(--font-body); font-size: 15px;
+  color: var(--body); background: var(--canvas);
+  border: 1px solid var(--hairline); border-radius: var(--rounded-md);
+}
+.post-edit-form input:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
+}
+.post-edit-form textarea { min-height: 200px; }
+
 .state {
   padding: var(--sp-section) var(--sp-lg); text-align: center;
   border: 1px dashed var(--hairline); border-radius: var(--rounded-lg);
@@ -390,6 +406,7 @@
   let myVote = 0;
   let comments = null;                    // null = 아직 안 받음 (빈 배열과 구분)
   let editing = null;                     // 수정 중인 답변 id (null = 없음)
+  let postEditing = false;                // 글 수정 폼을 띄우는 중인가
 
   const say = (msg) => { notice.textContent = msg; notice.hidden = false; };
   const hush = () => { notice.hidden = true; };
@@ -464,6 +481,23 @@
 
   function render() {
     if (!post) return;
+    /* 글 수정 폼도 render() 가 그린다 — 답변 수정 폼과 같은 이유다
+       (리스너 중복 등록 방지). */
+    if (postEditing) {
+      box.innerHTML =
+        '<form class="post-edit-form answer-edit-form">' +
+          '<div class="field"><label for="post-edit-title">제목</label>' +
+          '<input id="post-edit-title" maxlength="120" value="' + esc(post.title) + '"></div>' +
+          '<div class="field"><label for="post-edit-body">내용</label>' +
+          '<textarea id="post-edit-body" aria-label="글 수정" maxlength="4000">' + esc(post.body) + '</textarea></div>' +
+          '<div class="row">' +
+            '<span class="hint">제목 120자 · 내용 4000자까지</span>' +
+            '<button type="button" class="btn btn-ghost cancel-post-edit">취소</button>' +
+            '<button type="submit" class="btn btn-primary">저장</button>' +
+          '</div>' +
+        '</form>';
+      return;
+    }
     const s = SUBJECTS[post.subject] || { name: post.subject, color: 'var(--muted-soft)' };
     box.innerHTML =
       '<div class="thread-head">' +
@@ -478,10 +512,18 @@
             '<span class="subject"><span class="dot" style="background:' + s.color + '"></span>' + esc(s.name) + '</span>' +
             '<span class="sep" aria-hidden="true">·</span><span>' + esc(post.author) + '</span>' +
             '<span class="sep" aria-hidden="true">·</span><span>' + esc(ago(post.createdAt)) + '</span>' +
+            (post.updatedAt ? '<span class="sep" aria-hidden="true">·</span><span>수정됨</span>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
       '<div class="thread-body">' + esc(post.body) + '</div>' +
+      /* 자기 글에만 붙인다 — 남의 글에 보이면 반드시 실패할 버튼이 된다 */
+      (post.mine
+        ? '<div class="answer-actions">' +
+            '<button type="button" class="edit" data-post-edit>수정</button>' +
+            '<button type="button" class="delete" data-post-delete>삭제</button>' +
+          '</div>'
+        : '') +
       reportBtn(post.id, post.mine) +
       '<section class="answers">' +
         '<h2>답변 ' + post.answers + '</h2>' +
@@ -720,6 +762,103 @@
     } catch {
       say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
     } finally {
+      delBtn.disabled = false;
+      delBtn.textContent = '삭제';
+    }
+  });
+
+  // ── 글 수정 ──
+  box.addEventListener('click', function (e) {
+    if (e.target.closest('[data-post-edit]')) {
+      postEditing = true;
+      render();
+      const t = el('post-edit-title');
+      if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+      return;
+    }
+    if (e.target.closest('.cancel-post-edit')) {
+      postEditing = false;
+      render();
+    }
+  });
+
+  box.addEventListener('submit', async function (e) {
+    const form = e.target.closest('.post-edit-form');
+    if (!form) return;
+    e.preventDefault();
+
+    const titleEl = el('post-edit-title');
+    const bodyEl = el('post-edit-body');
+    const title = titleEl.value.trim();
+    const text = bodyEl.value.trim();
+    if (!title) { titleEl.focus(); return; }
+    if (!text) { bodyEl.focus(); return; }
+    // 안 바뀌었으면 요청도 안 본다 — 고치지 않았는데 "수정됨" 이 붙는 건 거짓말이다
+    if (title === post.title && text === post.body) { postEditing = false; render(); return; }
+
+    const submitBtn = form.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '저장 중…';
+
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body: text })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        say(data.error || '수정하지 못했습니다.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '저장';
+        return;                     // 폼을 닫지 않는다 — 쓴 내용이 날아간다
+      }
+
+      if (data.held) {
+        // 보류된 글은 이 주소에서도 404 다 — 더 읽을 수 없으니 목록으로 본다
+        alert(data.message);
+        window.location.href = '/community';
+        return;
+      }
+      hush();
+      post = data.post;
+      postEditing = false;
+      document.title = post.title + ' — Ans2Quest';
+      render();
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '저장';
+    }
+  });
+
+  // ── 글 삭제 ──
+  box.addEventListener('click', async function (e) {
+    const delBtn = e.target.closest('[data-post-delete]');
+    if (!delBtn) return;
+
+    if (!confirm('이 글을 삭제하시겠습니까? 달린 답변도 함께 삭제되며 복구할 수 없습니다.')) return;
+
+    delBtn.disabled = true;
+    delBtn.textContent = '삭제 중…';
+
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        say(data.error || '삭제하지 못했습니다.');
+        delBtn.disabled = false;
+        delBtn.textContent = '삭제';
+        return;
+      }
+      // 지워진 글은 이 주소에서 404 다 — 목록으로 본다
+      window.location.href = '/community';
+    } catch {
+      say('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
       delBtn.disabled = false;
       delBtn.textContent = '삭제';
     }
