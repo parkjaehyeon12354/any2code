@@ -365,6 +365,16 @@
             <span class="hint">주기는 질량과 무관합니다 — 아무리 바꿔도 측정 주기가 같은지 보세요.
             단 공기 저항이 있으면 무거운 추일수록 진폭이 천천히 줍니다(같은 저항 힘이 질량으로 나뉨).</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="grav">중력 가속도</label>
+              <output id="grav-out">9.81 m/s² · 지구</output>
+            </div>
+            <input type="range" id="grav" min="1.6" max="24.8" step="0.01" value="9.81">
+            <span class="hint">질량은 주기를 안 바꾸지만 <strong>중력은 바꿉니다.</strong>
+            달(1.62)로 내리면 주기가 2.46배 길어집니다 — 같은 진자가 달에서는 느리게 흔들립니다.</span>
+          </div>
         </div>
       </div>
 
@@ -431,7 +441,10 @@
      적분은 반음(semi-implicit) 오일러다. 속도를 먼저 갱신하고 그 속도로 위치를 옮긴다.
      보통 오일러법을 쓰면 감쇠를 0으로 둬도 진폭이 서서히 커져서, 학생이 물리가 아니라
      수치 오차를 관찰하게 된다. 순서만 바꾸면 그 문제가 사라진다. */
-  const G = 9.80665;
+  const G_EARTH = 9.80665;
+  /* 중력 가속도는 이제 조작 변수다. 천체별 값(m/s²):
+     달 1.62 · 화성 3.72 · 지구 9.81 · 목성 24.79 */
+  const G = () => params.g;
 
   /* 화면 주사율(60Hz·144Hz)이 물리 결과를 바꾸면 안 되므로 고정 간격으로 적분한다.
      ponytail: 탭을 오래 숨겼다가 돌아오면 밀린 시간이 한꺼번에 들어온다. 0.25초로
@@ -446,7 +459,7 @@
     running: true
   };
 
-  const params = { L: 1, deg: 20, b: 0, m: 1 };
+  const params = { L: 1, deg: 20, b: 0, m: 1, g: G_EARTH };
 
   /* 주기 측정 — 아래로 0을 지나는 순간을 잡아 그 간격을 잰다.
      최대점을 추적하지 않는 이유: 감쇠가 있으면 최대점이 매번 달라져 흔들린다.
@@ -475,7 +488,7 @@
     /* 저항 '힘' 은 속도에 비례하고, 가속도는 그 힘을 질량으로 나눈 것이다.
        같은 저항에서 무거운 추는 천천히 멈춘다 — 주기(무저항)는 질량과 무관하지만
        감쇠는 관련이 있다. m=1 이면 기존 식과 같다. */
-    const acc = -(G / params.L) * Math.sin(state.theta) - (params.b / params.m) * state.omega;
+    const acc = -(G() / params.L) * Math.sin(state.theta) - (params.b / params.m) * state.omega;
     state.omega += acc * DT;
     state.theta += state.omega * DT;
     state.t += DT;
@@ -497,7 +510,7 @@
   const measured = () =>
     periods.length ? periods.reduce((a, b) => a + b, 0) / periods.length : null;
 
-  const idealPeriod = () => 2 * Math.PI * Math.sqrt(params.L / G);
+  const idealPeriod = () => 2 * Math.PI * Math.sqrt(params.L / G());
 
   /* ── 그리기 ── */
   const canvas = el('canvas');
@@ -655,13 +668,22 @@
   }
 
   /* ── 조작 ── */
-  const lenIn = el('len'), angIn = el('ang'), dampIn = el('damp'), massIn = el('mass');
+  const lenIn = el('len'), angIn = el('ang'), dampIn = el('damp'), massIn = el('mass'), gravIn = el('grav');
+
+  /* 가까운 천체 이름을 붙인다 — 숫자만 보면 1.62 가 무슨 값인지 모른다.
+     0.3 안쪽이면 그 천체로 본다(슬라이더 step 0.01 이라 정확히 맞추기 어렵다). */
+  const BODIES = [[1.62, '달'], [3.72, '화성'], [8.87, '금성'], [9.81, '지구'], [24.79, '목성']];
+  function bodyName(g) {
+    const hit = BODIES.find(([v]) => Math.abs(g - v) < 0.3);
+    return hit ? hit[1] : '가상';
+  }
 
   function syncLabels() {
     el('len-out').textContent = params.L.toFixed(2) + ' m';
     el('ang-out').textContent = params.deg + '°';
     el('damp-out').textContent = params.b.toFixed(2) + ' /s';
     el('mass-out').textContent = params.m.toFixed(1) + ' kg';
+    el('grav-out').textContent = params.g.toFixed(2) + ' m/s² · ' + bodyName(params.g);
   }
 
   lenIn.addEventListener('input', function () {
@@ -689,6 +711,12 @@
        주기가 그대로인 걸 보는 게 이 슬라이더의 존재 이유다. */
   });
 
+  gravIn.addEventListener('input', function () {
+    params.g = Number(this.value);
+    syncLabels();
+    periods = []; lastCross = null;   // 중력이 바뀌면 이전 측정은 의미가 없다
+  });
+
   el('toggle').addEventListener('click', function () {
     state.running = !state.running;
     this.textContent = state.running ? '일시정지' : '이어서';
@@ -708,7 +736,8 @@
       L: params.L.toFixed(2),
       a: String(params.deg),
       b: params.b.toFixed(2),
-      m: params.m.toFixed(1)
+      m: params.m.toFixed(1),
+      g: params.g.toFixed(2)
     }).toString();
     return u.toString();
   }
@@ -761,13 +790,15 @@
     params.deg = Math.round(num('a', 5, 90, 20));
     params.b = num('b', 0, 0.5, 0);
     params.m = num('m', 0.1, 2, 1);
+    params.g = num('g', 1.6, 24.8, G_EARTH);
 
     lenIn.value = params.L;
     angIn.value = params.deg;
     dampIn.value = params.b;
     massIn.value = params.m;
+    gravIn.value = params.g;
 
-    if (q.has('L') || q.has('a') || q.has('b') || q.has('m')) {
+    if (q.has('L') || q.has('a') || q.has('b') || q.has('m') || q.has('g')) {
       el('stage-said').textContent = '공유된 조건으로 시작했습니다.';
       return true;
     }

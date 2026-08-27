@@ -478,6 +478,17 @@
             <input type="range" id="mB" min="2" max="80" step="0.5" value="32">
             <span class="hint"><strong>두 값을 같게 맞춰 보세요.</strong> 그때만 속도가 같아집니다.</span>
           </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="count">한 상자의 입자 수</label>
+              <output id="count-out">46개</output>
+            </div>
+            <input type="range" id="count" min="8" max="200" step="1" value="46">
+            <span class="hint">이론값은 입자가 아주 많다고 보고 계산한 것입니다.
+            <strong>8개까지 줄여 보세요</strong> — 측정 속력이 이론값에서 몇 % 씩 벗어납니다.
+            표본이 작아 평균이 안 맞는 것이지, 온도가 틀린 게 아닙니다.</span>
+          </div>
         </div>
       </div>
 
@@ -573,7 +584,7 @@
   const kB = 1.380649e-23;          // 볼츠만 상수 (J/K)
   const NA = 6.02214076e23;         // 아보가드로 수
 
-  const S = { temp: 300, mA: 4, mB: 32 };
+  const S = { temp: 300, mA: 4, mB: 32, count: 46 };
   let running = true;
 
   const canvas = el('canvas');
@@ -601,7 +612,8 @@
 
   /* 화면용 입자. 실제 속력(m/s)을 픽셀 속도로 줄여 쓴다.
      분포에서 뽑아야 "모두 같은 속도가 아니다" 가 눈에 보인다. */
-  const N = 46;
+/* 입자 수는 조작 변수다(S.count) — 적으면 표본 오차로 측정 속력이 이론값에서
+     벗어난다. 그게 이 슬라이더의 존재 이유다. */
   let boxes = [[], []];
 
   // 맥스웰-볼츠만 분포에서 속력 하나를 뽑는다(기각 표본).
@@ -619,7 +631,7 @@
     boxes = [0, 1].map((k) => {
       const M = k === 0 ? S.mA : S.mB;
       const list = [];
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < S.count; i++) {
         const speed = sampleSpeed(S.temp, M);
         const th = Math.random() * Math.PI * 2;
         list.push({
@@ -767,16 +779,30 @@
     gctx.fillText('입자 수', pad.l - 8, pad.t + 12);
   }
 
+  /* 화면에 있는 입자들의 실제 rms. 이론값과 달리 표본이 작으면 흔들린다 —
+     이론식만 보여주면 8개로 줄여도 숫자가 꿈쩍하지 않아, 입자 수 슬라이더가
+     아무 일도 안 하는 것처럼 보인다. */
+  function sampleRms(k) {
+    const list = boxes[k];
+    if (!list || !list.length) return 0;
+    return Math.sqrt(list.reduce((a, p) => a + p.speed * p.speed, 0) / list.length);
+  }
+
   // ── 수치 ──
   function readout() {
     const T = S.temp;
-    const va = vRms(T, S.mA), vb = vRms(T, S.mB);
+    const va = sampleRms(0) || vRms(T, S.mA), vb = sampleRms(1) || vRms(T, S.mB);
     const ek = meanEk(T);
 
     el('r-temp').textContent = T + ' K (' + (T - 273.15).toFixed(0) + '°C)';
     el('r-ek').textContent = ek.toExponential(3).replace('e-21', ' × 10⁻²¹') + ' J';
-    el('r-va').textContent = Math.round(va).toLocaleString() + ' m/s';
-    el('r-vb').textContent = Math.round(vb).toLocaleString() + ' m/s';
+    const thA = vRms(T, S.mA), thB = vRms(T, S.mB);
+    const gap = (m, th) => {
+      const d = Math.abs(m - th) / th * 100;
+      return d < 0.5 ? '' : ` (이론 ${Math.round(th).toLocaleString()}, ${d.toFixed(1)}% 차)`;
+    };
+    el('r-va').textContent = Math.round(va).toLocaleString() + ' m/s' + gap(va, thA);
+    el('r-vb').textContent = Math.round(vb).toLocaleString() + ' m/s' + gap(vb, thB);
     el('r-graham').textContent = (va / vb).toFixed(3) + ' : 1';
 
     el('s-ek').textContent = '1.000 : 1';
@@ -809,10 +835,11 @@
   const labels = {
     temp: (v) => Number(v) + ' K',
     mA: (v) => Number(v).toFixed(1) + ' g/mol',
-    mB: (v) => Number(v).toFixed(1) + ' g/mol'
+    mB: (v) => Number(v).toFixed(1) + ' g/mol',
+    count: (v) => Number(v) + '개'
   };
 
-  ['temp', 'mA', 'mB'].forEach((k) => {
+  ['temp', 'mA', 'mB', 'count'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -867,7 +894,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ temp: S.temp, mA: S.mA, mB: S.mB });
+      const q = new URLSearchParams({ temp: S.temp, mA: S.mA, mB: S.mB, count: S.count });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -878,7 +905,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['temp', 'mA', 'mB'].forEach((k) => {
+    ['temp', 'mA', 'mB', 'count'].forEach((k) => {
       const v = Number(q.get(k));
       if (q.get(k) === null || !Number.isFinite(v)) return;
       const input = el(k);
