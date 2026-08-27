@@ -341,37 +341,44 @@ test('목록 페이지는 검색에 노출되지 않는다', () => {
     '링크를 다 지웠어도 검색 결과로는 들어올 수 있다 — noindex 가 필요하다');
 });
 
-test('약관 동의는 로그인 화면에서 먼저 받는다', () => {
-  /* 소셜 로그인은 누르는 순간 외부 제공자로 넘어가 되돌릴 수 없다.
-     동의를 그 뒤에 받으면 "계정이 만들어진 뒤에 묻는" 꼴이 된다. */
+test('로그인 화면은 순수 로그인만 한다', () => {
+  /* 예전엔 소셜 로그인 버튼 아래에 약관 동의 체크박스가 있었다. 그런데 서버가
+     신규 가입자를 어차피 /welcome 으로 보내 거기서 동의를 받으므로, 로그인
+     화면의 체크박스는 화면 넛지일 뿐 실제 강제가 아니었다 — 이미 가입한
+     사용자도 로그인마다 약관 링크를 보게 되는 게 자연스럽지 않다.
+     로그인은 소셜 버튼만 누르면 바로 진행돼야 한다. */
   const html = readRoot('login.html');
-  assert.ok(/id="agree"/.test(html), '로그인 화면에 동의 체크박스가 있어야 한다');
+  assert.ok(!/id="agree"/.test(html), '로그인 화면에 동의 체크박스가 남아 있으면 안 된다');
+  assert.ok(!/class="auth-agree"/.test(html), '동의 블록 마크업이 남아 있으면 안 된다');
+  assert.ok(!/if \(!agree\.checked\)/.test(html), '동의 체크 가드가 남아 있으면 안 된다');
+
+  // 그렇다고 강제 자체가 사라진 건 아니다 — /welcome 이 대신 받는다는 걸 문서화한다
+  const w = readRoot('welcome.html');
+  assert.ok(/id="w-agree"/.test(w), '/welcome 에 실제 동의 체크박스가 있어야 한다');
+});
+
+test('회원가입(welcome)이 약관 동의를 실제로 강제한다', () => {
+  /* 예전엔 /welcome 이 "동의는 로그인 화면에서 이미 받았다" 며 조용한
+     안내문만 보여주고 agree: true 를 하드코딩해서 서버로 보냈다 — 로그인
+     화면 체크박스를 없애면 아무 동의도 없이 서버가 '동의했다' 고 기록하게
+     된다. 진짜 강제(termsAcceptedAt)가 이뤄지는 화면에 진짜 체크박스가
+     있어야 한다. */
+  const html = readRoot('welcome.html');
+  assert.ok(/type="checkbox" id="w-agree"/.test(html), '체크박스가 있어야 한다');
   assert.ok(/href="\/terms"/.test(html) && /href="\/privacy"/.test(html),
     '두 문서로 가는 링크가 있어야 한다');
 
-  // 체크박스가 OAuth 버튼보다 뒤(아래)에 와야 한다 — 사용자가 요청한 배치
-  assert.ok(html.indexOf('class="providers"') < html.indexOf('class="auth-agree"'),
-    '동의는 로그인 버튼 아래에 둔다');
-
-  // 동의 없이 누르면 이동하지 않아야 한다
-  assert.ok(/if \(!agree\.checked\)[\s\S]{0,300}return;/.test(html),
-    '미동의 상태에서 로그인 시작을 막아야 한다');
+  // 미체크 상태에서 제출하면 서버로 안 나가야 한다
+  const submit = html.slice(html.indexOf("form.addEventListener('submit'"));
+  assert.ok(/if \(!agree\.checked\)[\s\S]{0,200}return;/.test(submit.slice(0, 600)),
+    '미동의 상태에서 제출을 막아야 한다');
 });
 
-test('로그인 버튼을 비활성으로 두지 않는다', () => {
+test('회원가입 버튼을 비활성으로 두지 않는다', () => {
   /* disabled 로 막으면 왜 안 눌리는지 알 수 없다. 누르게 두고 이유를 보여준다. */
-  const html = readRoot('login.html');
-  const guard = html.slice(html.indexOf("if (!agree.checked)"));
-  assert.ok(/notice\.textContent/.test(guard.slice(0, 400)),
-    '막을 때 이유를 화면에 알려야 한다');
-});
-
-test('프로필 화면은 약관을 다시 묻지 않는다', () => {
-  // 로그인 화면에서 이미 받았다. 또 물으면 두 번 묻는 꼴이다.
   const html = readRoot('welcome.html');
-  assert.ok(!/type="checkbox"/.test(html),
-    '/welcome 에 동의 체크박스가 남아 있으면 안 된다');
-  assert.ok(/w-agreed/.test(html), '동의한 문서 링크는 남겨야 한다');
+  const guard = html.slice(html.indexOf('if (!agree.checked)'));
+  assert.ok(/fail\(/.test(guard.slice(0, 300)), '막을 때 이유를 화면에 알려야 한다');
 });
 
 test('이름·생일은 건너뛸 수 있다', () => {

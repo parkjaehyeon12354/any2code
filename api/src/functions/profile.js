@@ -107,3 +107,46 @@ app.http('profileAcceptTerms', {
     }
   }
 });
+
+/* 계정 삭제 예약.
+
+   POST 로 예약, DELETE 로 취소한다. 즉시 지우지 않는 이유는 profile.js 의
+   scheduleDeletion 주석에 있다 — 실수와 소셜 로그인 일시 장애를 구분할 수
+   없어 7일 유예를 둔다. */
+app.http('profileScheduleDeletion', {
+  route: 'profile/delete',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+
+    try {
+      const purgeAt = await profile.scheduleDeletion(user.sub);
+      return { status: 202, jsonBody: { deletionScheduledAt: new Date().toISOString(), purgeAt } };
+    } catch (e) {
+      context.error('계정 삭제 예약 실패:', e.message);
+      return dbFail(e, '삭제를 예약하지 못했습니다.');
+    }
+  }
+});
+
+app.http('profileCancelDeletion', {
+  route: 'profile/delete',
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+
+    try {
+      await profile.cancelDeletion(user.sub);
+      return { status: 204 };
+    } catch (e) {
+      context.error('계정 삭제 취소 실패:', e.message);
+      return dbFail(e, '취소하지 못했습니다.');
+    }
+  }
+});

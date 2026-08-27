@@ -219,6 +219,19 @@
   .rows > div { flex-direction: column; align-items: flex-start; gap: 4px; }
   .rows dt { width: auto; }
 }
+
+/* 계정 삭제 카드 — 다른 카드와 같은 톤을 쓰되 제목만 위험색으로 눈에 띄게 한다.
+   전체를 빨갛게 칠하면 화면이 시끄러워지고, 그 옆의 '로그아웃' 버튼과도
+   섞여서 무엇이 진짜 위험한 동작인지 오히려 흐려진다. */
+#danger-card .card-head h2 { color: var(--badge-bad-fg); }
+.btn-danger {
+  background: var(--badge-bad-bg);
+  color: var(--badge-bad-fg);
+  border: 1px solid var(--badge-bad-fg);
+}
+.btn-danger:hover { opacity: .85; }
+#danger-countdown strong { color: var(--badge-bad-fg); }
+
 </style>
 </head>
 <body>
@@ -235,8 +248,65 @@
       </svg>
       Ans2Quest
     </a>
-    <ul class="nav-links">
-      <li><a href="/community">커뮤니티</a></li>
+    <ul class="nav-links" id="nav-links">
+      <li>
+        <a href="/simulation/" data-dropdown="simulation">시뮬레이션</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=physics">물리학</a></p>
+            <a href="/simulation/pendulum.html">단진자</a>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+            <a href="/simulation/wave-interference.html">빛과 파동</a>
+            <a href="/simulation/orbital-motion.html">천체의 운동</a>
+            <a href="/simulation/thermal-gas.html">열과 통계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=chemistry">화학</a></p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <a href="/simulation/chemical-reaction.html">화학 반응</a>
+            <a href="/simulation/acid-base.html">산과 염기</a>
+            <a href="/simulation/electrochemistry.html">전기화학</a>
+            <a href="/simulation/radioactivity.html">방사능</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=biology">생명과학</a></p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <a href="/simulation/ecology-population.html">개체와 생태계</a>
+            <a href="/simulation/neural-signal.html">신경과 자극전달</a>
+            <a href="/simulation/circulation-transport.html">순환과 수송</a>
+            <a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=earth">지구과학</a></p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+       <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="/research" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="/research/topics">주제 탐색</a>
+            <a href="/research/hypothesis">가설 설정 가이드</a>
+            <a href="/research/experiment">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">생기부 연계</p>
+            <a href="/research/record">세특 작성 가이드</a>
+            <a href="/research/report">보고서 템플릿</a>
+            <a href="/research/examples">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
     </ul>
     <div class="nav-cta" id="nav-cta">
       <a href="/login">시작하기</a>
@@ -263,7 +333,9 @@
     </button>
   </div>
   <nav>
-    <a href="/simulation/pendulum.html">단진자</a>
+      <!-- 모바일엔 드롭다운이 없다. href="#" 4개 대신 실제로 갈 수 있는 목록 하나로. -->
+      <a href="/simulation/">시뮬레이션 전체 목록</a>
+      <a href="/simulation/pendulum.html">단진자</a>
     <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
     <a href="/simulation/wave-interference.html">빛과 파동</a>
     <a href="/simulation/orbital-motion.html">천체의 운동</a>
@@ -278,8 +350,9 @@
     <a href="/simulation/ocean-circulation.html">해양과 순환</a>
     <a href="/community">커뮤니티</a>
     <a href="/science">AI 과학 도우미</a>
-    <a href="/guide">가이드</a>
-  </nav>
+      <a href="/research">심화 탐구</a>
+      <a href="/guide">가이드</a>
+    </nav>
 </div>
 
 <main class="container settings">
@@ -352,6 +425,26 @@
         <a href="#" class="btn btn-ghost" data-logout>로그아웃</a>
       </div>
     </div>
+
+    <!-- 맨 아래에 둔다. 실수로 누르는 걸 최대한 어렵게 하는 위치다. -->
+    <div class="card" id="danger-card">
+      <div class="card-head">
+        <h2>계정 삭제</h2>
+        <p>글·답변·프로필이 지워집니다. 7일 안에는 다시 로그인해 취소할 수 있습니다.</p>
+      </div>
+      <div class="card-body" id="danger-normal">
+        <span class="hint">삭제를 누르면 계정이 <strong>7일 뒤</strong> 완전히 사라집니다.
+        그 전까지 로그인하면 자동으로 취소됩니다. 7일이 지나면 같은 소셜 계정으로
+        새로 가입할 수 있습니다.</span>
+      </div>
+      <div class="card-body" id="danger-pending" hidden>
+        <span class="hint" id="danger-countdown"></span>
+      </div>
+      <div class="foot">
+        <button type="button" class="btn btn-danger" id="danger-delete">계정 삭제</button>
+        <button type="button" class="btn btn-primary" id="danger-cancel" hidden>삭제 취소</button>
+      </div>
+    </div>
   </div>
 
   <!-- 동의한 문서를 언제든 다시 볼 수 있어야 한다. 가입할 때만 보여주고
@@ -364,6 +457,7 @@
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>
 <script src="/assets/js/mobile-menu.js"></script>
+<script src="/assets/js/nav-dropdown.js"></script>
 <script>
 (function () {
   const el = (id) => document.getElementById(id);
@@ -584,11 +678,68 @@
     say('불러온 값으로 되돌렸습니다. 저장하지는 않았습니다.');
   });
 
+  /* 계정 삭제. deletionScheduledAt 은 /api/me 가 준다(Session.refresh 응답) —
+     /api/profile 은 이름·생일만 다루는 좁은 엔드포인트라 여기 없다. */
+  const dangerNormal = el('danger-normal');
+  const dangerPending = el('danger-pending');
+  const dangerCountdown = el('danger-countdown');
+  const deleteBtn = el('danger-delete');
+  const cancelBtn = el('danger-cancel');
+  const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function renderDanger(user) {
+    const scheduled = user && user.deletionScheduledAt;
+    dangerNormal.hidden = !!scheduled;
+    dangerPending.hidden = !scheduled;
+    deleteBtn.hidden = !!scheduled;
+    cancelBtn.hidden = !scheduled;
+    if (!scheduled) return;
+
+    const purgeAt = Date.parse(scheduled) + GRACE_MS;
+    const daysLeft = Math.max(0, Math.ceil((purgeAt - Date.now()) / 86400000));
+    dangerCountdown.innerHTML = '삭제가 예약되어 있습니다. <strong>' + daysLeft +
+      '일 뒤</strong> 완전히 삭제됩니다. 그 전까지 로그인하면 자동으로 취소됩니다.';
+  }
+
+  deleteBtn.addEventListener('click', async function () {
+    if (!confirm('계정을 삭제하시겠습니까?\n\n글·답변·프로필이 7일 뒤 완전히 사라집니다. ' +
+      '그 전까지는 다시 로그인하면 취소됩니다.')) return;
+
+    deleteBtn.disabled = true;
+    try {
+      const res = await fetch('/api/profile/delete', { method: 'POST', credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '삭제를 예약하지 못했습니다.');
+      const me = await Session.refresh();
+      renderDanger(me);
+      say('삭제를 예약했습니다. 7일 안에 로그인하면 취소됩니다.');
+    } catch (e) {
+      say('삭제를 예약하지 못했습니다: ' + e.message, true);
+    } finally {
+      deleteBtn.disabled = false;
+    }
+  });
+
+  cancelBtn.addEventListener('click', async function () {
+    cancelBtn.disabled = true;
+    try {
+      const res = await fetch('/api/profile/delete', { method: 'DELETE', credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '취소하지 못했습니다.');
+      const me = await Session.refresh();
+      renderDanger(me);
+      say('계정 삭제를 취소했습니다.');
+    } catch (e) {
+      say('취소하지 못했습니다: ' + e.message, true);
+    } finally {
+      cancelBtn.disabled = false;
+    }
+  });
+
   // 로그인 확인이 끝난 뒤에 화면을 고른다. 비로그인에게 빈 폼을 보여주면
   // 채우고 저장한 다음에야 로그인하라는 말을 듣게 된다.
   Session.refresh().then(function (user) {
     if (!user) { el('gate').hidden = false; return; }
     el('panel').hidden = false;
+    renderDanger(user);
     load();
   });
 })();

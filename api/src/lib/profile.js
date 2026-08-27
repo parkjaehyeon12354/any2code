@@ -270,5 +270,84 @@ async function discipline(sub) {
   };
 }
 
+/* ── 계정 삭제 ──
+
+   즉시 지우지 않고 7일 유예를 둔다. 실수로 누른 경우와 소셜 계정이 잠깐
+   막혀 로그인이 안 되는 경우를 구분할 수 없어서, 그 기간엔 재로그인으로
+   취소할 수 있게 한다.
+
+   삭제 실행은 크론이 아니라 로그인 시점에 지연 확인한다(lazy cleanup).
+   Azure Functions 에 timer trigger 를 새로 추가하는 대신, 이미 모든 요청이
+   거치는 auth 콜백/me 조회에 편승한다 — 배포할 트리거가 하나 늘지 않는다.
+   대가는 "아무도 로그인하지 않는 탈퇴 계정은 유예가 지나도 안 지워진다"인데,
+   그런 계정은 애초에 노출될 일이 없으므로 감수한다. */
+
+const DELETION_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** 삭제를 예약한다. 이미 예약돼 있으면 시각을 갱신하지 않는다(취소 후 재예약이 아니면). */
+async function scheduleDeletion(sub) {
+  const now = new Date().toISOString();
+  await container().item(docId(sub), sub).patch([
+    { op: 'set', path: '/deletionScheduledAt', value: now }
+  ]);
+  return new Date(Date.parse(now) + DELETION_GRACE_MS).toISOString();
+}
+
+/** 재로그인 등으로 마음이 바뀐 경우. 유예 기간 안에서만 의미가 있다. */
+async function cancelDeletion(sub) {
+  await container().item(docId(sub), sub).patch([
+    { op: 'set', path: '/deletionScheduledAt', value: null }
+  ]);
+}
+
+/** 유예가 끝났으면 즉시 완전히 지운다. 매 로그인마다 불리므로 예약이 없으면 바로 반환한다. */
+async function purgeIfExpired(user) {
+  const doc = await read(user.sub);
+  if (!doc || !doc.deletionScheduledAt) return false;
+  if (Date.now() - Date.parse(doc.deletionScheduledAt) < DELETION_GRACE_MS) return false;
+
+  await purge(user.sub);
+  return true;
+}
+
+/* 완전 삭제.
+
+   user·credit·sanction·appeal 은 sub 가 파티션 키라 곧장 지운다.
+   post·comment 는 파티션이 과목/글 id 로 흩어져 있어 조회 후 하나씩 지워야
+   한다 — renameOwnContent 와 같은 이유다.
+
+   글·답변은 지우지 않고 posts.js 의 소프트 삭제와 같은 방식으로 비운다.
+   다른 사람의 답변이 달린 글을 통째로 지우면 그 대화 맥락이 깨진다. */
+async function purge(sub) {
+  const c = container();
+
+  const [selfDocs, content] = await Promise.all([
+    query({
+      query: "SELECT c.id, c.pk FROM c WHERE c.type IN ('user', 'credit', 'sanction', 'appeal') AND c.pk = @s",
+      parameters: [{ name: '@s', value: sub }]
+    }),
+    query({
+      query: "SELECT c.id, c.pk, c.type FROM c WHERE c.type IN ('post', 'comment') AND c.authorSub = @s AND c.status != 'deleted'",
+      parameters: [{ name: '@s', value: sub }]
+    })
+  ]);
+
+  for (const row of content) {
+    const emptyBody = row.type === 'post' ? '(탈퇴한 사용자의 글입니다.)' : '(탈퇴한 사용자의 답변입니다.)';
+    await c.item(row.id, row.pk).patch([
+      { op: 'set', path: '/status', value: 'deleted' },
+      { op: 'set', path: '/body', value: emptyBody },
+      { op: 'set', path: '/authorName', value: '탈퇴한 사용자' }
+    ]);
+  }
+
+  for (const row of selfDocs) {
+    await c.item(row.id, row.pk).delete();
+  }
+}
+
 // NAME_MIN·NAME_MAX 는 화면이 input 의 minlength/maxlength 에 그대로 쓴다 (functions/profile.js)
-module.exports = { ensure, read, save, view, displayName, discipline, acceptTerms, NAME_MIN, NAME_MAX };
+module.exports = {
+  ensure, read, save, view, displayName, discipline, acceptTerms, NAME_MIN, NAME_MAX,
+  scheduleDeletion, cancelDeletion, purgeIfExpired, purge, DELETION_GRACE_MS
+};

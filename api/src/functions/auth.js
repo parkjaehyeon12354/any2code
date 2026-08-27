@@ -103,6 +103,18 @@ app.http('authCallback', {
         context.error('사용자 문서 갱신 실패:', e.message);
       }
 
+      /* 삭제 예약 중이던 계정이 유예(7일)를 넘겼으면 여기서 완전히 지운다.
+         크론이 아니라 로그인 시점에 확인한다 — 이 사람이 방금 다시 로그인했으니
+         "재가입" 절차로 자연스럽게 이어진다. 삭제되면 위 ensure() 가 만든 문서도
+         함께 지워지므로, 아래에서 다시 read() 하면 새 사용자처럼 termsAcceptedAt
+         이 비어 있어 /welcome 으로 간다 — 새 계정과 똑같이 취급된다. */
+      try {
+        const purged = await profile.purgeIfExpired(user);
+        if (purged) await profile.ensure(user);
+      } catch (e) {
+        context.error('삭제 유예 확인 실패:', e.message);
+      }
+
       /* 가입 절차를 안 끝냈으면 /welcome 으로 보낸다.
 
          돌아갈 곳은 ?to= 로 넘겨, 약관에 동의하면 원래 가려던 화면으로 이어진다.
@@ -150,10 +162,12 @@ app.http('me', {
     // 이름을 바꿔도 그때까지 옛 이름이 상단바에 남는다 — role 과 같은 이유다.
     let name = user.name;
     let onboarded = true;   // 조회 실패 시 가입 절차로 되돌리지 않는다(로그인은 살린다)
+    let deletionScheduledAt = null;
     try {
       const doc = await profile.read(user.sub);
       name = (doc && doc.displayName) || user.name;
       onboarded = !!(doc && doc.termsAcceptedAt);
+      deletionScheduledAt = (doc && doc.deletionScheduledAt) || null;
     } catch { name = user.name; }
 
     // AI 크레딧 잔액. 실패해도 null 로 두고 로그인은 정상 처리한다.
@@ -172,6 +186,9 @@ app.http('me', {
         credit: creditBalance,
         // 가입 절차(약관 동의)를 끝냈는지. false 면 화면이 /welcome 으로 되돌린다.
         onboarded,
+        // 계정 삭제를 예약했으면 그 시각. 화면이 "n일 뒤 완전히 삭제됩니다" 를
+        // 계산해 보여주고, 취소 버튼을 함께 제공한다.
+        deletionScheduledAt,
         name,
         email: user.email,
         picture: user.picture,

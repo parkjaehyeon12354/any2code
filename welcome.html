@@ -62,6 +62,27 @@
   .w-submit:disabled { opacity: .5; cursor: not-allowed; }
   .w-submit:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+  /* 약관 동의 — 시작하기 버튼을 가르는 유일한 필수 항목이라 테두리로 눈에 띄게 한다.
+     예전엔 로그인 화면에 있었지만, 실제 서버 강제(termsAcceptedAt)는 여기서
+     이뤄지므로 동의도 여기서 받는 게 맞다. */
+  .w-agree {
+    margin: 20px 0 16px;
+    padding: 12px 13px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface-soft);
+  }
+  .w-agree label {
+    display: flex; align-items: flex-start; gap: 9px;
+    font-size: 13px; line-height: 1.55; color: var(--body); cursor: pointer;
+  }
+  .w-agree input[type="checkbox"] {
+    width: 17px; height: 17px; margin: 1px 0 0;
+    flex: 0 0 auto; accent-color: var(--primary); cursor: pointer;
+  }
+  .w-agree a { color: var(--primary); font-weight: 600; text-decoration: underline; }
+  .w-agree.nudge { border-color: var(--badge-wait-fg); background: var(--badge-wait-bg); }
+
   .w-error {
     margin: 0 0 14px; padding: 11px 13px; border-radius: 9px;
     background: var(--badge-bad-bg); color: var(--badge-bad-fg);
@@ -103,12 +124,17 @@
         <p class="w-hint">입력하지 않아도 서비스를 이용할 수 있습니다.</p>
       </div>
 
-      <!-- 약관 동의는 로그인 화면에서 이미 받았다. 여기서 또 물으면 두 번 묻는 꼴이다.
-           무엇에 동의했는지는 확인할 수 있어야 하므로 링크만 남긴다. -->
-      <p class="w-agreed">
-        <a href="/terms" target="_blank" rel="noopener">이용약관</a> ·
-        <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에 동의하셨습니다.
-      </p>
+      <!-- 회원가입을 가르는 유일한 필수 항목. 체크 전에는 제출을 막는다. -->
+      <div class="w-agree" id="w-agree-box">
+        <label for="w-agree">
+          <input type="checkbox" id="w-agree">
+          <span>
+            <a href="/terms" target="_blank" rel="noopener">이용약관</a>과
+            <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에
+            동의합니다. <strong>(필수)</strong>
+          </span>
+        </label>
+      </div>
 
       <button type="submit" class="w-submit" id="w-submit">시작하기</button>
 
@@ -143,7 +169,7 @@
   }
 
   el('w-skip').addEventListener('click', function (e) {
-    // 이름·생일은 선택이다. 빈 값으로 제출해 가입만 마친다.
+    // 이름·생일만 선택이다. 동의는 여전히 필수라 submit 핸들러가 그대로 막는다.
     e.preventDefault();
     el('w-name').value = '';
     el('w-birthday').value = '';
@@ -156,8 +182,24 @@
     Session.logout().then(function () { location.replace('/'); });
   });
 
+  var agree = el('w-agree'), agreeBox = el('w-agree-box');
+  agree.addEventListener('change', function () {
+    if (!agree.checked) return;
+    agreeBox.classList.remove('nudge');
+    err.hidden = true;
+  });
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    // 체크하지 않으면 서버로 보내지 않는다 — 버튼을 막는 대신 이유를 보여준다.
+    if (!agree.checked) {
+      agreeBox.classList.add('nudge');
+      fail('이용약관과 개인정보 처리방침에 동의해야 시작할 수 있습니다.');
+      agree.focus();
+      return;
+    }
+
     submit.disabled = true;
     submit.textContent = '처리하는 중…';
     err.hidden = true;
@@ -167,9 +209,7 @@
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        // 동의 자체는 로그인 화면에서 받았다. 여기서 보내는 값은 그걸 서버에
-        // 확정 기록하는 신호다 — 이 요청이 성공해야 가입이 끝난다.
-        agree: true,
+        agree: true,   // 여기 도달했다는 것 자체가 체크박스를 확인했다는 뜻이다
         name: el('w-name').value.trim(),
         birthday: el('w-birthday').value || null
       })

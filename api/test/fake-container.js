@@ -32,11 +32,15 @@ function createFake() {
             const values = [...list.matchAll(/'([^']*)'/g)].map((m) => m[1]);
             out = out.filter((d) => values.includes(d[field]));
           }
+          for (const [, field, value] of q.matchAll(/c\.(\w+)\s*!=\s*'([^']*)'/g)) {
+            out = out.filter((d) => d[field] !== value);
+          }
           if (q.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
           if (q.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));
           if (q.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
           if (q.includes('c.userSub = @u')) out = out.filter((d) => d.userSub === p('@u'));
           if (q.includes('c.authorSub = @u')) out = out.filter((d) => d.authorSub === p('@u'));
+          if (q.includes('c.authorSub = @s')) out = out.filter((d) => d.authorSub === p('@s'));
           if (q.includes('c.createdAt > @since')) out = out.filter((d) => d.createdAt > p('@since'));
 
           if (q.includes('VALUE COUNT')) return { resources: [out.length] };
