@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -480,6 +485,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>균형점</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>피식자가 멈추는 수</dt><dd id="s-nstar">—</dd></dl>
+            <dl class="stat"><dt>포식자가 멈추는 수</dt><dd id="s-pstar">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>
     <div class="graph-wrap"><canvas id="phase-graph" aria-label="피식자와 포식자 수를 두 축으로 한 궤적"></canvas></div>
@@ -556,16 +572,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>균형점</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>피식자가 멈추는 수</dt><dd id="s-nstar">—</dd></dl>
-            <dl class="stat"><dt>포식자가 멈추는 수</dt><dd id="s-pstar">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

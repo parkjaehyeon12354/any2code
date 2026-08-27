@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -480,6 +485,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>열에 풀리지 않는다면</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>실제 속도</dt><dd id="s-real">—</dd></dl>
+            <dl class="stat"><dt>변성이 없다면</dt><dd id="s-ideal">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
     <div class="graph-wrap"><canvas id="temp-graph" aria-label="온도에 따른 반응 속도"></canvas></div>
@@ -556,16 +572,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>열에 풀리지 않는다면</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>실제 속도</dt><dd id="s-real">—</dd></dl>
-            <dl class="stat"><dt>변성이 없다면</dt><dd id="s-ideal">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

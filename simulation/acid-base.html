@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -482,6 +487,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>물을 무시하면 어떻게 되나</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>실제 pH</dt><dd id="s-real">—</dd></dl>
+            <dl class="stat"><dt>물 무시했을 때</dt><dd id="s-naive">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">희석할수록 pH 는 어떻게 되나</h2><p>빨간 실선이 <strong>실제</strong>, 회색 점선이 <strong>물을 무시한 계산</strong>입니다. 처음에는 겹쳐 있다가 어느 지점부터 갈라집니다 — 점선은 7을 넘어 계속 올라가지만(불가능), 실선은 중성 pH 에 <strong>붙어서 멈춥니다</strong>. 그 갈라지는 지점이 물의 이온화를 무시할 수 없게 되는 곳입니다.</p></div>
     <div class="graph-wrap"><canvas id="ph-graph" aria-label="희석 배율에 따른 pH 변화"></canvas></div>
@@ -566,16 +582,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>물을 무시하면 어떻게 되나</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>실제 pH</dt><dd id="s-real">—</dd></dl>
-            <dl class="stat"><dt>물 무시했을 때</dt><dd id="s-naive">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

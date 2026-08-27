@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -481,6 +486,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>반감기가 지날 때마다</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>2회 지나면</dt><dd id="s-two">25%</dd></dl>
+            <dl class="stat"><dt>10회 지나도</dt><dd id="s-ten">0.098%</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">개별 원자는 무작위, 집단은 규칙적</h2><p>위쪽은 원자 <strong>여덟 개를 골라</strong> 각각 언제 터졌는지 표시한 것입니다 — 아무 규칙이 없습니다. 아래쪽은 <strong>전체 집단</strong>이고, 가로축은 시간이 아니라 <strong>지나간 반감기 횟수</strong>입니다. 개별은 예측할 수 없지만 집단은 (1/2)ⁿ 을 따릅니다. 원자 수를 줄이면 점들이 회색 이론선에서 벗어납니다.</p></div>
     <div class="graph-wrap"><canvas id="decay-graph" aria-label="개별 원자의 붕괴 시점과 집단의 감소"></canvas></div>
@@ -553,16 +569,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>반감기가 지날 때마다</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>2회 지나면</dt><dd id="s-two">25%</dd></dl>
-            <dl class="stat"><dt>10회 지나도</dt><dd id="s-ten">0.098%</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

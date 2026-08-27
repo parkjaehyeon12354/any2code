@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -481,6 +486,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>겉보기는 멈춤, 속은 계속</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>순 변화 (v<sub>f</sub> − v<sub>r</sub>)</dt><dd id="s-net">—</dd></dl>
+            <dl class="stat"><dt>지금까지 전환된 횟수</dt><dd id="s-flips">0</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">시간에 따른 농도 변화</h2><p>두 곡선이 평평해진 지점이 평형입니다. 하지만 <strong>평평한 것은 '순 변화'뿐</strong>입니다 — 아래 초록 선이 초당 전환 횟수인데, 평형 후에도 <strong>0으로 떨어지지 않습니다</strong>. 촉매를 넣으면 곡선이 왼쪽으로 당겨질 뿐 <strong>도착점은 같습니다</strong>.</p></div>
     <div class="graph-wrap"><canvas id="conc-graph" aria-label="시간에 따른 A와 B의 농도 변화"></canvas></div>
@@ -575,16 +591,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>겉보기는 멈춤, 속은 계속</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>순 변화 (v<sub>f</sub> − v<sub>r</sub>)</dt><dd id="s-net">—</dd></dl>
-            <dl class="stat"><dt>지금까지 전환된 횟수</dt><dd id="s-flips">0</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -448,6 +453,13 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>무엇이 생기나</h2></div>
+        <div class="panel-body">
+          <div class="result" id="result"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="quake-title">
     <div class="analysis-head"><h2 id="quake-title">지진이 일어나는 깊이</h2><p>가로는 위치, 세로는 깊이입니다. 섭입대에서는 판이 비스듬히 들어가면서 진원이 점점 깊어집니다 — 이것을 베니오프대라고 합니다.</p></div>
     <div class="graph-wrap"><canvas id="quake-graph" aria-label="위치별 지진 발생 깊이"></canvas></div>
@@ -482,12 +494,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>무엇이 생기나</h2></div>
-        <div class="panel-body">
-          <div class="result" id="result"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

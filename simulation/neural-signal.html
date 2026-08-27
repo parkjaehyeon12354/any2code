@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -480,6 +485,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>세기를 올리면</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>봉우리 높이</dt><dd id="s-amp">—</dd></dl>
+            <dl class="stat"><dt>1초당 횟수</dt><dd id="s-freq">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">세기를 올리면 무엇이 변하나</h2><p>가로축이 자극 세기입니다. <strong>빨간 선(봉우리 높이)은 완전히 평평합니다</strong> — 역치를 넘는 순간 100mV 로 튀어오르고, 그 뒤로는 아무리 세게 눌러도 그대로입니다. 반면 <strong>파란 선(1초당 횟수)은 계속 올라갑니다.</strong> 뇌는 &quot;얼마나 센가&quot;를 크기가 아니라 <strong>빈도로</strong> 읽습니다.</p></div>
     <div class="graph-wrap"><canvas id="response-graph" aria-label="자극 세기에 따른 활동전위 크기와 빈도"></canvas></div>
@@ -556,16 +572,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>세기를 올리면</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>봉우리 높이</dt><dd id="s-amp">—</dd></dl>
-            <dl class="stat"><dt>1초당 횟수</dt><dd id="s-freq">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

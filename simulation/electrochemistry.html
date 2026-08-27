@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -481,6 +486,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>무엇이 전압을 정하나</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>전극 크기 합</dt><dd id="s-size">—</dd></dl>
+            <dl class="stat"><dt>전압</dt><dd id="s-volt">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">농도비와 전압</h2><p>가로축은 두 용액의 농도비(로그 눈금), 세로축은 전압입니다. 직선인 이유는 네른스트 식에 <strong>log</strong> 가 들어 있기 때문입니다. 농도비를 10배 벌릴 때마다 전압은 <strong>29.6 mV 씩만</strong> 올라갑니다 — 100배로 벌려도 2배밖에 안 됩니다. 전극 크기를 아무리 바꿔도 <strong>점은 제자리</strong>입니다.</p></div>
     <div class="graph-wrap"><canvas id="nernst-graph" aria-label="농도비에 따른 전지 전압"></canvas></div>
@@ -568,16 +584,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>무엇이 전압을 정하나</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>전극 크기 합</dt><dd id="s-size">—</dd></dl>
-            <dl class="stat"><dt>전압</dt><dd id="s-volt">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

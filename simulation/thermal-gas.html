@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -483,6 +488,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>에너지는 같고, 속도는 다르다</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>운동에너지 비</dt><dd id="s-ek">—</dd></dl>
+            <dl class="stat"><dt>속도 비</dt><dd id="s-v">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">속력 분포 — 모두가 같은 속도로 움직이지 않는다</h2><p>입자들의 속력은 하나의 값이 아니라 <strong>분포</strong>를 이룹니다(맥스웰-볼츠만 분포). 가벼운 기체일수록 봉우리가 오른쪽으로 밀리고 넓게 퍼집니다. 세로 점선은 각 기체의 제곱평균제곱근 속력입니다.</p></div>
     <div class="graph-wrap"><canvas id="dist-graph" aria-label="두 기체의 속력 분포 곡선"></canvas></div>
@@ -558,16 +574,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>에너지는 같고, 속도는 다르다</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>운동에너지 비</dt><dd id="s-ek">—</dd></dl>
-            <dl class="stat"><dt>속도 비</dt><dd id="s-v">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>

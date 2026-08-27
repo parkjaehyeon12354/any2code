@@ -130,6 +130,11 @@
 }
 .note strong { color: var(--ink); font-weight: 600; }
 
+.insight-strip { margin:6px 0 0; display:grid; grid-template-columns:minmax(130px,auto) minmax(0,1fr); }
+.insight-strip .panel-head { display:flex; align-items:center; padding:7px 12px; border-right:1px solid var(--hairline); border-bottom:0; }
+.insight-strip .panel-body { min-width:0; padding:7px 12px; }
+.insight-strip .stat-row,.insight-strip .fact,.insight-strip .verdict,.insight-strip .result { margin:0; }
+@media(max-width:700px){.insight-strip{grid-template-columns:1fr}.insight-strip .panel-head{border-right:0;border-bottom:1px solid var(--hairline)}}
 .share-strip {
   margin: 10px 0 0;
   display: grid;
@@ -483,6 +488,17 @@
     </div>
       </section>
 
+      <div class="panel insight-strip">
+        <div class="panel-head"><h2>이 바다는 지금</h2></div>
+        <div class="panel-body">
+          <div class="stat-row">
+            <dl class="stat"><dt>표층 수온</dt><dd id="s-sst">—</dd></dl>
+            <dl class="stat"><dt>플랑크톤</dt><dd id="s-plankton">—</dd></dl>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+
       <section class="analysis-panel" id="analysis" aria-labelledby="density-title">
     <div class="analysis-head"><h2 id="density-title">수온·염분과 밀도</h2><p>가로축은 수온, 세로축은 염분입니다. 등고선은 같은 밀도를 잇습니다. 오른쪽 아래(덥고 싱거움)일수록 가볍고, 왼쪽 위(차고 짬)일수록 무겁습니다.</p></div>
     <div class="graph-wrap"><canvas id="ts-graph" aria-label="수온-염분 도표와 밀도 등고선"></canvas></div>
@@ -562,16 +578,7 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>이 바다는 지금</h2></div>
-        <div class="panel-body">
-          <div class="stat-row">
-            <dl class="stat"><dt>표층 수온</dt><dd id="s-sst">—</dd></dl>
-            <dl class="stat"><dt>플랑크톤</dt><dd id="s-plankton">—</dd></dl>
-          </div>
-          <div class="verdict" id="verdict"></div>
-        </div>
-      </div>
+
 
     </div>
   </div>
