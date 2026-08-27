@@ -117,6 +117,22 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
+.measurement-strip { margin: 10px 0 0; }
+.measurement-strip .panel-head { padding: 9px 16px; }
+.measurement-strip .panel-body { padding: 0; }
+.measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.measurement-strip .read > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.measurement-strip .read > div:last-child { border-right: 0; padding-bottom: 12px; }
+.measurement-strip .read dt { font-size: 12px; }
+.measurement-strip .read dd { font-size: 15px; }
+.measurement-strip .note { margin: 0; padding: 9px 16px; border-top: 1px solid var(--hairline); }
+.measurement-strip + .analysis-panel { margin-top: 10px; }
 
 .note {
   margin-top: var(--sp-md);
@@ -161,6 +177,12 @@
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+@media (max-width: 700px) {
+  .measurement-strip .read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .measurement-strip .read > div { border-bottom: 1px solid var(--hairline); }
+  .measurement-strip .read > div:nth-child(2n) { border-right: 0; }
+  .measurement-strip .read > div:last-child { grid-column: 1 / -1; border-bottom: 0; }
+}
 
 /* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
 #speed-graph { display: block; width: 100%; height: 340px; }
@@ -447,19 +469,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>측정</h2></div>
-        <div class="panel-body">
-          <dl class="read">
-            <div><dt>날짜</dt><dd id="r-date">—</dd></div>
-            <div><dt>태양까지 거리</dt><dd id="r-dist">—</dd></div>
-            <div><dt>남중 고도</dt><dd id="r-alt">—</dd></div>
-            <div><dt>낮 길이</dt><dd id="r-day">—</dd></div>
-            <div><dt>받는 햇빛</dt><dd id="r-energy" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-        </div>
-      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>공유</h2></div>
@@ -475,6 +484,20 @@
       </div>
     </div>
   </div>
+
+  <section class="panel measurement-strip" aria-labelledby="earth_seasons_measure">
+    <div class="panel-head"><h2 id="earth_seasons_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>날짜</dt><dd id="r-date">—</dd></div>
+            <div><dt>태양까지 거리</dt><dd id="r-dist">—</dd></div>
+            <div><dt>남중 고도</dt><dd id="r-alt">—</dd></div>
+            <div><dt>낮 길이</dt><dd id="r-day">—</dd></div>
+            <div><dt>받는 햇빛</dt><dd id="r-energy" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+  </section>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="daylight-title">
     <div class="analysis-head"><h2 id="daylight-title">1년 동안의 낮 길이와 태양 고도</h2><p>파란선은 낮 길이, 주황선은 남중 고도입니다. 자전축 기울기를 0으로 만들면 두 선이 평평해집니다 — 계절이 사라진다는 뜻입니다.</p></div>

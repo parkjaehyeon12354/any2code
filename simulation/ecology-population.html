@@ -117,6 +117,22 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
+.measurement-strip { margin: 10px 0 0; }
+.measurement-strip .panel-head { padding: 9px 16px; }
+.measurement-strip .panel-body { padding: 0; }
+.measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.measurement-strip .read > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.measurement-strip .read > div:last-child { border-right: 0; padding-bottom: 12px; }
+.measurement-strip .read dt { font-size: 12px; }
+.measurement-strip .read dd { font-size: 15px; }
+.measurement-strip .note { margin: 0; padding: 9px 16px; border-top: 1px solid var(--hairline); }
+.measurement-strip + .analysis-panel { margin-top: 10px; }
 
 .note {
   margin-top: var(--sp-md);
@@ -161,6 +177,12 @@
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+@media (max-width: 700px) {
+  .measurement-strip .read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .measurement-strip .read > div { border-bottom: 1px solid var(--hairline); }
+  .measurement-strip .read > div:nth-child(2n) { border-right: 0; }
+  .measurement-strip .read > div:last-child { grid-column: 1 / -1; border-bottom: 0; }
+}
 
 /* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
 #speed-graph { display: block; width: 100%; height: 340px; }
@@ -495,19 +517,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>측정</h2></div>
-        <div class="panel-body">
-          <dl class="read">
-            <div><dt>피식자 N</dt><dd id="r-n">—</dd></div>
-            <div><dt>포식자 P</dt><dd id="r-p">—</dd></div>
-            <div><dt>한 바퀴 도는 시간</dt><dd id="r-period">—</dd></div>
-            <div><dt>포식자가 뒤따르는 간격</dt><dd id="r-lag">—</dd></div>
-            <div><dt>지난 사냥</dt><dd id="r-kills" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-        </div>
-      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>균형점</h2></div>
@@ -534,6 +543,20 @@
       </div>
     </div>
   </div>
+
+  <section class="panel measurement-strip" aria-labelledby="ecology_population_measure">
+    <div class="panel-head"><h2 id="ecology_population_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>피식자 N</dt><dd id="r-n">—</dd></div>
+            <div><dt>포식자 P</dt><dd id="r-p">—</dd></div>
+            <div><dt>한 바퀴 도는 시간</dt><dd id="r-period">—</dd></div>
+            <div><dt>포식자가 뒤따르는 간격</dt><dd id="r-lag">—</dd></div>
+            <div><dt>지난 사냥</dt><dd id="r-kills" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+  </section>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>

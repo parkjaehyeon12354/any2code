@@ -117,6 +117,22 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
+.measurement-strip { margin: 10px 0 0; }
+.measurement-strip .panel-head { padding: 9px 16px; }
+.measurement-strip .panel-body { padding: 0; }
+.measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.measurement-strip .read > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.measurement-strip .read > div:last-child { border-right: 0; padding-bottom: 12px; }
+.measurement-strip .read dt { font-size: 12px; }
+.measurement-strip .read dd { font-size: 15px; }
+.measurement-strip .note { margin: 0; padding: 9px 16px; border-top: 1px solid var(--hairline); }
+.measurement-strip + .analysis-panel { margin-top: 10px; }
 
 .note {
   margin-top: var(--sp-md);
@@ -161,6 +177,12 @@
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+@media (max-width: 700px) {
+  .measurement-strip .read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .measurement-strip .read > div { border-bottom: 1px solid var(--hairline); }
+  .measurement-strip .read > div:nth-child(2n) { border-right: 0; }
+  .measurement-strip .read > div:last-child { grid-column: 1 / -1; border-bottom: 0; }
+}
 
 /* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
 #speed-graph { display: block; width: 100%; height: 340px; }
@@ -498,19 +520,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>측정</h2></div>
-        <div class="panel-body">
-          <dl class="read">
-            <div><dt>표층 해류 방향</dt><dd id="r-current">—</dd></div>
-            <div><dt>바람과의 각도</dt><dd id="r-angle">—</dd></div>
-            <div><dt>해수 밀도</dt><dd id="r-density">—</dd></div>
-            <div><dt>주변 표층 대비</dt><dd id="r-buoy">—</dd></div>
-            <div><dt>연안 상태</dt><dd id="r-coast" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-        </div>
-      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>이 바다는 지금</h2></div>
@@ -537,6 +546,20 @@
       </div>
     </div>
   </div>
+
+  <section class="panel measurement-strip" aria-labelledby="ocean_circulation_measure">
+    <div class="panel-head"><h2 id="ocean_circulation_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>표층 해류 방향</dt><dd id="r-current">—</dd></div>
+            <div><dt>바람과의 각도</dt><dd id="r-angle">—</dd></div>
+            <div><dt>해수 밀도</dt><dd id="r-density">—</dd></div>
+            <div><dt>주변 표층 대비</dt><dd id="r-buoy">—</dd></div>
+            <div><dt>연안 상태</dt><dd id="r-coast" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+  </section>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="density-title">
     <div class="analysis-head"><h2 id="density-title">수온·염분과 밀도</h2><p>가로축은 수온, 세로축은 염분입니다. 등고선은 같은 밀도를 잇습니다. 오른쪽 아래(덥고 싱거움)일수록 가볍고, 왼쪽 위(차고 짬)일수록 무겁습니다.</p></div>

@@ -422,6 +422,27 @@ test('판과 지각 변동의 침강판이 캔버스를 벗어나지 않는다',
     '진원 점에 테두리가 없다 — 맨틀 배경에 묻힌다');
 });
 
+
+test('측정값이 그래프 위 가로 스트립으로 나온다', () => {
+  /* 측정값이 오른쪽 사이드바 세로 목록이라 조작 패널에 밀려 한참 아래였다.
+     최윤지가 입자의 운동에서 무대 아래 가로 스트립으로 옮겼고, 그 방식을
+     나머지에도 맞췄다. 세포의 구조만 제외 — 측정값 자체가 없다. */
+  const files = fs.readdirSync(SIM_DIR)
+    .filter((f) => f.endsWith('.html') && f !== 'index.html' && f !== 'cell-structure.html');
+  for (const f of files) {
+    const html = read(path.join(SIM_DIR, f));
+    assert.match(html, /class="panel measurement-strip"/, f + ' 에 측정 스트립이 없다');
+    /* 스트립이 그래프보다 뒤에 있으면 옮긴 의미가 없다. */
+    const si = html.indexOf('class="panel measurement-strip"');
+    const ai = html.indexOf('<section class="analysis-panel"');
+    assert.ok(si > 0 && ai > si, f + ' 의 측정 스트립이 그래프보다 아래에 있다');
+    /* 사이드바에 옛 측정 패널이 남으면 값이 두 군데서 갱신돼 하나가 멈춘다. */
+    assert.ok(!/<(div|section) class="panel[^"]*">\s*<div class="panel-head"><h2>측정<\/h2>/.test(html),
+      f + ' 사이드바에 옛 측정 패널이 남아 있다');
+    assert.match(html, /\.measurement-strip \.read \{ display: grid/, f + ' 에 스트립 스타일이 없다');
+  }
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.

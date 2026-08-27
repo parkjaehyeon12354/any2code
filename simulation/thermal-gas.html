@@ -117,6 +117,22 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
+.measurement-strip { margin: 10px 0 0; }
+.measurement-strip .panel-head { padding: 9px 16px; }
+.measurement-strip .panel-body { padding: 0; }
+.measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.measurement-strip .read > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.measurement-strip .read > div:last-child { border-right: 0; padding-bottom: 12px; }
+.measurement-strip .read dt { font-size: 12px; }
+.measurement-strip .read dd { font-size: 15px; }
+.measurement-strip .note { margin: 0; padding: 9px 16px; border-top: 1px solid var(--hairline); }
+.measurement-strip + .analysis-panel { margin-top: 10px; }
 
 .note {
   margin-top: var(--sp-md);
@@ -161,6 +177,12 @@
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+@media (max-width: 700px) {
+  .measurement-strip .read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .measurement-strip .read > div { border-bottom: 1px solid var(--hairline); }
+  .measurement-strip .read > div:nth-child(2n) { border-right: 0; }
+  .measurement-strip .read > div:last-child { grid-column: 1 / -1; border-bottom: 0; }
+}
 
 /* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
 #speed-graph { display: block; width: 100%; height: 340px; }
@@ -495,19 +517,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>측정</h2></div>
-        <div class="panel-body">
-          <dl class="read">
-            <div><dt>온도</dt><dd id="r-temp">—</dd></div>
-            <div><dt>입자 하나의 평균 운동에너지</dt><dd id="r-ek">—</dd></div>
-            <div><dt>왼쪽 속력 (제곱평균제곱근)</dt><dd id="r-va">—</dd></div>
-            <div><dt>오른쪽 속력</dt><dd id="r-vb">—</dd></div>
-            <div><dt>확산 속도 비 (그레이엄)</dt><dd id="r-graham" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-        </div>
-      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>에너지는 같고, 속도는 다르다</h2></div>
@@ -534,6 +543,20 @@
       </div>
     </div>
   </div>
+
+  <section class="panel measurement-strip" aria-labelledby="thermal_gas_measure">
+    <div class="panel-head"><h2 id="thermal_gas_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>온도</dt><dd id="r-temp">—</dd></div>
+            <div><dt>입자 하나의 평균 운동에너지</dt><dd id="r-ek">—</dd></div>
+            <div><dt>왼쪽 속력 (제곱평균제곱근)</dt><dd id="r-va">—</dd></div>
+            <div><dt>오른쪽 속력</dt><dd id="r-vb">—</dd></div>
+            <div><dt>확산 속도 비 (그레이엄)</dt><dd id="r-graham" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+  </section>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">속력 분포 — 모두가 같은 속도로 움직이지 않는다</h2><p>입자들의 속력은 하나의 값이 아니라 <strong>분포</strong>를 이룹니다(맥스웰-볼츠만 분포). 가벼운 기체일수록 봉우리가 오른쪽으로 밀리고 넓게 퍼집니다. 세로 점선은 각 기체의 제곱평균제곱근 속력입니다.</p></div>

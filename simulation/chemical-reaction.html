@@ -117,6 +117,22 @@
 .read dd { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .read .gap { color: var(--warn-fg); }          /* 이론값과의 차이 — 앰버, surface 위 4.5:1 */
 .read .gap.same { color: var(--muted); font-weight: 500; }
+.measurement-strip { margin: 10px 0 0; }
+.measurement-strip .panel-head { padding: 9px 16px; }
+.measurement-strip .panel-body { padding: 0; }
+.measurement-strip .read { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.measurement-strip .read > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+.measurement-strip .read > div:last-child { border-right: 0; padding-bottom: 12px; }
+.measurement-strip .read dt { font-size: 12px; }
+.measurement-strip .read dd { font-size: 15px; }
+.measurement-strip .note { margin: 0; padding: 9px 16px; border-top: 1px solid var(--hairline); }
+.measurement-strip + .analysis-panel { margin-top: 10px; }
 
 .note {
   margin-top: var(--sp-md);
@@ -161,6 +177,12 @@
   .sim { padding-left: var(--sp-lg); padding-right: var(--sp-lg); }
 }
 @media (max-width: 700px) { .side-panels { grid-template-columns: 1fr; }.side-panels .panel:last-child { grid-column: auto; } }
+@media (max-width: 700px) {
+  .measurement-strip .read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .measurement-strip .read > div { border-bottom: 1px solid var(--hairline); }
+  .measurement-strip .read > div:nth-child(2n) { border-right: 0; }
+  .measurement-strip .read > div:last-child { grid-column: 1 / -1; border-bottom: 0; }
+}
 
 /* 입자 속력 분포 그래프 — 무대와 같은 어두운 판 위에 그린다 */
 #speed-graph { display: block; width: 100%; height: 340px; }
@@ -512,19 +534,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2>측정</h2></div>
-        <div class="panel-body">
-          <dl class="read">
-            <div><dt>지금 [A]</dt><dd id="r-a">—</dd></div>
-            <div><dt>지금 [B]</dt><dd id="r-b">—</dd></div>
-            <div><dt>정반응 속도 k<sub>f</sub>[A]</dt><dd id="r-vf">—</dd></div>
-            <div><dt>역반응 속도 k<sub>r</sub>[B]</dt><dd id="r-vr">—</dd></div>
-            <div><dt>평형 상수 K</dt><dd id="r-k" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-        </div>
-      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>겉보기는 멈춤, 속은 계속</h2></div>
@@ -551,6 +560,20 @@
       </div>
     </div>
   </div>
+
+  <section class="panel measurement-strip" aria-labelledby="chemical_reaction_measure">
+    <div class="panel-head"><h2 id="chemical_reaction_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 [A]</dt><dd id="r-a">—</dd></div>
+            <div><dt>지금 [B]</dt><dd id="r-b">—</dd></div>
+            <div><dt>정반응 속도 k<sub>f</sub>[A]</dt><dd id="r-vf">—</dd></div>
+            <div><dt>역반응 속도 k<sub>r</sub>[B]</dt><dd id="r-vr">—</dd></div>
+            <div><dt>평형 상수 K</dt><dd id="r-k" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+  </section>
 
   <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
     <div class="analysis-head"><h2 id="graph-title">시간에 따른 농도 변화</h2><p>두 곡선이 평평해진 지점이 평형입니다. 하지만 <strong>평평한 것은 '순 변화'뿐</strong>입니다 — 아래 초록 선이 초당 전환 횟수인데, 평형 후에도 <strong>0으로 떨어지지 않습니다</strong>. 촉매를 넣으면 곡선이 왼쪽으로 당겨질 뿐 <strong>도착점은 같습니다</strong>.</p></div>
