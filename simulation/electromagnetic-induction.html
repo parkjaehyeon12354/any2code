@@ -33,18 +33,6 @@
 .stage-foot { display:flex; align-items:center; gap:var(--sp-sm); flex-wrap:wrap; padding:var(--sp-md); border-top:1px solid var(--hairline); background:var(--surface-soft); }
 .stage-foot .btn { height:40px; padding:0 16px; font-size:13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
 .panel { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--rounded-lg); margin-bottom:var(--sp-lg); overflow:hidden; }
 .side-panels { display:grid; grid-template-columns:1fr; gap:var(--sp-md); align-items:start; }
 .side-panels .panel { margin-bottom:0; }
@@ -241,13 +229,44 @@
   </div>
 
   <div class="layout">
-    <div class="stage">
-      <canvas id="canvas" aria-label="자석과 코일의 전자기 유도 실험"></canvas>
-      <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 시간에 따른 자기선속 변화율과 유도 기전력</a>
-        <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
-        <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+    <div class="side-panels">
+      <div class="stage">
+        <canvas id="canvas" aria-label="자석과 코일의 전자기 유도 실험"></canvas>
+        <div class="stage-foot">
+          <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
+          <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
+        </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="emi_measure">
+    <div class="panel-head"><h2 id="emi_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>자석의 운동</dt><dd id="r-motion">가까워지는 중</dd></div>
+            <div><dt>자기선속 변화율 dΦ/dt</dt><dd id="r-flux">0.00 Wb/s</dd></div>
+            <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
+            <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
+          </dl>
+          <div class="legend"><span style="--key:#d7a04b">노란색: 자기선속 변화율 dΦ/dt</span><span style="--key:#69c6ac">초록색: 유도 기전력 ε</span></div>
+          <p class="note" id="note">패러데이 법칙: ε = −N·dΦ/dt</p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="induction-graph-title">
+    <div class="analysis-head"><h2 id="induction-graph-title">시간에 따른 자기선속 변화율과 유도 기전력</h2><p>오른쪽 끝 점이 현재 값입니다. 노란선은 dΦ/dt, 초록선은 ε를 나타냅니다.</p></div>
+    <div class="graph-wrap"><canvas id="graph-canvas" aria-label="시간에 따른 자기선속 변화율과 유도 기전력 그래프"></canvas></div>
+    <div class="formula-box">
+      <div class="concept-list">
+        <div class="concept"><strong>전자기 유도</strong><p>코일과 자석의 상대적인 운동으로 코일을 통과하는 자기선속이 변할 때 코일에 유도 기전력이 생기고, 닫힌 회로에는 유도 전류가 흐르는 현상입니다.</p></div>
+        <div class="concept"><strong>자기선속 공식: Φ = BA cosθ</strong><p>B는 자기장 세기(T), A는 코일의 단면적(m²), θ는 자기장과 면의 수직 방향이 이루는 각입니다. 자기선속 Φ의 단위는 Wb(웨버)입니다. 자기장이 면에 수직이면 θ = 0°이므로 Φ = BA입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>면적이 아주 작은 조각 dA를 지나는 자기선속은 dΦ = B·dA입니다. 벡터의 내적을 사용하면 dΦ = B cosθ dA가 됩니다.</p><p>균일한 자기장이 평평한 면 전체를 지날 때 적분하면 Φ = ∫B cosθ dA = B cosθ∫dA = BA cosθ입니다.</p><p>자기장이 면에 수직하면 cos0° = 1이므로 Φ = BA입니다. 이 식을 B에 관해 정리하면 <strong>B = Φ/A</strong>가 되며, 단위는 Wb/m² = T(테슬라)입니다.</p><p>자기장이 일정하지 않거나 면이 휘어 있으면 일반식 Φ = ∫<sub>S</sub>B·dA를 사용합니다.</p></div></details></div>
+        <div class="concept"><strong>자기선속 변화율: dΦ/dt = (dΦ/dx)v</strong><p>단위 시간 동안 자기선속이 얼마나 빠르게 변하는지를 뜻합니다. 그래프의 첫 번째 좌표계가 이 값입니다. 자석이 멈추면 위치가 일정해져 dΦ/dt = 0이 됩니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>자기선속이 자석 위치 x에 따라 Φ(x)로 변한다고 두면, 시간에 따른 변화는 합성함수 Φ(x(t))입니다.</p><p>연쇄법칙을 적용하면 dΦ/dt = (dΦ/dx)(dx/dt)입니다. 여기서 dx/dt = v이므로 dΦ/dt = (dΦ/dx)v가 됩니다.</p><p>따라서 같은 위치에서도 자석의 속력 v가 클수록 자기선속 변화율의 크기가 커집니다.</p></div></details></div>
+        <div class="concept"><strong>패러데이 전자기 유도 법칙: ε = −N·dΦ/dt</strong><p>유도 기전력 ε는 자기선속의 시간 변화율과 코일 감은 수 N에 비례합니다. 자석을 빠르게 움직이거나 코일을 많이 감을수록 유도 기전력의 크기가 커집니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>한 번 감은 폐회로에서 패러데이 법칙은 ∮E·dl = −dΦ/dt입니다. 폐회로를 따라 전기장을 적분한 값이 유도 기전력 ε입니다.</p><p>같은 자기선속을 지나는 코일이 N회 감겨 있으면 각 고리에 생기는 기전력이 더해져 ε = −N·dΦ/dt가 됩니다.</p><p>유한한 시간 간격 Δt로 측정할 때는 평균 유도 기전력을 ε ≈ −NΔΦ/Δt로 계산합니다.</p></div></details></div>
+        <div class="concept"><strong>렌츠 법칙과 마이너스 부호</strong><p>− 부호는 유도 전류가 원래 자기선속의 변화를 방해하는 방향으로 흐른다는 뜻입니다. 자석이 코일 중심을 지나면 dΦ/dt의 부호가 바뀌어 유도 기전력과 전류 방향도 반전됩니다.</p></div>
+        <div class="concept"><strong>유도 전류 공식: I = ε/R</strong><p>회로의 저항이 R일 때 유도 전류 I는 유도 기전력에 비례하고 저항에 반비례합니다. 현재 시뮬레이션은 전압과 방향을 중심으로 보여주며, Φ와 dΦ/dt는 상대값입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>코일과 연결 도선의 전체 저항을 R이라고 하면 옴의 법칙은 ε = IR입니다.</p><p>양변을 R로 나누면 I = ε/R을 얻습니다. 여기에 패러데이 법칙을 대입하면 I = −(N/R)dΦ/dt입니다.</p><p>따라서 같은 변화율에서는 감은 수 N이 클수록 전류가 커지고, 저항 R이 클수록 전류가 작아집니다.</p></div></details></div>
+      </div>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>코일을 지나는 자기선속은 Φ = ∫B·dA입니다. 자석이 움직이면 B가 위치 x에 따라 달라지므로 연쇄법칙으로 dΦ/dt = (dΦ/dx)(dx/dt) = (dΦ/dx)v가 됩니다.</p><p>패러데이 법칙에 따라 N회 감은 코일의 유도 기전력은 ε = −N·dΦ/dt입니다. 마이너스 부호는 렌츠 법칙을 뜻하며, 유도 전류가 자기선속의 변화를 방해하는 방향으로 흐른다는 의미입니다. 코일 중심을 지난 뒤에는 dΦ/dx의 부호가 바뀌므로 ε와 전류 방향도 반전됩니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div class="side-panels">
@@ -285,35 +304,6 @@
     </div>
   </div>
 
-  <section class="panel measurement-strip" aria-labelledby="emi_measure">
-    <div class="panel-head"><h2 id="emi_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>자석의 운동</dt><dd id="r-motion">가까워지는 중</dd></div>
-            <div><dt>자기선속 변화율 dΦ/dt</dt><dd id="r-flux">0.00 Wb/s</dd></div>
-            <div><dt>유도 기전력</dt><dd id="r-emf">0.00 V</dd></div>
-            <div><dt>전류 방향</dt><dd id="r-direction">—</dd></div>
-          </dl>
-          <div class="legend"><span style="--key:#d7a04b">노란색: 자기선속 변화율 dΦ/dt</span><span style="--key:#69c6ac">초록색: 유도 기전력 ε</span></div>
-          <p class="note" id="note">패러데이 법칙: ε = −N·dΦ/dt</p>
-    </div>
-  </section>
-
-  <section class="analysis-panel" id="analysis" aria-labelledby="induction-graph-title">
-    <div class="analysis-head"><h2 id="induction-graph-title">시간에 따른 자기선속 변화율과 유도 기전력</h2><p>오른쪽 끝 점이 현재 값입니다. 노란선은 dΦ/dt, 초록선은 ε를 나타냅니다.</p></div>
-    <div class="graph-wrap"><canvas id="graph-canvas" aria-label="시간에 따른 자기선속 변화율과 유도 기전력 그래프"></canvas></div>
-    <div class="formula-box">
-      <div class="concept-list">
-        <div class="concept"><strong>전자기 유도</strong><p>코일과 자석의 상대적인 운동으로 코일을 통과하는 자기선속이 변할 때 코일에 유도 기전력이 생기고, 닫힌 회로에는 유도 전류가 흐르는 현상입니다.</p></div>
-        <div class="concept"><strong>자기선속 공식: Φ = BA cosθ</strong><p>B는 자기장 세기(T), A는 코일의 단면적(m²), θ는 자기장과 면의 수직 방향이 이루는 각입니다. 자기선속 Φ의 단위는 Wb(웨버)입니다. 자기장이 면에 수직이면 θ = 0°이므로 Φ = BA입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>면적이 아주 작은 조각 dA를 지나는 자기선속은 dΦ = B·dA입니다. 벡터의 내적을 사용하면 dΦ = B cosθ dA가 됩니다.</p><p>균일한 자기장이 평평한 면 전체를 지날 때 적분하면 Φ = ∫B cosθ dA = B cosθ∫dA = BA cosθ입니다.</p><p>자기장이 면에 수직하면 cos0° = 1이므로 Φ = BA입니다. 이 식을 B에 관해 정리하면 <strong>B = Φ/A</strong>가 되며, 단위는 Wb/m² = T(테슬라)입니다.</p><p>자기장이 일정하지 않거나 면이 휘어 있으면 일반식 Φ = ∫<sub>S</sub>B·dA를 사용합니다.</p></div></details></div>
-        <div class="concept"><strong>자기선속 변화율: dΦ/dt = (dΦ/dx)v</strong><p>단위 시간 동안 자기선속이 얼마나 빠르게 변하는지를 뜻합니다. 그래프의 첫 번째 좌표계가 이 값입니다. 자석이 멈추면 위치가 일정해져 dΦ/dt = 0이 됩니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>자기선속이 자석 위치 x에 따라 Φ(x)로 변한다고 두면, 시간에 따른 변화는 합성함수 Φ(x(t))입니다.</p><p>연쇄법칙을 적용하면 dΦ/dt = (dΦ/dx)(dx/dt)입니다. 여기서 dx/dt = v이므로 dΦ/dt = (dΦ/dx)v가 됩니다.</p><p>따라서 같은 위치에서도 자석의 속력 v가 클수록 자기선속 변화율의 크기가 커집니다.</p></div></details></div>
-        <div class="concept"><strong>패러데이 전자기 유도 법칙: ε = −N·dΦ/dt</strong><p>유도 기전력 ε는 자기선속의 시간 변화율과 코일 감은 수 N에 비례합니다. 자석을 빠르게 움직이거나 코일을 많이 감을수록 유도 기전력의 크기가 커집니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>한 번 감은 폐회로에서 패러데이 법칙은 ∮E·dl = −dΦ/dt입니다. 폐회로를 따라 전기장을 적분한 값이 유도 기전력 ε입니다.</p><p>같은 자기선속을 지나는 코일이 N회 감겨 있으면 각 고리에 생기는 기전력이 더해져 ε = −N·dΦ/dt가 됩니다.</p><p>유한한 시간 간격 Δt로 측정할 때는 평균 유도 기전력을 ε ≈ −NΔΦ/Δt로 계산합니다.</p></div></details></div>
-        <div class="concept"><strong>렌츠 법칙과 마이너스 부호</strong><p>− 부호는 유도 전류가 원래 자기선속의 변화를 방해하는 방향으로 흐른다는 뜻입니다. 자석이 코일 중심을 지나면 dΦ/dt의 부호가 바뀌어 유도 기전력과 전류 방향도 반전됩니다.</p></div>
-        <div class="concept"><strong>유도 전류 공식: I = ε/R</strong><p>회로의 저항이 R일 때 유도 전류 I는 유도 기전력에 비례하고 저항에 반비례합니다. 현재 시뮬레이션은 전압과 방향을 중심으로 보여주며, Φ와 dΦ/dt는 상대값입니다.</p><details><summary>유도 과정 보기</summary><div class="proof"><p>코일과 연결 도선의 전체 저항을 R이라고 하면 옴의 법칙은 ε = IR입니다.</p><p>양변을 R로 나누면 I = ε/R을 얻습니다. 여기에 패러데이 법칙을 대입하면 I = −(N/R)dΦ/dt입니다.</p><p>따라서 같은 변화율에서는 감은 수 N이 클수록 전류가 커지고, 저항 R이 클수록 전류가 작아집니다.</p></div></details></div>
-      </div>
-      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>코일을 지나는 자기선속은 Φ = ∫B·dA입니다. 자석이 움직이면 B가 위치 x에 따라 달라지므로 연쇄법칙으로 dΦ/dt = (dΦ/dx)(dx/dt) = (dΦ/dx)v가 됩니다.</p><p>패러데이 법칙에 따라 N회 감은 코일의 유도 기전력은 ε = −N·dΦ/dt입니다. 마이너스 부호는 렌츠 법칙을 뜻하며, 유도 전류가 자기선속의 변화를 방해하는 방향으로 흐른다는 의미입니다. 코일 중심을 지난 뒤에는 dΦ/dx의 부호가 바뀌므로 ε와 전류 방향도 반전됩니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

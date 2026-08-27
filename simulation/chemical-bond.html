@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -370,12 +357,34 @@
       <div class="stage">
         <canvas id="canvas" aria-label="고정 원자와 움직이는 원자가 표시된 거리-퍼텐셜 에너지 그래프"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 결합은 왜 특정 거리에서 멈출까</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">결합 길이로</button>
           <span class="share-said" id="stage-said">그래프 위의 움직이는 원자를 드래그해 보세요</span>
         </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="chemical_bond_measure">
+    <div class="panel-head"><h2 id="chemical_bond_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 거리</dt><dd id="r-dist">—</dd></div>
+            <div><dt>결합 길이</dt><dd id="r-eq">—</dd></div>
+            <div><dt>퍼텐셜 에너지</dt><dd id="r-energy">—</dd></div>
+            <div><dt>작용하는 힘</dt><dd id="r-force">—</dd></div>
+            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="bond-formula-title">
+    <div class="analysis-head"><h2 id="bond-formula-title">결합은 왜 특정 거리에서 멈출까</h2><p>시뮬레이션은 레너드-존스 퍼텐셜로 두 원자 사이의 힘을 계산합니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">U(r) = D<sub>e</sub>[(r<sub>0</sub>/r)<sup>12</sup> − 2(r<sub>0</sub>/r)<sup>6</sup>], &nbsp;&nbsp; F = −dU/dr</p>
+      <p>두 원자가 가까워지면 <strong>전자껍질끼리 밀치고</strong>(r<sup>12</sup> 항), 멀어지면 <strong>서로 끌어당깁니다</strong>(r<sup>6</sup> 항). 두 힘이 정확히 상쇄되는 거리가 결합 길이 r<sub>0</sub>이고, 그때 에너지가 가장 낮습니다.</p>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>먼 거리에서는 원자의 전자 구름이 순간적으로 치우치며 쌍극자가 생깁니다. 이 유도 쌍극자 사이의 인력은 거리의 6제곱에 반비례해 −1/r⁶ 꼴로 줄어듭니다.</p><p>반대로 아주 가까워지면 두 원자의 전자가 같은 공간을 차지하려 하는데, 파울리 배타 원리가 이를 막습니다. 이 반발은 훨씬 가파르게 커져서 보통 +1/r¹²로 근사합니다(계산이 쉬워 r⁶의 제곱을 씁니다).</p><p>둘을 합치면 U(r) = D<sub>e</sub>[(r₀/r)¹² − 2(r₀/r)⁶]입니다. 힘은 F = −dU/dr이므로, U가 최소인 지점에서 F = 0입니다. 미분해서 0으로 두면 정확히 r = r₀에서 최소가 됩니다.</p><p>이 지점이 안정한 이유는 <strong>양쪽으로 벗어나면 되돌리는 힘이 생기기 때문</strong>입니다. r &lt; r₀이면 반발력이 이겨 밀어내고, r &gt; r₀이면 인력이 이겨 당깁니다. 슬라이더를 아무 데나 놓고 손을 떼면 항상 r₀로 돌아오는 것이 그 증거입니다.</p><p>곡선의 깊이 D<sub>e</sub>가 결합 에너지입니다. 진동 에너지가 D<sub>e</sub>에 가까워지면 원자가 서로 벗어나 결합이 끊어질 수 있습니다 — 가열하면 분자가 분해되는 이유입니다. 실제로는 분자마다 에너지가 제각각이라, 온도가 오르면 우물을 넘는 분자의 비율이 늘어납니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -410,24 +419,8 @@
         </div>
       </div>
 
-
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="chemical_bond_measure">
-    <div class="panel-head"><h2 id="chemical_bond_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>지금 거리</dt><dd id="r-dist">—</dd></div>
-            <div><dt>결합 길이</dt><dd id="r-eq">—</dd></div>
-            <div><dt>퍼텐셜 에너지</dt><dd id="r-energy">—</dd></div>
-            <div><dt>작용하는 힘</dt><dd id="r-force">—</dd></div>
-            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -442,14 +435,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="bond-formula-title">
-    <div class="analysis-head"><h2 id="bond-formula-title">결합은 왜 특정 거리에서 멈출까</h2><p>시뮬레이션은 레너드-존스 퍼텐셜로 두 원자 사이의 힘을 계산합니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">U(r) = D<sub>e</sub>[(r<sub>0</sub>/r)<sup>12</sup> − 2(r<sub>0</sub>/r)<sup>6</sup>], &nbsp;&nbsp; F = −dU/dr</p>
-      <p>두 원자가 가까워지면 <strong>전자껍질끼리 밀치고</strong>(r<sup>12</sup> 항), 멀어지면 <strong>서로 끌어당깁니다</strong>(r<sup>6</sup> 항). 두 힘이 정확히 상쇄되는 거리가 결합 길이 r<sub>0</sub>이고, 그때 에너지가 가장 낮습니다.</p>
-      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>먼 거리에서는 원자의 전자 구름이 순간적으로 치우치며 쌍극자가 생깁니다. 이 유도 쌍극자 사이의 인력은 거리의 6제곱에 반비례해 −1/r⁶ 꼴로 줄어듭니다.</p><p>반대로 아주 가까워지면 두 원자의 전자가 같은 공간을 차지하려 하는데, 파울리 배타 원리가 이를 막습니다. 이 반발은 훨씬 가파르게 커져서 보통 +1/r¹²로 근사합니다(계산이 쉬워 r⁶의 제곱을 씁니다).</p><p>둘을 합치면 U(r) = D<sub>e</sub>[(r₀/r)¹² − 2(r₀/r)⁶]입니다. 힘은 F = −dU/dr이므로, U가 최소인 지점에서 F = 0입니다. 미분해서 0으로 두면 정확히 r = r₀에서 최소가 됩니다.</p><p>이 지점이 안정한 이유는 <strong>양쪽으로 벗어나면 되돌리는 힘이 생기기 때문</strong>입니다. r &lt; r₀이면 반발력이 이겨 밀어내고, r &gt; r₀이면 인력이 이겨 당깁니다. 슬라이더를 아무 데나 놓고 손을 떼면 항상 r₀로 돌아오는 것이 그 증거입니다.</p><p>곡선의 깊이 D<sub>e</sub>가 결합 에너지입니다. 진동 에너지가 D<sub>e</sub>에 가까워지면 원자가 서로 벗어나 결합이 끊어질 수 있습니다 — 가열하면 분자가 분해되는 이유입니다. 실제로는 분자마다 에너지가 제각각이라, 온도가 오르면 우물을 넘는 분자의 비율이 늘어납니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

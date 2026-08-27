@@ -395,20 +395,33 @@ test('시뮬레이션 목록 페이지에 네비로 갈 수 있다', () => {
 });
 
 
-test('분석 그래프로 건너뛰는 링크가 모든 시뮬에 있다', () => {
-  /* 그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-     새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 링크 한 줄을 얹었다.
-     고정 헤더가 56px 이라 scroll-margin-top 이 없으면 제목이 헤더에 깔린다. */
+test('그래프가 무대와 같은 열에 있다', () => {
+  /* 그래프가 첫 화면에서 752px 아래였다. 조작 패널이 무대보다 393px 길어서
+     오른쪽 열 아래가 텅 비고, 그래프는 두 열이 끝난 다음에 있었다.
+     링크로 건너뛰게 해봤자 아래에 있다는 사실은 그대로다.
+     측정값·공유·그래프를 왼쪽 열(무대 아래)로 넣어 빈 공간을 채웠다 —
+     스크롤 752px → 평균 280px. 점프 링크는 뺐다. */
   const files = fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html') && f !== 'index.html');
   for (const f of files) {
     const html = read(path.join(SIM_DIR, f));
-    assert.match(html, /class="graph-jump" href="#analysis"/, f + ' 에 그래프 점프 링크가 없다');
-    assert.match(html, /<section class="analysis-panel" id="analysis"/, f + ' 에 앵커 대상이 없다');
-    assert.match(html, /\.graph-jump \{/, f + ' 에 점프 링크 스타일이 없다');
+    const sp = html.indexOf('<div class="side-panels">');
+    assert.ok(sp > 0, f + ' 에 왼쪽 열이 없다');
+    assert.ok(html.indexOf('<section class="analysis-panel"', sp) > sp, f + ' 에 분석 패널이 없다');
+    /* 왼쪽 열이 닫히기 전에 분석 패널이 나와야 한다. 바깥으로 빠지면
+       다시 조작 패널 길이만큼 밀린다.
+       ⚠ 네 번 틀렸다. 인덱스로 여는/닫는 짝을 세려다 두 번(측정 스트립·분석
+       패널 안에도 같은 들여쓰기의 </div> 가 있다), 열 끝 모양만 보다 한 번
+       (분석 패널을 빼도 뒤의 것들이 같은 모양을 만든다), 캔버스 수로 보다
+       한 번(화학 결합은 그래프 없이 설명만 있는 분석 패널이다).
+       분석 패널에 붙은 id="analysis" 가 유일하고 확실한 표시다. */
+    const colEnd = html.search(/<\/section>\n {4}<\/div>\n\n {4}<div/);
+    assert.ok(colEnd > sp, f + ' 의 왼쪽 열이 닫히는 자리를 찾을 수 없다');
+    const column = html.slice(sp, colEnd);
+    assert.match(column, /<section class="analysis-panel" id="analysis"/,
+      f + ' 의 그래프가 왼쪽 열 밖에 있다 — 조작 패널 길이만큼 아래로 밀린다');
+    assert.ok(!/graph-jump/.test(html),
+      f + ' 에 점프 링크가 남아 있다 — 그래프가 바로 아래라 필요 없다');
   }
-  const css = read(path.join(ROOT, 'assets/css/styles.css'));
-  assert.match(css, /\[id\] \{ scroll-margin-top/,
-    '앵커 여백이 없다 — 헤더가 제목을 가린다');
 });
 
 test('판과 지각 변동의 침강판이 캔버스를 벗어나지 않는다', () => {

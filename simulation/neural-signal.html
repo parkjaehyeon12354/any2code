@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -451,10 +438,6 @@
   </div>
 </div>
 
-
-
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 생명과학 · 신경과 자극전달</p>
 
@@ -471,7 +454,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="자극 세기에 따른 막전위 변화와 활동전위 발생"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 세기를 올리면 무엇이 변하나</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -483,6 +465,34 @@
         <span><i style="background:#8a8f98"></i>불응기 (아무것도 못 함)</span>
         <span><i style="background:#ffd166"></i>역치 <span id="lg-vth">−55</span>mV</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="neural_signal_measure">
+    <div class="panel-head"><h2 id="neural_signal_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>활동전위 크기</dt><dd id="r-amp">—</dd></div>
+            <div><dt>발생 빈도</dt><dd id="r-freq">—</dd></div>
+            <div><dt>역치까지 걸리는 시간</dt><dd id="r-charge">—</dd></div>
+            <div><dt>전도 속도</dt><dd id="r-speed">—</dd></div>
+            <div><dt>지금까지 발생</dt><dd id="r-count" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">세기를 올리면 무엇이 변하나</h2><p>가로축이 자극 세기입니다. <strong>빨간 선(봉우리 높이)은 완전히 평평합니다</strong> — 역치를 넘는 순간 100mV 로 튀어오르고, 그 뒤로는 아무리 세게 눌러도 그대로입니다. 반면 <strong>파란 선(1초당 횟수)은 계속 올라갑니다.</strong> 뇌는 &quot;얼마나 센가&quot;를 크기가 아니라 <strong>빈도로</strong> 읽습니다.</p></div>
+    <div class="graph-wrap"><canvas id="response-graph" aria-label="자극 세기에 따른 활동전위 크기와 빈도"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">차오르고, 터지고, 쉰다</h2><p>세 단계가 반복될 뿐입니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">빈도 = 1000 ÷ (차오르는 시간 + 불응기) &nbsp;&nbsp;|&nbsp;&nbsp; 크기 = 항상 100 mV</p>
+      <p>자극이 셀수록 막전위가 역치까지 <strong>빨리 차오릅니다.</strong> 80%면 13.9ms, 100%면 9.2ms입니다. 하지만 일단 터지면 크기는 언제나 −70mV 에서 +30mV 까지, <strong>정확히 같습니다.</strong> 그래서 세기는 오직 <strong>얼마나 자주 터지는가</strong>로만 전달됩니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>왜 항상 같은 크기일까요.</strong> 활동전위는 자극이 밀어 올리는 게 아니라, 역치를 넘는 순간 <strong>나트륨 통로가 한꺼번에 열리며 스스로 일어나는</strong> 현상입니다. 화약에 불을 붙이는 것과 같습니다 — 성냥을 세게 긋든 살살 긋든, 일단 붙으면 터지는 크기는 화약의 양이 정합니다. 그래서 <strong>실무율(all-or-none)</strong>, 전부 아니면 전무라고 부릅니다.</p><p><strong>그럼 아픈 정도는 어떻게 구분할까요.</strong> 두 가지입니다. 하나는 <strong>빈도</strong>로, 세게 누를수록 1초에 더 많은 신호가 갑니다. 다른 하나는 <strong>참여하는 신경 수</strong>인데, 약한 자극은 예민한 신경 몇 개만, 강한 자극은 둔한 신경까지 함께 반응합니다. 뇌는 이 두 정보를 합쳐 세기를 읽습니다.</p><p><strong>불응기가 상한을 만듭니다.</strong> 한 번 터진 뒤에는 나트륨 통로가 닫혀 있어 아무리 센 자극이 와도 반응하지 않습니다. 이 시간이 5ms 면 이론상 1초에 200번이 한계입니다. 불응기는 낭비가 아니라 <strong>신호가 뒤로 거꾸로 흐르지 못하게 막는 장치</strong>이기도 합니다 — 방금 지나온 자리는 쉬고 있으니 앞으로만 갈 수 있습니다.</p><p><strong>수초는 속도를 100배 올립니다.</strong> 축삭을 감싼 절연층이라 그 구간에서는 전위가 새지 않고, 신호가 마디(랑비에 결절)에서 마디로 <strong>건너뜁니다.</strong> 이걸 도약전도라 하며, 수초 없는 신경이 초속 1m 정도인 데 비해 수초가 있으면 <strong>초속 100m</strong> 까지 나옵니다. 다발성 경화증은 이 수초가 손상되는 병인데, 신호가 느려지거나 끊겨 감각과 운동에 문제가 생깁니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +556,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>세기를 올리면</h2></div>
         <div class="panel-body">
@@ -558,23 +567,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="neural_signal_measure">
-    <div class="panel-head"><h2 id="neural_signal_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>활동전위 크기</dt><dd id="r-amp">—</dd></div>
-            <div><dt>발생 빈도</dt><dd id="r-freq">—</dd></div>
-            <div><dt>역치까지 걸리는 시간</dt><dd id="r-charge">—</dd></div>
-            <div><dt>전도 속도</dt><dd id="r-speed">—</dd></div>
-            <div><dt>지금까지 발생</dt><dd id="r-count" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,21 +583,7 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">세기를 올리면 무엇이 변하나</h2><p>가로축이 자극 세기입니다. <strong>빨간 선(봉우리 높이)은 완전히 평평합니다</strong> — 역치를 넘는 순간 100mV 로 튀어오르고, 그 뒤로는 아무리 세게 눌러도 그대로입니다. 반면 <strong>파란 선(1초당 횟수)은 계속 올라갑니다.</strong> 뇌는 &quot;얼마나 센가&quot;를 크기가 아니라 <strong>빈도로</strong> 읽습니다.</p></div>
-    <div class="graph-wrap"><canvas id="response-graph" aria-label="자극 세기에 따른 활동전위 크기와 빈도"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">차오르고, 터지고, 쉰다</h2><p>세 단계가 반복될 뿐입니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">빈도 = 1000 ÷ (차오르는 시간 + 불응기) &nbsp;&nbsp;|&nbsp;&nbsp; 크기 = 항상 100 mV</p>
-      <p>자극이 셀수록 막전위가 역치까지 <strong>빨리 차오릅니다.</strong> 80%면 13.9ms, 100%면 9.2ms입니다. 하지만 일단 터지면 크기는 언제나 −70mV 에서 +30mV 까지, <strong>정확히 같습니다.</strong> 그래서 세기는 오직 <strong>얼마나 자주 터지는가</strong>로만 전달됩니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>왜 항상 같은 크기일까요.</strong> 활동전위는 자극이 밀어 올리는 게 아니라, 역치를 넘는 순간 <strong>나트륨 통로가 한꺼번에 열리며 스스로 일어나는</strong> 현상입니다. 화약에 불을 붙이는 것과 같습니다 — 성냥을 세게 긋든 살살 긋든, 일단 붙으면 터지는 크기는 화약의 양이 정합니다. 그래서 <strong>실무율(all-or-none)</strong>, 전부 아니면 전무라고 부릅니다.</p><p><strong>그럼 아픈 정도는 어떻게 구분할까요.</strong> 두 가지입니다. 하나는 <strong>빈도</strong>로, 세게 누를수록 1초에 더 많은 신호가 갑니다. 다른 하나는 <strong>참여하는 신경 수</strong>인데, 약한 자극은 예민한 신경 몇 개만, 강한 자극은 둔한 신경까지 함께 반응합니다. 뇌는 이 두 정보를 합쳐 세기를 읽습니다.</p><p><strong>불응기가 상한을 만듭니다.</strong> 한 번 터진 뒤에는 나트륨 통로가 닫혀 있어 아무리 센 자극이 와도 반응하지 않습니다. 이 시간이 5ms 면 이론상 1초에 200번이 한계입니다. 불응기는 낭비가 아니라 <strong>신호가 뒤로 거꾸로 흐르지 못하게 막는 장치</strong>이기도 합니다 — 방금 지나온 자리는 쉬고 있으니 앞으로만 갈 수 있습니다.</p><p><strong>수초는 속도를 100배 올립니다.</strong> 축삭을 감싼 절연층이라 그 구간에서는 전위가 새지 않고, 신호가 마디(랑비에 결절)에서 마디로 <strong>건너뜁니다.</strong> 이걸 도약전도라 하며, 수초 없는 신경이 초속 1m 정도인 데 비해 수초가 있으면 <strong>초속 100m</strong> 까지 나옵니다. 다발성 경화증은 이 수초가 손상되는 병인데, 신호가 느려지거나 끊겨 감각과 운동에 문제가 생깁니다.</p></div></details>
-    </div>
-  </section>
 </main>
-
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>
@@ -789,7 +769,6 @@
     }
     return V_REST + (state.v || 0);
   }
-
 
   const S = { stim: 80, tref: 5, myelin: 1, vth: 15 };
   let running = true;

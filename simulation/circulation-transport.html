@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -451,10 +438,6 @@
   </div>
 </div>
 
-
-
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 생명과학 · 순환과 수송</p>
 
@@ -471,7 +454,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="대동맥에서 모세혈관을 지나 대정맥으로 흐르는 혈액"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 넓어질수록 느려진다</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -482,6 +464,34 @@
         <span><i style="background:#7bdff2"></i>산소를 넘겨준 적혈구</span>
         <span><i style="background:#f4a261"></i>조직으로 간 산소</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="circulation_transport_measure">
+    <div class="panel-head"><h2 id="circulation_transport_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>대동맥 유속</dt><dd id="r-va">—</dd></div>
+            <div><dt>모세혈관 유속</dt><dd id="r-vc">—</dd></div>
+            <div><dt>모세혈관 총단면적</dt><dd id="r-ac">—</dd></div>
+            <div><dt>모세혈관 통과 시간</dt><dd id="r-time">—</dd></div>
+            <div><dt>산소 전달률</dt><dd id="r-o2" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">넓어질수록 느려진다</h2><p>가로축은 심장에서 출발해 대동맥 → 동맥 → 세동맥 → <strong>모세혈관</strong> → 세정맥 → 정맥 → 대정맥으로 가는 길입니다. 위쪽 막대가 <strong>총단면적</strong>, 아래 곡선이 <strong>유속</strong>입니다. 두 그림이 정확히 <strong>위아래 거울상</strong>입니다 — 넓어지면 느려지고, 좁아지면 빨라집니다. 곱하면 어디서나 같은 값이 나옵니다.</p></div>
+    <div class="graph-wrap"><canvas id="area-graph" aria-label="혈관 종류별 총단면적과 유속"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">한 줄이면 끝난다</h2><p>흐르는 양은 어디서나 같습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">A × v = Q (일정) &nbsp;&nbsp;→&nbsp;&nbsp; v = Q ÷ A</p>
+      <p>심장이 1초에 내보낸 피는 <strong>중간에 사라지지 않습니다.</strong> 그러니 좁은 곳을 지날 땐 빨리, 넓은 곳을 지날 땐 천천히 흘러야 양이 맞습니다. 모세혈관은 하나하나는 머리카락보다 가늘지만 <strong>30억 개를 합치면 대동맥의 500배</strong>라, 유속도 정확히 <strong>500분의 1</strong> 로 떨어집니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>강을 떠올리면 쉽습니다.</strong> 좁은 협곡에서 물살이 세지고 넓은 평야에서 잔잔해지는 것과 같습니다. 물이 중간에 없어지지 않으니, 강폭이 넓어지면 그만큼 천천히 흘러야 같은 양이 지나갑니다. 혈관도 똑같습니다 — 다만 &quot;넓이&quot;가 혈관 하나의 굵기가 아니라 <strong>같은 단계 혈관 전체를 합친 넓이</strong>라는 게 함정입니다.</p><p><strong>느린 게 목적입니다.</strong> 모세혈관에서 피가 느린 건 어쩔 수 없이 그렇게 된 게 아니라, <strong>그래야 산소를 넘겨줄 수 있기 때문</strong>입니다. 적혈구가 모세혈관 1mm 를 지나는 데 <strong>약 2초</strong>가 걸리는데, 산소가 혈액에서 조직으로 확산되는 데 필요한 시간이 딱 그만큼입니다. 여기서 피가 빨랐다면 산소를 실은 채 그냥 지나쳐 버립니다.</p><p><strong>모세혈관 벽은 세포 한 겹입니다.</strong> 두께가 1 µm 도 안 되고, 지름은 적혈구(7~8 µm)가 <strong>몸을 접어야 겨우 통과</strong>할 만큼 좁습니다. 이렇게 좁고 얇아야 물질이 오갈 수 있습니다. 대신 저항이 커지므로, 심장은 그만큼 강한 압력으로 밀어야 합니다.</p><p><strong>운동할 때는 어떻게 될까요.</strong> 심박출량이 5 L/분에서 25 L/분으로 다섯 배 오르면 모든 구간의 유속도 다섯 배가 됩니다. 모세혈관 통과 시간이 2초에서 0.4초로 줄어드는데, 그러면 산소를 다 못 넘기게 됩니다. 그래서 몸은 <strong>쓰지 않는 곳(소화기관·피부)의 혈관을 조여</strong> 근육 쪽으로 피를 몰아주고, 근육에서는 평소 닫아둔 모세혈관을 열어 <strong>총단면적을 늘립니다.</strong> 단순히 빨리 흘려보내는 게 아니라 길을 다시 짜는 셈입니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -544,7 +554,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>넓이와 속도</h2></div>
         <div class="panel-body">
@@ -556,23 +565,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="circulation_transport_measure">
-    <div class="panel-head"><h2 id="circulation_transport_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>대동맥 유속</dt><dd id="r-va">—</dd></div>
-            <div><dt>모세혈관 유속</dt><dd id="r-vc">—</dd></div>
-            <div><dt>모세혈관 총단면적</dt><dd id="r-ac">—</dd></div>
-            <div><dt>모세혈관 통과 시간</dt><dd id="r-time">—</dd></div>
-            <div><dt>산소 전달률</dt><dd id="r-o2" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -587,21 +581,7 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">넓어질수록 느려진다</h2><p>가로축은 심장에서 출발해 대동맥 → 동맥 → 세동맥 → <strong>모세혈관</strong> → 세정맥 → 정맥 → 대정맥으로 가는 길입니다. 위쪽 막대가 <strong>총단면적</strong>, 아래 곡선이 <strong>유속</strong>입니다. 두 그림이 정확히 <strong>위아래 거울상</strong>입니다 — 넓어지면 느려지고, 좁아지면 빨라집니다. 곱하면 어디서나 같은 값이 나옵니다.</p></div>
-    <div class="graph-wrap"><canvas id="area-graph" aria-label="혈관 종류별 총단면적과 유속"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">한 줄이면 끝난다</h2><p>흐르는 양은 어디서나 같습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">A × v = Q (일정) &nbsp;&nbsp;→&nbsp;&nbsp; v = Q ÷ A</p>
-      <p>심장이 1초에 내보낸 피는 <strong>중간에 사라지지 않습니다.</strong> 그러니 좁은 곳을 지날 땐 빨리, 넓은 곳을 지날 땐 천천히 흘러야 양이 맞습니다. 모세혈관은 하나하나는 머리카락보다 가늘지만 <strong>30억 개를 합치면 대동맥의 500배</strong>라, 유속도 정확히 <strong>500분의 1</strong> 로 떨어집니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>강을 떠올리면 쉽습니다.</strong> 좁은 협곡에서 물살이 세지고 넓은 평야에서 잔잔해지는 것과 같습니다. 물이 중간에 없어지지 않으니, 강폭이 넓어지면 그만큼 천천히 흘러야 같은 양이 지나갑니다. 혈관도 똑같습니다 — 다만 &quot;넓이&quot;가 혈관 하나의 굵기가 아니라 <strong>같은 단계 혈관 전체를 합친 넓이</strong>라는 게 함정입니다.</p><p><strong>느린 게 목적입니다.</strong> 모세혈관에서 피가 느린 건 어쩔 수 없이 그렇게 된 게 아니라, <strong>그래야 산소를 넘겨줄 수 있기 때문</strong>입니다. 적혈구가 모세혈관 1mm 를 지나는 데 <strong>약 2초</strong>가 걸리는데, 산소가 혈액에서 조직으로 확산되는 데 필요한 시간이 딱 그만큼입니다. 여기서 피가 빨랐다면 산소를 실은 채 그냥 지나쳐 버립니다.</p><p><strong>모세혈관 벽은 세포 한 겹입니다.</strong> 두께가 1 µm 도 안 되고, 지름은 적혈구(7~8 µm)가 <strong>몸을 접어야 겨우 통과</strong>할 만큼 좁습니다. 이렇게 좁고 얇아야 물질이 오갈 수 있습니다. 대신 저항이 커지므로, 심장은 그만큼 강한 압력으로 밀어야 합니다.</p><p><strong>운동할 때는 어떻게 될까요.</strong> 심박출량이 5 L/분에서 25 L/분으로 다섯 배 오르면 모든 구간의 유속도 다섯 배가 됩니다. 모세혈관 통과 시간이 2초에서 0.4초로 줄어드는데, 그러면 산소를 다 못 넘기게 됩니다. 그래서 몸은 <strong>쓰지 않는 곳(소화기관·피부)의 혈관을 조여</strong> 근육 쪽으로 피를 몰아주고, 근육에서는 평소 닫아둔 모세혈관을 열어 <strong>총단면적을 늘립니다.</strong> 단순히 빨리 흘려보내는 게 아니라 길을 다시 짜는 셈입니다.</p></div></details>
-    </div>
-  </section>
 </main>
-
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>

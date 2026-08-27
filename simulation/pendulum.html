@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -356,12 +343,39 @@
       <div class="stage">
         <canvas id="canvas" aria-label="단진자 운동"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 시간에 따른 각도와 각속도</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="pendulum_measure">
+    <div class="panel-head"><h2 id="pendulum_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 각도</dt><dd id="r-theta">—</dd></div>
+            <div><dt>각속도</dt><dd id="r-omega">—</dd></div>
+            <div><dt>측정 주기</dt><dd id="r-measured">—</dd></div>
+            <div><dt>근사식 값</dt><dd id="r-ideal">—</dd></div>
+            <div><dt>차이</dt><dd id="r-gap" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="pendulum-graph-title">
+    <div class="analysis-head"><h2 id="pendulum-graph-title">시간에 따른 각도와 각속도</h2><p>파란선은 각도 θ, 주황선은 각속도 ω이며 오른쪽 끝 점이 현재 값입니다.</p></div>
+    <div class="graph-wrap"><canvas id="pendulum-graph" aria-label="시간에 따른 단진자 각도와 각속도 그래프"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="pendulum-formula-title">
+    <div class="analysis-head"><h2 id="pendulum-formula-title">단진자의 운동과 주기 공식</h2><p>시뮬레이션은 sin θ를 그대로 사용하는 비선형 운동방정식을 계산합니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">θ″ + bθ′ + (g/L)sinθ = 0, &nbsp;&nbsp; 작은 각도에서 T ≈ 2π√(L/g)</p>
+      <p>정확한 운동은 sinθ가 포함된 비선형 방정식으로 계산합니다. 교과서의 주기 공식은 |θ|가 충분히 작아 sinθ ≈ θ로 둘 수 있을 때의 근사값입니다.</p>
+      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>추의 접선 방향 복원력은 −mg sinθ이고, 회전 운동식 mLθ″ = −mg sinθ에서 θ″ + (g/L)sinθ = 0을 얻습니다. 공기 저항을 각속도에 비례한다고 두면 bθ′ 항이 추가됩니다.</p><p>작은 각도에서 sinθ ≈ θ이므로 θ″ + (g/L)θ = 0인 단순 조화 운동이 됩니다. 각진동수는 ω₀ = √(g/L), 따라서 주기는 T = 2π/ω₀ = 2π√(L/g)입니다. 큰 각도에서는 sinθ ≈ θ가 성립하지 않아 실제 주기가 이 값보다 길어집니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -416,24 +430,8 @@
         </div>
       </div>
 
-
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="pendulum_measure">
-    <div class="panel-head"><h2 id="pendulum_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>지금 각도</dt><dd id="r-theta">—</dd></div>
-            <div><dt>각속도</dt><dd id="r-omega">—</dd></div>
-            <div><dt>측정 주기</dt><dd id="r-measured">—</dd></div>
-            <div><dt>근사식 값</dt><dd id="r-ideal">—</dd></div>
-            <div><dt>차이</dt><dd id="r-gap" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -449,19 +447,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="pendulum-graph-title">
-    <div class="analysis-head"><h2 id="pendulum-graph-title">시간에 따른 각도와 각속도</h2><p>파란선은 각도 θ, 주황선은 각속도 ω이며 오른쪽 끝 점이 현재 값입니다.</p></div>
-    <div class="graph-wrap"><canvas id="pendulum-graph" aria-label="시간에 따른 단진자 각도와 각속도 그래프"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="pendulum-formula-title">
-    <div class="analysis-head"><h2 id="pendulum-formula-title">단진자의 운동과 주기 공식</h2><p>시뮬레이션은 sin θ를 그대로 사용하는 비선형 운동방정식을 계산합니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">θ″ + bθ′ + (g/L)sinθ = 0, &nbsp;&nbsp; 작은 각도에서 T ≈ 2π√(L/g)</p>
-      <p>정확한 운동은 sinθ가 포함된 비선형 방정식으로 계산합니다. 교과서의 주기 공식은 |θ|가 충분히 작아 sinθ ≈ θ로 둘 수 있을 때의 근사값입니다.</p>
-      <details><summary>공식 증명 더 알아보기</summary><div class="proof"><p>추의 접선 방향 복원력은 −mg sinθ이고, 회전 운동식 mLθ″ = −mg sinθ에서 θ″ + (g/L)sinθ = 0을 얻습니다. 공기 저항을 각속도에 비례한다고 두면 bθ′ 항이 추가됩니다.</p><p>작은 각도에서 sinθ ≈ θ이므로 θ″ + (g/L)θ = 0인 단순 조화 운동이 됩니다. 각진동수는 ω₀ = √(g/L), 따라서 주기는 T = 2π/ω₀ = 2π√(L/g)입니다. 큰 각도에서는 sinθ ≈ θ가 성립하지 않아 실제 주기가 이 값보다 길어집니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

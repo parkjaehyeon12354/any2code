@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -453,8 +440,6 @@
   </div>
 </div>
 
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 화학 · 화학 반응</p>
 
@@ -471,7 +456,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="A와 B 입자가 서로 전환되는 가역 반응"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 시간에 따른 농도 변화</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -482,6 +466,34 @@
         <span><i style="background:#e8615d"></i>생성물 B</span>
         <span><i style="background:#ffd166"></i>전환되는 순간</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="chemical_reaction_measure">
+    <div class="panel-head"><h2 id="chemical_reaction_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 [A]</dt><dd id="r-a">—</dd></div>
+            <div><dt>지금 [B]</dt><dd id="r-b">—</dd></div>
+            <div><dt>정반응 속도 k<sub>f</sub>[A]</dt><dd id="r-vf">—</dd></div>
+            <div><dt>역반응 속도 k<sub>r</sub>[B]</dt><dd id="r-vr">—</dd></div>
+            <div><dt>평형 상수 K</dt><dd id="r-k" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">시간에 따른 농도 변화</h2><p>두 곡선이 평평해진 지점이 평형입니다. 하지만 <strong>평평한 것은 '순 변화'뿐</strong>입니다 — 아래 초록 선이 초당 전환 횟수인데, 평형 후에도 <strong>0으로 떨어지지 않습니다</strong>. 촉매를 넣으면 곡선이 왼쪽으로 당겨질 뿐 <strong>도착점은 같습니다</strong>.</p></div>
+    <div class="graph-wrap"><canvas id="conc-graph" aria-label="시간에 따른 A와 B의 농도 변화"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">평형은 정지가 아니라 균형이다</h2><p>두 방향이 같은 속도로 달리고 있을 뿐입니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">평형에서 k<sub>f</sub>[A] = k<sub>r</sub>[B] &nbsp;&nbsp;|&nbsp;&nbsp; K = k<sub>f</sub> ÷ k<sub>r</sub> = [B] ÷ [A] &nbsp;&nbsp;|&nbsp;&nbsp; [A]<sub>평형</sub> = [A]₀ ÷ (1 + K) &nbsp;&nbsp;|&nbsp;&nbsp; 도달 시간 τ = 1 ÷ (k<sub>f</sub> + k<sub>r</sub>)</p>
+      <p>촉매는 k<sub>f</sub> 와 k<sub>r</sub> 을 <strong>같은 배율로</strong> 키웁니다. K = k<sub>f</sub>/k<sub>r</sub> 이므로 배율이 위아래에서 약분되어 <strong>평형 상수가 변하지 않습니다.</strong> 반면 τ 는 분모가 커져 그만큼 빨리 도달합니다. 6배 촉매면 8.33초 걸리던 것이 1.39초가 됩니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>평형은 멈춘 것이 아닙니다.</strong> 정반응과 역반응의 속도가 같아져 겉보기 농도가 일정해진 것이지, 반응이 끝난 것이 아닙니다. 입자 수준에서는 A → B 와 B → A 가 지금도 같은 속도로 일어나고 있습니다. 위 화면의 전환 횟수가 평형 후에도 계속 올라가는 것이 그 증거입니다. 이것을 <strong>동적 평형</strong>이라 부릅니다.</p><p><strong>촉매는 활성화 에너지를 낮춥니다.</strong> 다른 반응 경로를 열어 넘어야 할 언덕을 낮춰 줍니다. 핵심은 <strong>정반응과 역반응의 언덕을 똑같은 폭으로</strong> 낮춘다는 점입니다. 그래서 양쪽이 같은 비율로 빨라지고, 평형 상수는 그대로입니다. 촉매는 "어느 쪽으로 더 가게" 만드는 것이 아니라 "양쪽 모두 더 쉽게" 만듭니다.</p><p><strong>활성화 에너지와 반응열은 다릅니다.</strong> 활성화 에너지는 넘어야 할 언덕의 높이이고, 반응열은 출발점과 도착점의 높이 차이입니다. 발열 반응이라도 언덕은 있습니다 — 종이가 저절로 타지 않는 이유입니다. 촉매는 언덕만 낮출 뿐 출발점과 도착점의 높이 차이, 즉 반응열은 건드리지 못합니다.</p><p><strong>평형 상수를 바꾸는 것은 온도뿐입니다.</strong> 농도나 압력을 바꾸면 평형의 위치는 옮겨가지만 K 자체는 그대로입니다(르샤틀리에 원리). 반면 온도를 바꾸면 K 값 자체가 달라집니다. 발열 반응은 온도를 올리면 K 가 작아지고, 흡열 반응은 커집니다. 이 구분이 시험에서 자주 나옵니다.</p><p><strong>암모니아 공장이 이 줄다리기 위에 있습니다.</strong> 질소와 수소로 암모니아를 만드는 하버-보슈법은 발열 반응이라 <strong>온도가 낮을수록 수율이 좋습니다.</strong> 그런데 온도가 낮으면 너무 느려서 공장이 돌아가지 않습니다. 그래서 철 촉매로 속도를 벌고, 온도는 400~500°C 로 타협하며, 압력을 200기압 이상 올려 평형을 생성물 쪽으로 밉니다. 이 공정이 없었다면 지금 인류의 절반은 식량을 얻지 못했을 것입니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -563,7 +575,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>겉보기는 멈춤, 속은 계속</h2></div>
         <div class="panel-body">
@@ -575,23 +586,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="chemical_reaction_measure">
-    <div class="panel-head"><h2 id="chemical_reaction_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>지금 [A]</dt><dd id="r-a">—</dd></div>
-            <div><dt>지금 [B]</dt><dd id="r-b">—</dd></div>
-            <div><dt>정반응 속도 k<sub>f</sub>[A]</dt><dd id="r-vf">—</dd></div>
-            <div><dt>역반응 속도 k<sub>r</sub>[B]</dt><dd id="r-vr">—</dd></div>
-            <div><dt>평형 상수 K</dt><dd id="r-k" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -606,19 +602,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">시간에 따른 농도 변화</h2><p>두 곡선이 평평해진 지점이 평형입니다. 하지만 <strong>평평한 것은 '순 변화'뿐</strong>입니다 — 아래 초록 선이 초당 전환 횟수인데, 평형 후에도 <strong>0으로 떨어지지 않습니다</strong>. 촉매를 넣으면 곡선이 왼쪽으로 당겨질 뿐 <strong>도착점은 같습니다</strong>.</p></div>
-    <div class="graph-wrap"><canvas id="conc-graph" aria-label="시간에 따른 A와 B의 농도 변화"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">평형은 정지가 아니라 균형이다</h2><p>두 방향이 같은 속도로 달리고 있을 뿐입니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">평형에서 k<sub>f</sub>[A] = k<sub>r</sub>[B] &nbsp;&nbsp;|&nbsp;&nbsp; K = k<sub>f</sub> ÷ k<sub>r</sub> = [B] ÷ [A] &nbsp;&nbsp;|&nbsp;&nbsp; [A]<sub>평형</sub> = [A]₀ ÷ (1 + K) &nbsp;&nbsp;|&nbsp;&nbsp; 도달 시간 τ = 1 ÷ (k<sub>f</sub> + k<sub>r</sub>)</p>
-      <p>촉매는 k<sub>f</sub> 와 k<sub>r</sub> 을 <strong>같은 배율로</strong> 키웁니다. K = k<sub>f</sub>/k<sub>r</sub> 이므로 배율이 위아래에서 약분되어 <strong>평형 상수가 변하지 않습니다.</strong> 반면 τ 는 분모가 커져 그만큼 빨리 도달합니다. 6배 촉매면 8.33초 걸리던 것이 1.39초가 됩니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>평형은 멈춘 것이 아닙니다.</strong> 정반응과 역반응의 속도가 같아져 겉보기 농도가 일정해진 것이지, 반응이 끝난 것이 아닙니다. 입자 수준에서는 A → B 와 B → A 가 지금도 같은 속도로 일어나고 있습니다. 위 화면의 전환 횟수가 평형 후에도 계속 올라가는 것이 그 증거입니다. 이것을 <strong>동적 평형</strong>이라 부릅니다.</p><p><strong>촉매는 활성화 에너지를 낮춥니다.</strong> 다른 반응 경로를 열어 넘어야 할 언덕을 낮춰 줍니다. 핵심은 <strong>정반응과 역반응의 언덕을 똑같은 폭으로</strong> 낮춘다는 점입니다. 그래서 양쪽이 같은 비율로 빨라지고, 평형 상수는 그대로입니다. 촉매는 "어느 쪽으로 더 가게" 만드는 것이 아니라 "양쪽 모두 더 쉽게" 만듭니다.</p><p><strong>활성화 에너지와 반응열은 다릅니다.</strong> 활성화 에너지는 넘어야 할 언덕의 높이이고, 반응열은 출발점과 도착점의 높이 차이입니다. 발열 반응이라도 언덕은 있습니다 — 종이가 저절로 타지 않는 이유입니다. 촉매는 언덕만 낮출 뿐 출발점과 도착점의 높이 차이, 즉 반응열은 건드리지 못합니다.</p><p><strong>평형 상수를 바꾸는 것은 온도뿐입니다.</strong> 농도나 압력을 바꾸면 평형의 위치는 옮겨가지만 K 자체는 그대로입니다(르샤틀리에 원리). 반면 온도를 바꾸면 K 값 자체가 달라집니다. 발열 반응은 온도를 올리면 K 가 작아지고, 흡열 반응은 커집니다. 이 구분이 시험에서 자주 나옵니다.</p><p><strong>암모니아 공장이 이 줄다리기 위에 있습니다.</strong> 질소와 수소로 암모니아를 만드는 하버-보슈법은 발열 반응이라 <strong>온도가 낮을수록 수율이 좋습니다.</strong> 그런데 온도가 낮으면 너무 느려서 공장이 돌아가지 않습니다. 그래서 철 촉매로 속도를 벌고, 온도는 400~500°C 로 타협하며, 압력을 200기압 이상 올려 평형을 생성물 쪽으로 밉니다. 이 공정이 없었다면 지금 인류의 절반은 식량을 얻지 못했을 것입니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

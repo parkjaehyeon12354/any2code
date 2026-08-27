@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -451,10 +438,6 @@
   </div>
 </div>
 
-
-
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 생명과학 · 개체와 생태계</p>
 
@@ -472,7 +455,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="초원에서 피식자와 포식자의 수가 번갈아 오르내리는 모습"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 두 수를 한 점으로 찍으면</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -483,6 +465,34 @@
         <span><i style="background:#f4a261"></i>포식자 (육식동물)</span>
         <span><i style="background:#ffd166"></i>사냥이 일어난 순간</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="ecology_population_measure">
+    <div class="panel-head"><h2 id="ecology_population_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>피식자 N</dt><dd id="r-n">—</dd></div>
+            <div><dt>포식자 P</dt><dd id="r-p">—</dd></div>
+            <div><dt>한 바퀴 도는 시간</dt><dd id="r-period">—</dd></div>
+            <div><dt>포식자가 뒤따르는 간격</dt><dd id="r-lag">—</dd></div>
+            <div><dt>지난 사냥</dt><dd id="r-kills" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>
+    <div class="graph-wrap"><canvas id="phase-graph" aria-label="피식자와 포식자 수를 두 축으로 한 궤적"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">두 줄이면 끝난다</h2><p>이 복잡한 고리가 딱 두 식에서 나옵니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">dN/dt = <strong>rN</strong> − <strong>aNP</strong> &nbsp;&nbsp;|&nbsp;&nbsp; dP/dt = <strong>eaNP</strong> − <strong>mP</strong></p>
+      <p>피식자는 스스로 <strong>늘고(rN)</strong> 잡아먹혀 <strong>줄어듭니다(aNP)</strong>. 포식자는 먹은 만큼 <strong>늘고(eaNP)</strong> 저절로 <strong>죽습니다(mP)</strong>. 둘 다 멈추는 지점이 균형점인데, <strong>피식자 수는 포식자 쪽 상수로만</strong>, <strong>포식자 수는 피식자 쪽 상수로만</strong> 정해집니다 — 서로 엇갈려 있습니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>한 방향으로만 읽으면 틀립니다.</strong> &quot;포식자가 늘면 피식자가 준다&quot;까지는 맞습니다. 그런데 거기서 멈추면 안 됩니다. 피식자가 줄면 포식자는 먹을 게 없어 굶어 죽고, 포식자가 줄면 피식자는 다시 늘어납니다. 원인과 결과가 <strong>고리를 이루어</strong> 서로를 밀고 당깁니다.</p><p><strong>포식자는 항상 한 박자 늦습니다.</strong> 피식자가 가장 많은 순간에 포식자가 가장 많은 게 아닙니다. 먹이가 넘쳐야 새끼를 많이 낳고, 그 새끼가 자라야 수가 늘기 때문에 <strong>시간이 걸립니다.</strong> 이 화면에서는 한 바퀴의 <strong>5분의 1</strong> 만큼 뒤처집니다. 실제 캐나다 숲의 눈신토끼와 스라소니 모피 거래 기록에서도 <strong>약 10년 주기</strong>로 같은 어긋남이 관찰됐습니다.</p><p><strong>천적을 없애면 어떻게 될까요.</strong> 이 모형에서는 피식자가 끝없이 늘어납니다. 하지만 현실에는 먹을 풀의 양이라는 한계가 있습니다. 1900년대 초 미국 카이밥 고원에서 사슴을 보호하려 늑대와 퓨마를 없앴더니, 사슴이 4천 마리에서 10만 마리까지 폭증했다가 <strong>풀이 바닥나 굶어 죽으며 도로 1만 마리로 무너졌습니다.</strong> 포식자는 피식자의 적이면서 동시에 <strong>개체수를 지켜주는 장치</strong>였던 셈입니다.</p><p><strong>균형점이 엇갈려 있는 게 이상합니다.</strong> 피식자가 멈추는 수는 포식자의 사망률과 사냥 성공률로 정해지고, 포식자가 멈추는 수는 피식자의 번식률로 정해집니다. 그래서 <strong>피식자에게 좋은 일(번식률 상승)을 해주면 정작 늘어나는 건 포식자</strong>입니다. 생태계에 손을 대기 어려운 이유가 여기 있습니다 — 직관과 결과가 자주 어긋납니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +556,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>균형점</h2></div>
         <div class="panel-body">
@@ -558,23 +567,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="ecology_population_measure">
-    <div class="panel-head"><h2 id="ecology_population_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>피식자 N</dt><dd id="r-n">—</dd></div>
-            <div><dt>포식자 P</dt><dd id="r-p">—</dd></div>
-            <div><dt>한 바퀴 도는 시간</dt><dd id="r-period">—</dd></div>
-            <div><dt>포식자가 뒤따르는 간격</dt><dd id="r-lag">—</dd></div>
-            <div><dt>지난 사냥</dt><dd id="r-kills" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,21 +583,7 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">두 수를 한 점으로 찍으면</h2><p>가로축이 피식자, 세로축이 포식자입니다. 시간축이 없습니다 — 대신 <strong>지금 이 순간의 두 마릿수를 점 하나로</strong> 찍고, 그 점이 지나간 자리를 남깁니다. 놀랍게도 점은 <strong>제자리로 돌아오는 닫힌 고리</strong>를 그립니다. 시계 반대 방향으로 도는데, 이게 &quot;먹이가 늘고 → 포식자가 늘고 → 먹이가 줄고 → 포식자가 줄고&quot;의 순서입니다. 고리가 닫힌다는 건 <strong>영원히 반복된다</strong>는 뜻입니다.</p></div>
-    <div class="graph-wrap"><canvas id="phase-graph" aria-label="피식자와 포식자 수를 두 축으로 한 궤적"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">두 줄이면 끝난다</h2><p>이 복잡한 고리가 딱 두 식에서 나옵니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">dN/dt = <strong>rN</strong> − <strong>aNP</strong> &nbsp;&nbsp;|&nbsp;&nbsp; dP/dt = <strong>eaNP</strong> − <strong>mP</strong></p>
-      <p>피식자는 스스로 <strong>늘고(rN)</strong> 잡아먹혀 <strong>줄어듭니다(aNP)</strong>. 포식자는 먹은 만큼 <strong>늘고(eaNP)</strong> 저절로 <strong>죽습니다(mP)</strong>. 둘 다 멈추는 지점이 균형점인데, <strong>피식자 수는 포식자 쪽 상수로만</strong>, <strong>포식자 수는 피식자 쪽 상수로만</strong> 정해집니다 — 서로 엇갈려 있습니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>한 방향으로만 읽으면 틀립니다.</strong> &quot;포식자가 늘면 피식자가 준다&quot;까지는 맞습니다. 그런데 거기서 멈추면 안 됩니다. 피식자가 줄면 포식자는 먹을 게 없어 굶어 죽고, 포식자가 줄면 피식자는 다시 늘어납니다. 원인과 결과가 <strong>고리를 이루어</strong> 서로를 밀고 당깁니다.</p><p><strong>포식자는 항상 한 박자 늦습니다.</strong> 피식자가 가장 많은 순간에 포식자가 가장 많은 게 아닙니다. 먹이가 넘쳐야 새끼를 많이 낳고, 그 새끼가 자라야 수가 늘기 때문에 <strong>시간이 걸립니다.</strong> 이 화면에서는 한 바퀴의 <strong>5분의 1</strong> 만큼 뒤처집니다. 실제 캐나다 숲의 눈신토끼와 스라소니 모피 거래 기록에서도 <strong>약 10년 주기</strong>로 같은 어긋남이 관찰됐습니다.</p><p><strong>천적을 없애면 어떻게 될까요.</strong> 이 모형에서는 피식자가 끝없이 늘어납니다. 하지만 현실에는 먹을 풀의 양이라는 한계가 있습니다. 1900년대 초 미국 카이밥 고원에서 사슴을 보호하려 늑대와 퓨마를 없앴더니, 사슴이 4천 마리에서 10만 마리까지 폭증했다가 <strong>풀이 바닥나 굶어 죽으며 도로 1만 마리로 무너졌습니다.</strong> 포식자는 피식자의 적이면서 동시에 <strong>개체수를 지켜주는 장치</strong>였던 셈입니다.</p><p><strong>균형점이 엇갈려 있는 게 이상합니다.</strong> 피식자가 멈추는 수는 포식자의 사망률과 사냥 성공률로 정해지고, 포식자가 멈추는 수는 피식자의 번식률로 정해집니다. 그래서 <strong>피식자에게 좋은 일(번식률 상승)을 해주면 정작 늘어나는 건 포식자</strong>입니다. 생태계에 손을 대기 어려운 이유가 여기 있습니다 — 직관과 결과가 자주 어긋납니다.</p></div></details>
-    </div>
-  </section>
 </main>
-
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>

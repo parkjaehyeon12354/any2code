@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -435,12 +422,39 @@
       <div class="stage">
         <canvas id="canvas" aria-label="지구의 공전과 계절"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 1년 동안의 낮 길이와 태양 고도</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">봄으로</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="earth_seasons_measure">
+    <div class="panel-head"><h2 id="earth_seasons_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>날짜</dt><dd id="r-date">—</dd></div>
+            <div><dt>태양까지 거리</dt><dd id="r-dist">—</dd></div>
+            <div><dt>남중 고도</dt><dd id="r-alt">—</dd></div>
+            <div><dt>낮 길이</dt><dd id="r-day">—</dd></div>
+            <div><dt>받는 햇빛</dt><dd id="r-energy" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="daylight-title">
+    <div class="analysis-head"><h2 id="daylight-title">1년 동안의 낮 길이와 태양 고도</h2><p>파란선은 낮 길이, 주황선은 남중 고도입니다. 자전축 기울기를 0으로 만들면 두 선이 평평해집니다 — 계절이 사라진다는 뜻입니다.</p></div>
+    <div class="graph-wrap"><canvas id="daylight-graph" aria-label="1년간 낮 길이와 태양 고도 변화"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="astro-formula-title">
+    <div class="analysis-head"><h2 id="astro-formula-title">계절은 거리가 아니라 기울기 때문이다</h2><p>가장 흔한 오해를 시뮬레이션으로 직접 확인할 수 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">남중 고도 = 90° − 위도 + 태양 적위 &nbsp;(북반구) &nbsp;&nbsp;|&nbsp;&nbsp; 90° − |위도 − 적위| &nbsp;(남·북 공통)</p>
+      <p>교과서 식은 북반구 기준입니다. 남반구까지 한 식으로 쓰려면 <strong>90° − |위도 − 적위|</strong> 로 두면 됩니다 — 시드니를 골라 확인해 보세요. 이 시뮬레이션은 이 일반식으로 계산합니다.</p><p>지구는 <strong>1월에 태양과 가장 가깝고</strong>(약 1억 4,710만 km) 7월에 가장 멉니다(약 1억 5,210만 km). 거리로 계절이 정해진다면 북반구는 1월이 여름이어야 합니다. 실제로는 반대입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>계절을 만드는 것은 <strong>자전축이 23.5° 기울어져 공전한다</strong>는 사실입니다. 기울어진 채로 태양 주위를 돌기 때문에, 어떤 때는 북반구가 태양 쪽으로 기울고 어떤 때는 반대로 기웁니다.</p><p>태양 쪽으로 기울면 두 가지가 동시에 일어납니다. 첫째, <strong>태양이 더 높이 뜹니다</strong>(남중 고도 증가). 빛이 더 수직으로 들어오면 같은 넓이에 더 많은 에너지가 모입니다. 손전등을 바닥에 수직으로 비출 때와 비스듬히 비출 때를 떠올리면 됩니다.</p><p>둘째, <strong>낮이 길어집니다</strong>. 데워지는 시간이 길고 식는 시간이 짧으니 더 더워집니다. 이 두 효과가 겹쳐 여름이 됩니다.</p><p>남중 고도는 <strong>90° − 위도 + 태양 적위</strong>로 구합니다. 태양 적위는 태양이 천구 적도에서 얼마나 벗어나 있는지를 나타내며, 하지에 +23.5°, 동지에 −23.5°, 춘분·추분에 0°입니다.</p><p>서울(위도 37.5°)의 하지 남중 고도는 90 − 37.5 + 23.5 = <strong>76°</strong>, 동지에는 90 − 37.5 − 23.5 = <strong>29°</strong>입니다. 시뮬레이션에서 서울을 고르고 계절을 바꿔 이 값이 나오는지 확인해 보세요.</p><p>기울기를 0°로 만들면 적위가 항상 0이 되어 남중 고도가 1년 내내 같아집니다. 낮도 항상 12시간입니다. <strong>계절이 사라집니다.</strong> 반대로 천왕성처럼 82°로 두면 극단적으로 변합니다 — 한쪽 반구가 수십 년간 낮이고 반대쪽은 밤입니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -498,24 +512,8 @@
         </div>
       </div>
 
-
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="earth_seasons_measure">
-    <div class="panel-head"><h2 id="earth_seasons_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>날짜</dt><dd id="r-date">—</dd></div>
-            <div><dt>태양까지 거리</dt><dd id="r-dist">—</dd></div>
-            <div><dt>남중 고도</dt><dd id="r-alt">—</dd></div>
-            <div><dt>낮 길이</dt><dd id="r-day">—</dd></div>
-            <div><dt>받는 햇빛</dt><dd id="r-energy" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -530,19 +528,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="daylight-title">
-    <div class="analysis-head"><h2 id="daylight-title">1년 동안의 낮 길이와 태양 고도</h2><p>파란선은 낮 길이, 주황선은 남중 고도입니다. 자전축 기울기를 0으로 만들면 두 선이 평평해집니다 — 계절이 사라진다는 뜻입니다.</p></div>
-    <div class="graph-wrap"><canvas id="daylight-graph" aria-label="1년간 낮 길이와 태양 고도 변화"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="astro-formula-title">
-    <div class="analysis-head"><h2 id="astro-formula-title">계절은 거리가 아니라 기울기 때문이다</h2><p>가장 흔한 오해를 시뮬레이션으로 직접 확인할 수 있습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">남중 고도 = 90° − 위도 + 태양 적위 &nbsp;(북반구) &nbsp;&nbsp;|&nbsp;&nbsp; 90° − |위도 − 적위| &nbsp;(남·북 공통)</p>
-      <p>교과서 식은 북반구 기준입니다. 남반구까지 한 식으로 쓰려면 <strong>90° − |위도 − 적위|</strong> 로 두면 됩니다 — 시드니를 골라 확인해 보세요. 이 시뮬레이션은 이 일반식으로 계산합니다.</p><p>지구는 <strong>1월에 태양과 가장 가깝고</strong>(약 1억 4,710만 km) 7월에 가장 멉니다(약 1억 5,210만 km). 거리로 계절이 정해진다면 북반구는 1월이 여름이어야 합니다. 실제로는 반대입니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p>계절을 만드는 것은 <strong>자전축이 23.5° 기울어져 공전한다</strong>는 사실입니다. 기울어진 채로 태양 주위를 돌기 때문에, 어떤 때는 북반구가 태양 쪽으로 기울고 어떤 때는 반대로 기웁니다.</p><p>태양 쪽으로 기울면 두 가지가 동시에 일어납니다. 첫째, <strong>태양이 더 높이 뜹니다</strong>(남중 고도 증가). 빛이 더 수직으로 들어오면 같은 넓이에 더 많은 에너지가 모입니다. 손전등을 바닥에 수직으로 비출 때와 비스듬히 비출 때를 떠올리면 됩니다.</p><p>둘째, <strong>낮이 길어집니다</strong>. 데워지는 시간이 길고 식는 시간이 짧으니 더 더워집니다. 이 두 효과가 겹쳐 여름이 됩니다.</p><p>남중 고도는 <strong>90° − 위도 + 태양 적위</strong>로 구합니다. 태양 적위는 태양이 천구 적도에서 얼마나 벗어나 있는지를 나타내며, 하지에 +23.5°, 동지에 −23.5°, 춘분·추분에 0°입니다.</p><p>서울(위도 37.5°)의 하지 남중 고도는 90 − 37.5 + 23.5 = <strong>76°</strong>, 동지에는 90 − 37.5 − 23.5 = <strong>29°</strong>입니다. 시뮬레이션에서 서울을 고르고 계절을 바꿔 이 값이 나오는지 확인해 보세요.</p><p>기울기를 0°로 만들면 적위가 항상 0이 되어 남중 고도가 1년 내내 같아집니다. 낮도 항상 12시간입니다. <strong>계절이 사라집니다.</strong> 반대로 천왕성처럼 82°로 두면 극단적으로 변합니다 — 한쪽 반구가 수십 년간 낮이고 반대쪽은 밤입니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -441,12 +428,39 @@
       <div class="stage">
         <canvas id="canvas" aria-label="판의 경계와 지각 변동"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 지진이 일어나는 깊이</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="plate_tectonics_measure">
+    <div class="panel-head"><h2 id="plate_tectonics_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>이동 속도</dt><dd id="r-speed">—</dd></div>
+            <div><dt>경과</dt><dd id="r-time">—</dd></div>
+            <div><dt>지형 변화</dt><dd id="r-relief">—</dd></div>
+            <div><dt>지진 깊이</dt><dd id="r-depth">—</dd></div>
+            <div><dt>화산</dt><dd id="r-volcano" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="quake-title">
+    <div class="analysis-head"><h2 id="quake-title">지진이 일어나는 깊이</h2><p>가로는 위치, 세로는 깊이입니다. 섭입대에서는 판이 비스듬히 들어가면서 진원이 점점 깊어집니다 — 이것을 베니오프대라고 합니다.</p></div>
+    <div class="graph-wrap"><canvas id="quake-graph" aria-label="위치별 지진 발생 깊이"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="plate-note-title">
+    <div class="analysis-head"><h2 id="plate-note-title">밀도가 지형을 결정한다</h2><p>세 가지 경계를 외우는 것보다, 왜 그렇게 되는지 아는 편이 쉽습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">해양 지각 ≈ 3.0 g/cm³ &nbsp; &gt; &nbsp; 대륙 지각 ≈ 2.7 g/cm³</p>
+      <p>해양판은 현무암질이라 무겁고, 대륙판은 화강암질이라 가볍습니다. 두 판이 부딪히면 <strong>무거운 쪽이 밑으로 들어갑니다</strong>. 이것만 알면 나머지는 따라옵니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>해양판 + 대륙판</strong>이면 해양판이 들어갑니다(섭입). 들어가는 자리가 움푹 파여 <strong>해구</strong>가 되고, 판이 깊이 내려가면서 물을 함께 끌고 들어갑니다. 이 물이 맨틀의 녹는점을 낮춰 마그마가 생기고, 대륙 쪽으로 올라와 <strong>화산</strong>을 만듭니다. 안데스 산맥이 이렇게 만들어졌습니다.</p><p><strong>해양판 + 해양판</strong>이면 더 오래되고 차가운 쪽이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 <strong>호상 열도</strong>가 됩니다. 일본 열도가 대표적입니다.</p><p><strong>대륙판 + 대륙판</strong>이면 어느 쪽도 들어가지 못합니다. 둘 다 가벼워 맨틀에 가라앉지 않기 때문입니다. 그래서 부딪힌 자리가 위로 솟아 <strong>습곡 산맥</strong>이 됩니다. 히말라야가 지금도 자라고 있는 이유입니다.</p><p><strong>발산 경계</strong>에서는 맨틀이 올라와 새 지각을 만듭니다. 바다에서는 <strong>해령</strong>, 육지에서는 <strong>열곡대</strong>가 됩니다. 대서양 중앙 해령과 동아프리카 열곡대가 그 예입니다.</p><p><strong>보존 경계</strong>에서는 판이 스쳐 지나갑니다. 지각이 생기지도 사라지지도 않아 화산은 없지만, 쌓인 힘이 한꺼번에 풀리며 <strong>얕은 지진</strong>이 자주 납니다. 산안드레아스 단층이 그렇습니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -475,24 +489,8 @@
         </div>
       </div>
 
-
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="plate_tectonics_measure">
-    <div class="panel-head"><h2 id="plate_tectonics_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>이동 속도</dt><dd id="r-speed">—</dd></div>
-            <div><dt>경과</dt><dd id="r-time">—</dd></div>
-            <div><dt>지형 변화</dt><dd id="r-relief">—</dd></div>
-            <div><dt>지진 깊이</dt><dd id="r-depth">—</dd></div>
-            <div><dt>화산</dt><dd id="r-volcano" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -507,19 +505,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="quake-title">
-    <div class="analysis-head"><h2 id="quake-title">지진이 일어나는 깊이</h2><p>가로는 위치, 세로는 깊이입니다. 섭입대에서는 판이 비스듬히 들어가면서 진원이 점점 깊어집니다 — 이것을 베니오프대라고 합니다.</p></div>
-    <div class="graph-wrap"><canvas id="quake-graph" aria-label="위치별 지진 발생 깊이"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="plate-note-title">
-    <div class="analysis-head"><h2 id="plate-note-title">밀도가 지형을 결정한다</h2><p>세 가지 경계를 외우는 것보다, 왜 그렇게 되는지 아는 편이 쉽습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">해양 지각 ≈ 3.0 g/cm³ &nbsp; &gt; &nbsp; 대륙 지각 ≈ 2.7 g/cm³</p>
-      <p>해양판은 현무암질이라 무겁고, 대륙판은 화강암질이라 가볍습니다. 두 판이 부딪히면 <strong>무거운 쪽이 밑으로 들어갑니다</strong>. 이것만 알면 나머지는 따라옵니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>해양판 + 대륙판</strong>이면 해양판이 들어갑니다(섭입). 들어가는 자리가 움푹 파여 <strong>해구</strong>가 되고, 판이 깊이 내려가면서 물을 함께 끌고 들어갑니다. 이 물이 맨틀의 녹는점을 낮춰 마그마가 생기고, 대륙 쪽으로 올라와 <strong>화산</strong>을 만듭니다. 안데스 산맥이 이렇게 만들어졌습니다.</p><p><strong>해양판 + 해양판</strong>이면 더 오래되고 차가운 쪽이 들어갑니다. 위에 남은 판에 화산이 줄지어 생겨 <strong>호상 열도</strong>가 됩니다. 일본 열도가 대표적입니다.</p><p><strong>대륙판 + 대륙판</strong>이면 어느 쪽도 들어가지 못합니다. 둘 다 가벼워 맨틀에 가라앉지 않기 때문입니다. 그래서 부딪힌 자리가 위로 솟아 <strong>습곡 산맥</strong>이 됩니다. 히말라야가 지금도 자라고 있는 이유입니다.</p><p><strong>발산 경계</strong>에서는 맨틀이 올라와 새 지각을 만듭니다. 바다에서는 <strong>해령</strong>, 육지에서는 <strong>열곡대</strong>가 됩니다. 대서양 중앙 해령과 동아프리카 열곡대가 그 예입니다.</p><p><strong>보존 경계</strong>에서는 판이 스쳐 지나갑니다. 지각이 생기지도 사라지지도 않아 화산은 없지만, 쌓인 힘이 한꺼번에 풀리며 <strong>얕은 지진</strong>이 자주 납니다. 산안드레아스 단층이 그렇습니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

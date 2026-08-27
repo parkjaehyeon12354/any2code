@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -456,8 +443,6 @@
   </div>
 </div>
 
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 물리학 · 열과 통계</p>
 
@@ -474,7 +459,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="같은 온도의 두 기체 상자에서 다른 속도로 움직이는 입자들"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 속력 분포 — 모두가 같은 속도로 움직이지 않는다</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -484,6 +468,34 @@
         <span><i style="background:#6ee7f0"></i>가벼운 기체 (빠름)</span>
         <span><i style="background:#f2a65a"></i>무거운 기체 (느림)</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="thermal_gas_measure">
+    <div class="panel-head"><h2 id="thermal_gas_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>온도</dt><dd id="r-temp">—</dd></div>
+            <div><dt>입자 하나의 평균 운동에너지</dt><dd id="r-ek">—</dd></div>
+            <div><dt>왼쪽 속력 (제곱평균제곱근)</dt><dd id="r-va">—</dd></div>
+            <div><dt>오른쪽 속력</dt><dd id="r-vb">—</dd></div>
+            <div><dt>확산 속도 비 (그레이엄)</dt><dd id="r-graham" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">속력 분포 — 모두가 같은 속도로 움직이지 않는다</h2><p>입자들의 속력은 하나의 값이 아니라 <strong>분포</strong>를 이룹니다(맥스웰-볼츠만 분포). 가벼운 기체일수록 봉우리가 오른쪽으로 밀리고 넓게 퍼집니다. 세로 점선은 각 기체의 제곱평균제곱근 속력입니다.</p></div>
+    <div class="graph-wrap"><canvas id="dist-graph" aria-label="두 기체의 속력 분포 곡선"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">온도는 속도가 아니라 에너지의 눈금이다</h2><p>같은 에너지를 가지려면 가벼운 쪽이 더 빨라야 합니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">½mv² = (3/2)k<sub>B</sub>T &nbsp;&nbsp;|&nbsp;&nbsp; v = √(3k<sub>B</sub>T ÷ m) &nbsp;&nbsp;|&nbsp;&nbsp; v ∝ 1/√m &nbsp;&nbsp;|&nbsp;&nbsp; 확산 속도 비 = √(M₂/M₁)</p>
+      <p>온도는 입자 하나가 가진 <strong>평균 운동에너지</strong>의 척도입니다. 300K 에서는 기체 종류와 상관없이 언제나 6.21×10⁻²¹ J 입니다. 그런데 운동에너지는 ½mv² 이므로, 질량이 8배 무거우면 같은 에너지를 갖기 위해 속도가 √8 ≈ 2.83배 느려야 합니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>모든 입자가 같은 속도로 움직이지 않습니다.</strong> 상자 안의 입자들은 끊임없이 부딪히며 속도를 주고받아, 어떤 것은 아주 빠르고 어떤 것은 거의 멈춰 있습니다. 이 속력들이 이루는 모양이 <strong>맥스웰-볼츠만 분포</strong>입니다. 아래 그래프의 봉우리가 가장 흔한 속력이고, 오른쪽으로 길게 늘어진 꼬리가 유난히 빠른 소수의 입자입니다. 이 꼬리에 있는 입자들이 화학 반응을 일으키고 액체를 증발시킵니다.</p><p><strong>대표 속력이 세 가지입니다.</strong> 봉우리에 해당하는 최빈 속력, 산술 평균인 평균 속력, 그리고 에너지에서 바로 나오는 제곱평균제곱근 속력입니다. 크기는 항상 최빈 &lt; 평균 &lt; 제곱평균제곱근 순이고, 비율은 1 : 1.128 : 1.225 로 <strong>온도나 기체와 무관하게 고정</strong>되어 있습니다. 이 화면에서는 ½mv² = (3/2)k<sub>B</sub>T 와 바로 연결되는 제곱평균제곱근 속력을 씁니다.</p><p><strong>그레이엄의 확산 법칙.</strong> 같은 온도·압력에서 기체가 퍼져 나가는 속도는 분자량의 제곱근에 반비례합니다. 속도 자체가 √m 에 반비례하니 당연한 결과입니다. 수소는 산소보다 정확히 4배 빨리 퍼지고, 헬륨 풍선이 공기 풍선보다 빨리 쪼그라드는 것도 같은 이유입니다. 가스 누출을 냄새로 알아채는 시간, 향수가 방 안에 퍼지는 속도에도 이 법칙이 들어 있습니다.</p><p><strong>온도를 올리면 어떻게 될까요.</strong> 속력은 √T 에 비례하므로 온도가 4배가 되어야 속도가 2배가 됩니다. 300K 에서 600K 로 올리면 속도는 2배가 아니라 √2 ≈ 1.41배만 빨라집니다. 반면 <strong>두 기체의 속도 비는 온도와 무관하게 그대로</strong>입니다 — 온도는 두 곡선을 함께 밀 뿐, 사이 간격을 바꾸지 못합니다. 위에서 온도 슬라이더를 움직여 직접 확인해 보세요.</p><p><strong>이 원리가 쓰이는 곳.</strong> 별빛의 스펙트럼선이 얼마나 번졌는지 재면 그 별의 온도를 알 수 있습니다(뜨거울수록 원자가 빠르게 움직여 도플러 효과로 선이 넓어집니다). 지구 대기가 헬륨과 수소를 붙잡지 못하고 우주로 잃어버리는 것도, 이들이 너무 빨라 탈출 속도를 넘기 때문입니다. 질소와 산소는 무거워서 남았고, 그래서 우리가 숨 쉴 공기가 있습니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +558,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>에너지는 같고, 속도는 다르다</h2></div>
         <div class="panel-body">
@@ -558,23 +569,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="thermal_gas_measure">
-    <div class="panel-head"><h2 id="thermal_gas_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>온도</dt><dd id="r-temp">—</dd></div>
-            <div><dt>입자 하나의 평균 운동에너지</dt><dd id="r-ek">—</dd></div>
-            <div><dt>왼쪽 속력 (제곱평균제곱근)</dt><dd id="r-va">—</dd></div>
-            <div><dt>오른쪽 속력</dt><dd id="r-vb">—</dd></div>
-            <div><dt>확산 속도 비 (그레이엄)</dt><dd id="r-graham" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,19 +585,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">속력 분포 — 모두가 같은 속도로 움직이지 않는다</h2><p>입자들의 속력은 하나의 값이 아니라 <strong>분포</strong>를 이룹니다(맥스웰-볼츠만 분포). 가벼운 기체일수록 봉우리가 오른쪽으로 밀리고 넓게 퍼집니다. 세로 점선은 각 기체의 제곱평균제곱근 속력입니다.</p></div>
-    <div class="graph-wrap"><canvas id="dist-graph" aria-label="두 기체의 속력 분포 곡선"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">온도는 속도가 아니라 에너지의 눈금이다</h2><p>같은 에너지를 가지려면 가벼운 쪽이 더 빨라야 합니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">½mv² = (3/2)k<sub>B</sub>T &nbsp;&nbsp;|&nbsp;&nbsp; v = √(3k<sub>B</sub>T ÷ m) &nbsp;&nbsp;|&nbsp;&nbsp; v ∝ 1/√m &nbsp;&nbsp;|&nbsp;&nbsp; 확산 속도 비 = √(M₂/M₁)</p>
-      <p>온도는 입자 하나가 가진 <strong>평균 운동에너지</strong>의 척도입니다. 300K 에서는 기체 종류와 상관없이 언제나 6.21×10⁻²¹ J 입니다. 그런데 운동에너지는 ½mv² 이므로, 질량이 8배 무거우면 같은 에너지를 갖기 위해 속도가 √8 ≈ 2.83배 느려야 합니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>모든 입자가 같은 속도로 움직이지 않습니다.</strong> 상자 안의 입자들은 끊임없이 부딪히며 속도를 주고받아, 어떤 것은 아주 빠르고 어떤 것은 거의 멈춰 있습니다. 이 속력들이 이루는 모양이 <strong>맥스웰-볼츠만 분포</strong>입니다. 아래 그래프의 봉우리가 가장 흔한 속력이고, 오른쪽으로 길게 늘어진 꼬리가 유난히 빠른 소수의 입자입니다. 이 꼬리에 있는 입자들이 화학 반응을 일으키고 액체를 증발시킵니다.</p><p><strong>대표 속력이 세 가지입니다.</strong> 봉우리에 해당하는 최빈 속력, 산술 평균인 평균 속력, 그리고 에너지에서 바로 나오는 제곱평균제곱근 속력입니다. 크기는 항상 최빈 &lt; 평균 &lt; 제곱평균제곱근 순이고, 비율은 1 : 1.128 : 1.225 로 <strong>온도나 기체와 무관하게 고정</strong>되어 있습니다. 이 화면에서는 ½mv² = (3/2)k<sub>B</sub>T 와 바로 연결되는 제곱평균제곱근 속력을 씁니다.</p><p><strong>그레이엄의 확산 법칙.</strong> 같은 온도·압력에서 기체가 퍼져 나가는 속도는 분자량의 제곱근에 반비례합니다. 속도 자체가 √m 에 반비례하니 당연한 결과입니다. 수소는 산소보다 정확히 4배 빨리 퍼지고, 헬륨 풍선이 공기 풍선보다 빨리 쪼그라드는 것도 같은 이유입니다. 가스 누출을 냄새로 알아채는 시간, 향수가 방 안에 퍼지는 속도에도 이 법칙이 들어 있습니다.</p><p><strong>온도를 올리면 어떻게 될까요.</strong> 속력은 √T 에 비례하므로 온도가 4배가 되어야 속도가 2배가 됩니다. 300K 에서 600K 로 올리면 속도는 2배가 아니라 √2 ≈ 1.41배만 빨라집니다. 반면 <strong>두 기체의 속도 비는 온도와 무관하게 그대로</strong>입니다 — 온도는 두 곡선을 함께 밀 뿐, 사이 간격을 바꾸지 못합니다. 위에서 온도 슬라이더를 움직여 직접 확인해 보세요.</p><p><strong>이 원리가 쓰이는 곳.</strong> 별빛의 스펙트럼선이 얼마나 번졌는지 재면 그 별의 온도를 알 수 있습니다(뜨거울수록 원자가 빠르게 움직여 도플러 효과로 선이 넓어집니다). 지구 대기가 헬륨과 수소를 붙잡지 못하고 우주로 잃어버리는 것도, 이들이 너무 빨라 탈출 속도를 넘기 때문입니다. 질소와 산소는 무거워서 남았고, 그래서 우리가 숨 쉴 공기가 있습니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

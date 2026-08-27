@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -456,8 +443,6 @@
   </div>
 </div>
 
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 물리학 · 빛과 파동</p>
 
@@ -473,7 +458,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="두 매질 경계에서 꺾이는 빛과 파면"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 입사각에 따른 굴절각</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -485,6 +469,34 @@
         <span><i style="background:#e07a5f"></i>반사 광선</span>
         <span><i style="background:#c8d3e0"></i>파면</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="wave_interference_measure">
+    <div class="panel-head"><h2 id="wave_interference_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>입사각 θ₁</dt><dd id="r-t1">—</dd></div>
+            <div><dt>굴절각 θ₂</dt><dd id="r-t2">—</dd></div>
+            <div><dt>매질 2 속력 v₂</dt><dd id="r-v2">—</dd></div>
+            <div><dt>파장 비 λ₂/λ₁</dt><dd id="r-lam">—</dd></div>
+            <div><dt>임계각 θc</dt><dd id="r-crit" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">입사각에 따른 굴절각</h2><p>직선이 아니라 휘어진 곡선입니다. 굴절각은 입사각에 <strong>비례하지 않습니다</strong> — sin 값끼리 비례합니다. n₁ &gt; n₂ 이면 곡선이 90°에 닿는 지점이 임계각입니다.</p></div>
+    <div class="graph-wrap"><canvas id="angle-graph" aria-label="입사각에 따른 굴절각 곡선"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">굴절은 속도가 달라서 생긴다</h2><p>수직으로 넣으면 안 꺾이는 이유가 여기 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">n₁ sin θ₁ = n₂ sin θ₂ &nbsp;&nbsp;|&nbsp;&nbsp; n = c ÷ v &nbsp;&nbsp;|&nbsp;&nbsp; λ₂/λ₁ = v₂/v₁ = n₁/n₂ &nbsp;&nbsp;|&nbsp;&nbsp; 임계각 θc = arcsin(n₂/n₁)</p>
+      <p>굴절률 n은 "얼마나 꺾이는지"를 나타내는 숫자가 아니라 <strong>빛이 얼마나 느려지는지</strong>를 나타내는 숫자입니다. 진공에서의 속력 c를 매질에서의 속력 v로 나눈 값입니다. 물(n=1.33) 속에서 빛은 약 2.26×10⁸ m/s로 달립니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>굴절의 본질은 속도 변화입니다.</strong> 빛이 다른 매질로 들어갈 때 속도가 달라지면서 진행 방향이 바뀝니다. 느려지는 쪽으로 들어가면 법선 쪽으로 꺾이고, 빨라지는 쪽으로 들어가면 법선에서 멀어집니다. 이 화면에서 굴절률 슬라이더를 움직이면 파면의 간격과 광선의 방향이 함께 바뀌는 것을 볼 수 있습니다.</p><p><strong>수직으로 넣으면 왜 안 꺾일까요.</strong> 파면이 경계면에 비스듬히 닿으면 파면의 한쪽 끝이 먼저 새 매질에 들어가 느려지고, 반대쪽은 아직 빠르게 움직입니다. 이 속도 차이가 파면을 회전시킵니다. 그런데 수직으로 들어가면 파면 전체가 <strong>동시에</strong> 경계에 닿아 똑같이 느려집니다. 회전시킬 이유가 없으니 방향이 그대로입니다. 속도는 분명히 변했는데도 말입니다.</p><p><strong>진동수는 변하지 않습니다.</strong> 경계면에서 파동이 끊기지 않으려면 양쪽의 진동 주기가 같아야 합니다. v = fλ 에서 f가 고정이므로 속도가 줄면 파장도 같은 비율로 줄어듭니다. 그래서 λ₂/λ₁ = v₂/v₁ = n₁/n₂ 입니다. 화면에서 경계 아래쪽 파면 간격이 좁아지는 것이 이것입니다.</p><p><strong>굴절각은 입사각에 비례하지 않습니다.</strong> 아래 그래프가 직선이 아닌 이유입니다. 공기에서 유리로 들어갈 때 입사각 10°면 굴절각 6.65°(비율 0.665)지만, 입사각 80°면 굴절각 41.04°(비율 0.513)입니다. sin 값끼리는 정확히 비례하지만 각도 자체는 그렇지 않습니다.</p><p><strong>전반사와 광섬유.</strong> 빛이 느린 매질에서 빠른 매질로 나갈 때(n₁ &gt; n₂), 입사각이 어느 값을 넘으면 굴절광이 아예 나오지 못하고 전부 반사됩니다. 이 각도가 임계각이고 arcsin(n₂/n₁)으로 구합니다. 물에서 공기로 나갈 때는 48.75°입니다. 광섬유는 이 원리로 빛을 가둬 수십 km를 보냅니다. 내시경과 다이아몬드의 반짝임도 같은 현상입니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +558,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>지금 무슨 일이</h2></div>
         <div class="panel-body">
@@ -558,23 +569,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="wave_interference_measure">
-    <div class="panel-head"><h2 id="wave_interference_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>입사각 θ₁</dt><dd id="r-t1">—</dd></div>
-            <div><dt>굴절각 θ₂</dt><dd id="r-t2">—</dd></div>
-            <div><dt>매질 2 속력 v₂</dt><dd id="r-v2">—</dd></div>
-            <div><dt>파장 비 λ₂/λ₁</dt><dd id="r-lam">—</dd></div>
-            <div><dt>임계각 θc</dt><dd id="r-crit" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,19 +585,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">입사각에 따른 굴절각</h2><p>직선이 아니라 휘어진 곡선입니다. 굴절각은 입사각에 <strong>비례하지 않습니다</strong> — sin 값끼리 비례합니다. n₁ &gt; n₂ 이면 곡선이 90°에 닿는 지점이 임계각입니다.</p></div>
-    <div class="graph-wrap"><canvas id="angle-graph" aria-label="입사각에 따른 굴절각 곡선"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">굴절은 속도가 달라서 생긴다</h2><p>수직으로 넣으면 안 꺾이는 이유가 여기 있습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">n₁ sin θ₁ = n₂ sin θ₂ &nbsp;&nbsp;|&nbsp;&nbsp; n = c ÷ v &nbsp;&nbsp;|&nbsp;&nbsp; λ₂/λ₁ = v₂/v₁ = n₁/n₂ &nbsp;&nbsp;|&nbsp;&nbsp; 임계각 θc = arcsin(n₂/n₁)</p>
-      <p>굴절률 n은 "얼마나 꺾이는지"를 나타내는 숫자가 아니라 <strong>빛이 얼마나 느려지는지</strong>를 나타내는 숫자입니다. 진공에서의 속력 c를 매질에서의 속력 v로 나눈 값입니다. 물(n=1.33) 속에서 빛은 약 2.26×10⁸ m/s로 달립니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>굴절의 본질은 속도 변화입니다.</strong> 빛이 다른 매질로 들어갈 때 속도가 달라지면서 진행 방향이 바뀝니다. 느려지는 쪽으로 들어가면 법선 쪽으로 꺾이고, 빨라지는 쪽으로 들어가면 법선에서 멀어집니다. 이 화면에서 굴절률 슬라이더를 움직이면 파면의 간격과 광선의 방향이 함께 바뀌는 것을 볼 수 있습니다.</p><p><strong>수직으로 넣으면 왜 안 꺾일까요.</strong> 파면이 경계면에 비스듬히 닿으면 파면의 한쪽 끝이 먼저 새 매질에 들어가 느려지고, 반대쪽은 아직 빠르게 움직입니다. 이 속도 차이가 파면을 회전시킵니다. 그런데 수직으로 들어가면 파면 전체가 <strong>동시에</strong> 경계에 닿아 똑같이 느려집니다. 회전시킬 이유가 없으니 방향이 그대로입니다. 속도는 분명히 변했는데도 말입니다.</p><p><strong>진동수는 변하지 않습니다.</strong> 경계면에서 파동이 끊기지 않으려면 양쪽의 진동 주기가 같아야 합니다. v = fλ 에서 f가 고정이므로 속도가 줄면 파장도 같은 비율로 줄어듭니다. 그래서 λ₂/λ₁ = v₂/v₁ = n₁/n₂ 입니다. 화면에서 경계 아래쪽 파면 간격이 좁아지는 것이 이것입니다.</p><p><strong>굴절각은 입사각에 비례하지 않습니다.</strong> 아래 그래프가 직선이 아닌 이유입니다. 공기에서 유리로 들어갈 때 입사각 10°면 굴절각 6.65°(비율 0.665)지만, 입사각 80°면 굴절각 41.04°(비율 0.513)입니다. sin 값끼리는 정확히 비례하지만 각도 자체는 그렇지 않습니다.</p><p><strong>전반사와 광섬유.</strong> 빛이 느린 매질에서 빠른 매질로 나갈 때(n₁ &gt; n₂), 입사각이 어느 값을 넘으면 굴절광이 아예 나오지 못하고 전부 반사됩니다. 이 각도가 임계각이고 arcsin(n₂/n₁)으로 구합니다. 물에서 공기로 나갈 때는 48.75°입니다. 광섬유는 이 원리로 빛을 가둬 수십 km를 보냅니다. 내시경과 다이아몬드의 반짝임도 같은 현상입니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

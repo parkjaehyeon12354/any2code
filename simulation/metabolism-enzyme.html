@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -451,10 +438,6 @@
   </div>
 </div>
 
-
-
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 생명과학 · 대사와 효소</p>
 
@@ -471,7 +454,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="효소가 기질을 생성물로 바꾸는 모습과 고온에서의 변성"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 온도를 올리면 어떻게 되나</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -483,6 +465,34 @@
         <span><i style="background:#7bdff2"></i>기질</span>
         <span><i style="background:#a8dadc"></i>생성물</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="metabolism_enzyme_measure">
+    <div class="panel-head"><h2 id="metabolism_enzyme_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>반응 속도 v</dt><dd id="r-v">—</dd></div>
+            <div><dt>이 온도의 V<sub>max</sub></dt><dd id="r-vmax">—</dd></div>
+            <div><dt>살아있는 효소</dt><dd id="r-alive">—</dd></div>
+            <div><dt>기질 포화도</dt><dd id="r-sat">—</dd></div>
+            <div><dt>최적 온도</dt><dd id="r-opt" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
+    <div class="graph-wrap"><canvas id="temp-graph" aria-label="온도에 따른 반응 속도"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">두 힘이 반대로 당긴다</h2><p>빨라지려는 힘과 망가지려는 힘의 곱입니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">v = k<sub>cat</sub> · A(T) · f(T) · [E] · [S] ÷ (K<sub>m</sub> + [S]) &nbsp;&nbsp;|&nbsp;&nbsp; A(T) = e<sup>(Ea/R)(1/298 − 1/T)</sup> &nbsp;&nbsp;|&nbsp;&nbsp; f(T) = 1 ÷ (1 + e<sup>(T−50)/3</sup>)</p>
+      <p><strong>A(T)</strong> 는 온도가 오를수록 커집니다 — 분자가 빨리 움직여 더 자주 부딪히니까요. <strong>f(T)</strong> 는 아직 안 풀린 효소의 비율이라 온도가 오를수록 작아집니다. 둘을 곱하면 <strong>중간 어딘가에서 최댓값</strong>이 생기고, 그 지점이 최적 온도입니다. 여기서는 <strong>45.4°C</strong> 입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>화학 반응은 온도를 올리면 끝까지 빨라집니다.</strong> 대략 10°C 마다 두 배씩 빨라진다는 경험칙이 있을 정도입니다. 분자가 빠르게 움직여 충돌이 잦아지고, 넘어야 할 에너지 언덕을 넘는 분자도 많아지기 때문입니다. 효소도 이 효과를 그대로 갖고 있습니다 — 45°C 까지는 정확히 그렇게 빨라집니다.</p><p><strong>그런데 효소는 단백질입니다.</strong> 단백질은 실이 접혀 만들어진 입체 구조이고, 그 모양이 정확해야 기질이 딱 들어맞습니다. 열은 이 접힘을 풀어버립니다. 한 번 풀린 효소는 기질을 붙잡지 못하고, <strong>대부분 다시 접히지도 않습니다.</strong> 달걀 흰자가 익으면 다시 투명해지지 않는 것과 같은 일입니다.</p><p><strong>최적 온도는 두 곡선이 만나는 타협점입니다.</strong> 빨라지려는 힘과 망가지려는 힘의 곱이 최대가 되는 지점이라, <strong>절반이 변성되는 온도(50°C)보다 항상 낮습니다.</strong> 여기서는 45.4°C 입니다. 이 균형점은 생물마다 다릅니다 — 온천에 사는 세균의 효소는 80°C 에서도 멀쩡합니다.</p><p><strong>기질을 아무리 넣어도 한계가 있습니다.</strong> 효소 하나가 한 번에 처리할 수 있는 양이 정해져 있어서, 기질이 넘치면 효소가 전부 &quot;작업 중&quot; 상태가 됩니다. 그때 속도가 V<sub>max</sub> 입니다. 반대로 <strong>효소를 두 배 넣으면 속도도 정확히 두 배</strong>가 됩니다 — 일하는 사람이 늘어난 것이니까요. 기질과 효소가 전혀 다르게 작동하는 이유입니다.</p><p><strong>이 원리가 실제로 쓰입니다.</strong> 코로나 검사에 쓰인 PCR 은 DNA 를 95°C 로 가열하는 과정이 있는데, 보통 효소라면 즉시 죽습니다. 그래서 온천 세균에서 뽑은 열에 강한 효소를 씁니다. 김치가 냉장고에서 천천히 익는 것, 열이 나면 몸이 축 처지는 것, 세제에 효소가 들어가도 뜨거운 물에 빨면 효과가 떨어지는 것 — 전부 같은 두 곡선의 이야기입니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +556,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>열에 풀리지 않는다면</h2></div>
         <div class="panel-body">
@@ -558,23 +567,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="metabolism_enzyme_measure">
-    <div class="panel-head"><h2 id="metabolism_enzyme_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>반응 속도 v</dt><dd id="r-v">—</dd></div>
-            <div><dt>이 온도의 V<sub>max</sub></dt><dd id="r-vmax">—</dd></div>
-            <div><dt>살아있는 효소</dt><dd id="r-alive">—</dd></div>
-            <div><dt>기질 포화도</dt><dd id="r-sat">—</dd></div>
-            <div><dt>최적 온도</dt><dd id="r-opt" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,21 +583,7 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">온도를 올리면 어떻게 되나</h2><p>회색 점선은 <strong>단백질이 열에 안 풀린다면</strong> 어떨지를 그린 것입니다 — 끝까지 올라갑니다. 화학 시간에 배운 그대로이고, 학생 대부분이 머릿속에 그리는 선입니다. 빨간 실선이 <strong>실제 효소</strong>인데, <strong>45°C 에서 꺾여 곤두박질칩니다.</strong> 두 선이 갈라지는 폭이 곧 변성으로 잃어버린 속도입니다.</p></div>
-    <div class="graph-wrap"><canvas id="temp-graph" aria-label="온도에 따른 반응 속도"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">두 힘이 반대로 당긴다</h2><p>빨라지려는 힘과 망가지려는 힘의 곱입니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">v = k<sub>cat</sub> · A(T) · f(T) · [E] · [S] ÷ (K<sub>m</sub> + [S]) &nbsp;&nbsp;|&nbsp;&nbsp; A(T) = e<sup>(Ea/R)(1/298 − 1/T)</sup> &nbsp;&nbsp;|&nbsp;&nbsp; f(T) = 1 ÷ (1 + e<sup>(T−50)/3</sup>)</p>
-      <p><strong>A(T)</strong> 는 온도가 오를수록 커집니다 — 분자가 빨리 움직여 더 자주 부딪히니까요. <strong>f(T)</strong> 는 아직 안 풀린 효소의 비율이라 온도가 오를수록 작아집니다. 둘을 곱하면 <strong>중간 어딘가에서 최댓값</strong>이 생기고, 그 지점이 최적 온도입니다. 여기서는 <strong>45.4°C</strong> 입니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>화학 반응은 온도를 올리면 끝까지 빨라집니다.</strong> 대략 10°C 마다 두 배씩 빨라진다는 경험칙이 있을 정도입니다. 분자가 빠르게 움직여 충돌이 잦아지고, 넘어야 할 에너지 언덕을 넘는 분자도 많아지기 때문입니다. 효소도 이 효과를 그대로 갖고 있습니다 — 45°C 까지는 정확히 그렇게 빨라집니다.</p><p><strong>그런데 효소는 단백질입니다.</strong> 단백질은 실이 접혀 만들어진 입체 구조이고, 그 모양이 정확해야 기질이 딱 들어맞습니다. 열은 이 접힘을 풀어버립니다. 한 번 풀린 효소는 기질을 붙잡지 못하고, <strong>대부분 다시 접히지도 않습니다.</strong> 달걀 흰자가 익으면 다시 투명해지지 않는 것과 같은 일입니다.</p><p><strong>최적 온도는 두 곡선이 만나는 타협점입니다.</strong> 빨라지려는 힘과 망가지려는 힘의 곱이 최대가 되는 지점이라, <strong>절반이 변성되는 온도(50°C)보다 항상 낮습니다.</strong> 여기서는 45.4°C 입니다. 이 균형점은 생물마다 다릅니다 — 온천에 사는 세균의 효소는 80°C 에서도 멀쩡합니다.</p><p><strong>기질을 아무리 넣어도 한계가 있습니다.</strong> 효소 하나가 한 번에 처리할 수 있는 양이 정해져 있어서, 기질이 넘치면 효소가 전부 &quot;작업 중&quot; 상태가 됩니다. 그때 속도가 V<sub>max</sub> 입니다. 반대로 <strong>효소를 두 배 넣으면 속도도 정확히 두 배</strong>가 됩니다 — 일하는 사람이 늘어난 것이니까요. 기질과 효소가 전혀 다르게 작동하는 이유입니다.</p><p><strong>이 원리가 실제로 쓰입니다.</strong> 코로나 검사에 쓰인 PCR 은 DNA 를 95°C 로 가열하는 과정이 있는데, 보통 효소라면 즉시 죽습니다. 그래서 온천 세균에서 뽑은 열에 강한 효소를 씁니다. 김치가 냉장고에서 천천히 익는 것, 열이 나면 몸이 축 처지는 것, 세제에 효소가 들어가도 뜨거운 물에 빨면 효과가 떨어지는 것 — 전부 같은 두 곡선의 이야기입니다.</p></div></details>
-    </div>
-  </section>
 </main>
-
 
 <script src="/assets/js/session.js"></script>
 <script src="/assets/js/nav-user.js"></script>

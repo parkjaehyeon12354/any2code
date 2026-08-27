@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -456,8 +443,6 @@
   </div>
 </div>
 
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 물리학 · 천체의 운동</p>
 
@@ -474,7 +459,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="지구를 도는 위성의 궤도와 중력·속도 벡터"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 한 바퀴 도는 동안의 거리와 속도</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="gravity">중력 끄기</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
@@ -487,6 +471,34 @@
         <span><i style="background:#8ecae6"></i>지나온 길</span>
         <span><i style="background:rgba(139,193,255,.45)"></i>쓸고 간 면적</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="orbital_motion_measure">
+    <div class="panel-head"><h2 id="orbital_motion_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지구 중심까지 거리 r</dt><dd id="r-dist">—</dd></div>
+            <div><dt>속도 v</dt><dd id="r-vel">—</dd></div>
+            <div><dt>한 바퀴 도는 시간 T</dt><dd id="r-period">—</dd></div>
+            <div><dt>중력 가속도</dt><dd id="r-acc">—</dd></div>
+            <div><dt>면적속도 dA/dt</dt><dd id="r-area" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">한 바퀴 도는 동안의 거리와 속도</h2><p>파란선이 속도, 주황선이 거리입니다. 두 선이 <strong>정확히 반대로</strong> 움직입니다 — 멀어지면 느려지고 가까워지면 빨라집니다. 초록선은 면적속도인데, 어떤 조건에서도 <strong>평평합니다</strong>.</p></div>
+    <div class="graph-wrap"><canvas id="orbit-graph" aria-label="궤도 위치에 따른 거리·속도·면적속도"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">떠 있는 게 아니라 떨어지는 중이다</h2><p>중력을 끄면 무슨 일이 생기는지가 답을 말해 줍니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">v = √(GM(2/r − 1/a)) &nbsp;&nbsp;|&nbsp;&nbsp; T = 2π√(a³/GM) &nbsp;&nbsp;|&nbsp;&nbsp; T² ∝ a³ &nbsp;&nbsp;|&nbsp;&nbsp; 면적속도 = ½rv⊥ = 일정</p>
+      <p>위성에 작용하는 힘은 <strong>지구 중력 하나뿐</strong>입니다. 받쳐주는 것도, 밀어주는 것도 없습니다. 위성은 그 중력에 이끌려 계속 지구로 떨어지지만, 옆으로 워낙 빨라서 지구가 둥글게 휘어지는 만큼 계속 비껴갑니다. 그래서 영원히 떨어지면서도 닿지 않습니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>무중력은 중력이 없는 게 아닙니다.</strong> 국제우주정거장 높이(약 400km)에서도 중력은 지표의 약 90%나 됩니다. 우주인이 둥둥 뜨는 이유는 중력이 없어서가 아니라, <strong>정거장과 우주인이 똑같이 떨어지고 있어서</strong>입니다. 엘리베이터 줄이 끊어져 함께 떨어지면 그 안에서도 몸이 뜨는 것과 같습니다.</p><p><strong>중력을 끄면 궤도가 즉시 직선이 됩니다.</strong> 이 화면에서 직접 확인할 수 있습니다. 중력이 없으면 위성은 그 자리에 멈추는 것이 아니라, 그 순간의 <strong>속도 방향으로 곧장 날아갑니다</strong>(뉴턴 1법칙). 궤도가 휘어져 있던 것은 중력이 계속 방향을 틀어주고 있었기 때문입니다. 즉 중력이 <strong>구심력</strong> 역할을 하고 있었던 것입니다.</p><p><strong>케플러 2법칙은 중력 때문이 아닙니다.</strong> 행성과 태양을 잇는 선은 같은 시간에 같은 넓이를 쓸고 지나갑니다(면적속도 일정). 놀랍게도 <strong>중력을 꺼도 이 값은 변하지 않습니다</strong> — 직접 눌러서 확인해 보세요. 힘이 항상 중심을 향하거나(중력) 아예 없으면(직선 운동) 둘 다 회전을 방해하는 토크가 0이라 <strong>각운동량이 보존</strong>되기 때문입니다. 케플러 2법칙은 중력의 결과가 아니라 각운동량 보존의 결과입니다.</p><p><strong>멀수록 느립니다.</strong> 궤도가 크면 빨리 돌 것 같지만 반대입니다. 케플러 3법칙 T² ∝ a³ 에 따라 장반경이 2배가 되면 주기는 약 2.83배 길어집니다. 멀수록 중력이 약해 더 느린 속도로도 궤도가 유지되기 때문입니다. 반지름 8,000km에서는 7.06km/s로 119분마다 돌지만, 14,000km에서는 5.34km/s로 275분이 걸립니다.</p><p><strong>실제 위성들이 이 법칙 위에 있습니다.</strong> 국제우주정거장은 반지름 약 6,778km에서 약 92분마다 한 바퀴 돌아 하루 15.5바퀴를 돕니다. 통신·기상 위성이 쓰는 <strong>정지궤도</strong>는 반지름 42,164km인데, 주기가 지구 자전과 정확히 같아져 하늘의 한 점에 붙박인 것처럼 보입니다. GPS 위성은 그 중간인 약 26,600km에서 12시간마다 돕니다. 용도에 맞는 궤도를 고르는 계산이 전부 이 공식에서 나옵니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -549,7 +561,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>가장 가까울 때 vs 가장 멀 때</h2></div>
         <div class="panel-body">
@@ -561,23 +572,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="orbital_motion_measure">
-    <div class="panel-head"><h2 id="orbital_motion_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>지구 중심까지 거리 r</dt><dd id="r-dist">—</dd></div>
-            <div><dt>속도 v</dt><dd id="r-vel">—</dd></div>
-            <div><dt>한 바퀴 도는 시간 T</dt><dd id="r-period">—</dd></div>
-            <div><dt>중력 가속도</dt><dd id="r-acc">—</dd></div>
-            <div><dt>면적속도 dA/dt</dt><dd id="r-area" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -592,19 +588,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">한 바퀴 도는 동안의 거리와 속도</h2><p>파란선이 속도, 주황선이 거리입니다. 두 선이 <strong>정확히 반대로</strong> 움직입니다 — 멀어지면 느려지고 가까워지면 빨라집니다. 초록선은 면적속도인데, 어떤 조건에서도 <strong>평평합니다</strong>.</p></div>
-    <div class="graph-wrap"><canvas id="orbit-graph" aria-label="궤도 위치에 따른 거리·속도·면적속도"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">떠 있는 게 아니라 떨어지는 중이다</h2><p>중력을 끄면 무슨 일이 생기는지가 답을 말해 줍니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">v = √(GM(2/r − 1/a)) &nbsp;&nbsp;|&nbsp;&nbsp; T = 2π√(a³/GM) &nbsp;&nbsp;|&nbsp;&nbsp; T² ∝ a³ &nbsp;&nbsp;|&nbsp;&nbsp; 면적속도 = ½rv⊥ = 일정</p>
-      <p>위성에 작용하는 힘은 <strong>지구 중력 하나뿐</strong>입니다. 받쳐주는 것도, 밀어주는 것도 없습니다. 위성은 그 중력에 이끌려 계속 지구로 떨어지지만, 옆으로 워낙 빨라서 지구가 둥글게 휘어지는 만큼 계속 비껴갑니다. 그래서 영원히 떨어지면서도 닿지 않습니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>무중력은 중력이 없는 게 아닙니다.</strong> 국제우주정거장 높이(약 400km)에서도 중력은 지표의 약 90%나 됩니다. 우주인이 둥둥 뜨는 이유는 중력이 없어서가 아니라, <strong>정거장과 우주인이 똑같이 떨어지고 있어서</strong>입니다. 엘리베이터 줄이 끊어져 함께 떨어지면 그 안에서도 몸이 뜨는 것과 같습니다.</p><p><strong>중력을 끄면 궤도가 즉시 직선이 됩니다.</strong> 이 화면에서 직접 확인할 수 있습니다. 중력이 없으면 위성은 그 자리에 멈추는 것이 아니라, 그 순간의 <strong>속도 방향으로 곧장 날아갑니다</strong>(뉴턴 1법칙). 궤도가 휘어져 있던 것은 중력이 계속 방향을 틀어주고 있었기 때문입니다. 즉 중력이 <strong>구심력</strong> 역할을 하고 있었던 것입니다.</p><p><strong>케플러 2법칙은 중력 때문이 아닙니다.</strong> 행성과 태양을 잇는 선은 같은 시간에 같은 넓이를 쓸고 지나갑니다(면적속도 일정). 놀랍게도 <strong>중력을 꺼도 이 값은 변하지 않습니다</strong> — 직접 눌러서 확인해 보세요. 힘이 항상 중심을 향하거나(중력) 아예 없으면(직선 운동) 둘 다 회전을 방해하는 토크가 0이라 <strong>각운동량이 보존</strong>되기 때문입니다. 케플러 2법칙은 중력의 결과가 아니라 각운동량 보존의 결과입니다.</p><p><strong>멀수록 느립니다.</strong> 궤도가 크면 빨리 돌 것 같지만 반대입니다. 케플러 3법칙 T² ∝ a³ 에 따라 장반경이 2배가 되면 주기는 약 2.83배 길어집니다. 멀수록 중력이 약해 더 느린 속도로도 궤도가 유지되기 때문입니다. 반지름 8,000km에서는 7.06km/s로 119분마다 돌지만, 14,000km에서는 5.34km/s로 275분이 걸립니다.</p><p><strong>실제 위성들이 이 법칙 위에 있습니다.</strong> 국제우주정거장은 반지름 약 6,778km에서 약 92분마다 한 바퀴 돌아 하루 15.5바퀴를 돕니다. 통신·기상 위성이 쓰는 <strong>정지궤도</strong>는 반지름 42,164km인데, 주기가 지구 자전과 정확히 같아져 하늘의 한 점에 붙박인 것처럼 보입니다. GPS 위성은 그 중간인 약 26,600km에서 12시간마다 돕니다. 용도에 맞는 궤도를 고르는 계산이 전부 이 공식에서 나옵니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

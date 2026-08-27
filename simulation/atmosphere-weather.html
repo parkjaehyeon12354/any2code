@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -456,7 +443,6 @@
   </div>
 </div>
 
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 지구과학 · 대기와 기상</p>
 
@@ -472,7 +458,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="산을 넘는 공기덩어리와 구름, 비"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 높이에 따른 기온과 이슬점</a>
           <button type="button" class="btn btn-primary" id="toggle">일시정지</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
@@ -483,6 +468,34 @@
         <span><i style="background:#3b82f6"></i>이슬점</span>
         <span><i style="background:#9ca3af"></i>구름 (기온 = 이슬점)</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="atmosphere_weather_measure">
+    <div class="panel-head"><h2 id="atmosphere_weather_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>지금 높이</dt><dd id="r-alt">—</dd></div>
+            <div><dt>공기덩어리 온도</dt><dd id="r-temp">—</dd></div>
+            <div><dt>구름 생기는 높이</dt><dd id="r-lcl">—</dd></div>
+            <div><dt>산 정상 온도</dt><dd id="r-peak">—</dd></div>
+            <div><dt>구름 두께</dt><dd id="r-cloud" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="profile-title">
+    <div class="analysis-head"><h2 id="profile-title">높이에 따른 기온과 이슬점</h2><p>두 선이 만나는 곳에서 구름이 생깁니다. 만나기 전까지는 기온이 1km에 9.8°C씩 빠르게 떨어지고, 만난 뒤(구름 속)에는 약 5°C씩 천천히 떨어집니다.</p></div>
+    <div class="graph-wrap"><canvas id="profile-graph" aria-label="높이에 따른 기온과 이슬점 변화"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">산 위가 추운 건 태양과 멀어서가 아니다</h2><p>공기가 스스로 식는 이유를 식으로 확인할 수 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">구름 높이 = (기온 − 이슬점) ÷ 7.8 &nbsp;km &nbsp;&nbsp;|&nbsp;&nbsp; 건조 9.8°C/km &nbsp; 습윤 약 5°C/km</p>
+      <p>산꼭대기는 지상보다 태양에 <strong>겨우 몇 km 가까울 뿐</strong>입니다. 태양까지 거리 1억 5천만 km에 비하면 무시할 수준이라, 가까워져서 따뜻해지는 효과는 사실상 없습니다. 그런데도 높이 올라가면 100m마다 약 1°C씩 떨어집니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>공기는 위로 올라갈수록 <strong>주변 기압이 낮아져 부풉니다</strong>. 부풀려면 주변을 밀어내야 하고, 그 일에 쓰는 에너지를 자기 안에서 꺼내 씁니다. 그래서 열을 주고받지 않아도 <strong>스스로 식습니다</strong>. 이것을 단열 팽창이라고 합니다.</p><p>수증기가 섞이지 않은 상태에서는 1km 오를 때마다 약 <strong>9.8°C</strong> 떨어집니다(건조단열감률). 그런데 계속 식다 보면 언젠가 <strong>이슬점에 닿습니다</strong>. 그 높이가 상승응결고도이고, 거기서부터 구름이 생깁니다.</p><p>이슬점도 높이 올라가면 조금씩 떨어집니다(약 2°C/km). 그래서 기온과 이슬점은 1km마다 <strong>9.8 − 2 = 7.8°C</strong>씩 가까워집니다. 지상에서 둘의 차이가 8°C였다면 8 ÷ 7.8 ≈ <strong>1.03km</strong>에서 만납니다.</p><p>구름이 생기기 시작하면 수증기가 물로 바뀌면서 <strong>숨은열을 내놓습니다</strong>. 이 열이 식는 것을 방해해서, 구름 속에서는 1km에 약 <strong>5°C</strong>만 떨어집니다(습윤단열감률). 그래프에서 꺾이는 지점이 바로 여기입니다.</p><p><strong>푄 현상(높새바람)</strong>은 이 차이 때문에 생깁니다. 올라갈 때는 구름 속에서 천천히 식었는데, 비를 뿌려 수증기를 잃고 내려올 때는 건조단열감률로 <strong>빠르게 데워집니다</strong>. 결과적으로 산을 넘은 공기는 넘기 전보다 <strong>더 덥고 더 건조합니다</strong>. 봄에 영동에서 영서로 부는 높새바람이 이렇게 만들어집니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -546,7 +559,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>넘기 전 vs 넘은 후</h2></div>
         <div class="panel-body">
@@ -558,23 +570,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="atmosphere_weather_measure">
-    <div class="panel-head"><h2 id="atmosphere_weather_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>지금 높이</dt><dd id="r-alt">—</dd></div>
-            <div><dt>공기덩어리 온도</dt><dd id="r-temp">—</dd></div>
-            <div><dt>구름 생기는 높이</dt><dd id="r-lcl">—</dd></div>
-            <div><dt>산 정상 온도</dt><dd id="r-peak">—</dd></div>
-            <div><dt>구름 두께</dt><dd id="r-cloud" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -589,19 +586,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="profile-title">
-    <div class="analysis-head"><h2 id="profile-title">높이에 따른 기온과 이슬점</h2><p>두 선이 만나는 곳에서 구름이 생깁니다. 만나기 전까지는 기온이 1km에 9.8°C씩 빠르게 떨어지고, 만난 뒤(구름 속)에는 약 5°C씩 천천히 떨어집니다.</p></div>
-    <div class="graph-wrap"><canvas id="profile-graph" aria-label="높이에 따른 기온과 이슬점 변화"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">산 위가 추운 건 태양과 멀어서가 아니다</h2><p>공기가 스스로 식는 이유를 식으로 확인할 수 있습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">구름 높이 = (기온 − 이슬점) ÷ 7.8 &nbsp;km &nbsp;&nbsp;|&nbsp;&nbsp; 건조 9.8°C/km &nbsp; 습윤 약 5°C/km</p>
-      <p>산꼭대기는 지상보다 태양에 <strong>겨우 몇 km 가까울 뿐</strong>입니다. 태양까지 거리 1억 5천만 km에 비하면 무시할 수준이라, 가까워져서 따뜻해지는 효과는 사실상 없습니다. 그런데도 높이 올라가면 100m마다 약 1°C씩 떨어집니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p>공기는 위로 올라갈수록 <strong>주변 기압이 낮아져 부풉니다</strong>. 부풀려면 주변을 밀어내야 하고, 그 일에 쓰는 에너지를 자기 안에서 꺼내 씁니다. 그래서 열을 주고받지 않아도 <strong>스스로 식습니다</strong>. 이것을 단열 팽창이라고 합니다.</p><p>수증기가 섞이지 않은 상태에서는 1km 오를 때마다 약 <strong>9.8°C</strong> 떨어집니다(건조단열감률). 그런데 계속 식다 보면 언젠가 <strong>이슬점에 닿습니다</strong>. 그 높이가 상승응결고도이고, 거기서부터 구름이 생깁니다.</p><p>이슬점도 높이 올라가면 조금씩 떨어집니다(약 2°C/km). 그래서 기온과 이슬점은 1km마다 <strong>9.8 − 2 = 7.8°C</strong>씩 가까워집니다. 지상에서 둘의 차이가 8°C였다면 8 ÷ 7.8 ≈ <strong>1.03km</strong>에서 만납니다.</p><p>구름이 생기기 시작하면 수증기가 물로 바뀌면서 <strong>숨은열을 내놓습니다</strong>. 이 열이 식는 것을 방해해서, 구름 속에서는 1km에 약 <strong>5°C</strong>만 떨어집니다(습윤단열감률). 그래프에서 꺾이는 지점이 바로 여기입니다.</p><p><strong>푄 현상(높새바람)</strong>은 이 차이 때문에 생깁니다. 올라갈 때는 구름 속에서 천천히 식었는데, 비를 뿌려 수증기를 잃고 내려올 때는 건조단열감률로 <strong>빠르게 데워집니다</strong>. 결과적으로 산을 넘은 공기는 넘기 전보다 <strong>더 덥고 더 건조합니다</strong>. 봄에 영동에서 영서로 부는 높새바람이 이렇게 만들어집니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

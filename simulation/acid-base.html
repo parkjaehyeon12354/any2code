@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -453,8 +440,6 @@
   </div>
 </div>
 
-
-
 <main class="container sim">
   <p class="crumb"><a href="/">홈</a> · 화학 · 산과 염기</p>
 
@@ -471,7 +456,6 @@
       <div class="stage">
         <canvas id="canvas" aria-label="희석에 따라 변하는 용액 속 H+ 와 OH- 이온"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 희석할수록 pH 는 어떻게 되나</a>
           <button type="button" class="btn btn-primary" id="naive">물의 이온화 무시해 보기</button>
           <button type="button" class="btn btn-ghost" id="reset">기본값으로</button>
           <span class="share-said" id="stage-said"></span>
@@ -482,6 +466,35 @@
         <span><i style="background:#5b8def"></i>OH⁻ (염기성)</span>
         <span><i style="background:#8d99ae"></i>물 분자</span>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="acid_base_measure">
+    <div class="panel-head"><h2 id="acid_base_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>희석 후 산 농도</dt><dd id="r-ca">—</dd></div>
+            <div><dt>[H⁺]</dt><dd id="r-h">—</dd></div>
+            <div><dt>이온화도</dt><dd id="r-alpha">—</dd></div>
+            <div><dt>[OH⁻]</dt><dd id="r-oh">—</dd></div>
+            <div><dt>pH</dt><dd id="r-ph">—</dd></div>
+            <div><dt>이 온도의 중성 pH</dt><dd id="r-neutral" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
+    <div class="analysis-head"><h2 id="graph-title">희석할수록 pH 는 어떻게 되나</h2><p>빨간 실선이 <strong>실제</strong>, 회색 점선이 <strong>물을 무시한 계산</strong>입니다. 처음에는 겹쳐 있다가 어느 지점부터 갈라집니다 — 점선은 7을 넘어 계속 올라가지만(불가능), 실선은 중성 pH 에 <strong>붙어서 멈춥니다</strong>. 그 갈라지는 지점이 물의 이온화를 무시할 수 없게 되는 곳입니다.</p></div>
+    <div class="graph-wrap"><canvas id="ph-graph" aria-label="희석 배율에 따른 pH 변화"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="formula-title">
+    <div class="analysis-head"><h2 id="formula-title">물도 산을 조금 내놓는다</h2><p>그 조금이 바닥을 받칩니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">H₂O ⇌ H⁺ + OH⁻ &nbsp;&nbsp;|&nbsp;&nbsp; K<sub>w</sub> = [H⁺][OH⁻] &nbsp;&nbsp;|&nbsp;&nbsp; [H⁺]² − C<sub>산</sub>[H⁺] − K<sub>w</sub> = 0 &nbsp;&nbsp;|&nbsp;&nbsp; 중성 pH = ½ pK<sub>w</sub></p>
+      <p>흔히 쓰는 pH = −log C 는 <strong>H⁺ 가 전부 산에서 왔다</strong>고 가정한 식입니다. 산이 충분히 진하면 맞지만, 농도가 10⁻⁷ mol/L 근처로 내려가면 <strong>물이 스스로 내놓는 H⁺ 와 비슷해집니다.</strong> 그때부터는 위의 2차 방정식을 풀어야 합니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p><strong>순수한 물도 아주 조금은 이온화합니다.</strong> 물 분자 약 5억 개 중 하나꼴로 H⁺ 와 OH⁻ 로 갈라집니다. 이 평형의 상수가 K<sub>w</sub> 이고 25°C 에서 1.0×10⁻¹⁴ 입니다. 그래서 순수한 물에도 [H⁺] = [OH⁻] = 10⁻⁷ mol/L 만큼은 항상 있습니다. <strong>이것이 아무리 희석해도 넘을 수 없는 바닥입니다.</strong></p><p><strong>왜 근사식이 극단적 희석에서 틀릴까요.</strong> pH = −log C 는 H⁺ 가 오직 산에서 온다고 봅니다. 산 농도가 10⁻⁸ 이면 이 식은 pH 8 이라는 답을 내놓는데, 이건 <strong>산을 넣었더니 염기성이 됐다</strong>는 뜻이라 말이 안 됩니다. 실제로는 물이 내놓는 10⁻⁷ 이 훨씬 크기 때문에 pH 는 7 바로 아래에 머뭅니다. 산은 아무리 묽어도 산이지, 염기가 될 수 없습니다.</p><p><strong>산성 용액에도 OH⁻ 는 항상 있습니다.</strong> [H⁺][OH⁻] = K<sub>w</sub> 라는 관계가 언제나 성립하기 때문입니다. pH 1 인 진한 염산에도 [OH⁻] = 10⁻¹³ mol/L 만큼은 존재합니다. 다만 H⁺ 보다 1조 배 적어서 무시할 뿐입니다. "산성이면 OH⁻ 가 없다"는 말은 틀렸습니다 — <strong>적을 뿐 0 은 아닙니다.</strong></p><p><strong>pH 7 이 중성이라는 말은 25°C 에서만 맞습니다.</strong> 중성의 진짜 정의는 [H⁺] = [OH⁻] 입니다. 이때 pH 는 ½pK<sub>w</sub> 인데, K<sub>w</sub> 가 온도에 따라 변하므로 중성 pH 도 함께 움직입니다. 60°C 물은 pH 가 6.51 이지만 여전히 <strong>완벽한 중성</strong>입니다. 우리 몸 속(37°C)의 중성은 약 6.81 입니다. 시험에서 "pH 7 이하면 산성"이라 쓸 때는 25°C 라는 전제가 숨어 있습니다.</p><p><strong>실험실에서는 어떨까요.</strong> 이 화면의 극단적 희석은 계산상의 이야기입니다. 실제로 10⁻⁹ mol/L 산 용액을 만들어 pH 를 재려 하면 공기 중 이산화탄소가 녹아들고, 용기 벽에 이온이 달라붙고, 측정기 자체의 한계까지 겹쳐 계산값이 그대로 나오지 않습니다. 그래도 <strong>"희석으로는 7을 넘길 수 없다"</strong>는 결론은 변하지 않습니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -553,7 +566,6 @@
         </div>
       </div>
 
-
       <div class="panel">
         <div class="panel-head"><h2>물을 무시하면 어떻게 되나</h2></div>
         <div class="panel-body">
@@ -565,24 +577,8 @@
         </div>
       </div>
 
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="acid_base_measure">
-    <div class="panel-head"><h2 id="acid_base_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>희석 후 산 농도</dt><dd id="r-ca">—</dd></div>
-            <div><dt>[H⁺]</dt><dd id="r-h">—</dd></div>
-            <div><dt>이온화도</dt><dd id="r-alpha">—</dd></div>
-            <div><dt>[OH⁻]</dt><dd id="r-oh">—</dd></div>
-            <div><dt>pH</dt><dd id="r-ph">—</dd></div>
-            <div><dt>이 온도의 중성 pH</dt><dd id="r-neutral" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -597,19 +593,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="graph-title">
-    <div class="analysis-head"><h2 id="graph-title">희석할수록 pH 는 어떻게 되나</h2><p>빨간 실선이 <strong>실제</strong>, 회색 점선이 <strong>물을 무시한 계산</strong>입니다. 처음에는 겹쳐 있다가 어느 지점부터 갈라집니다 — 점선은 7을 넘어 계속 올라가지만(불가능), 실선은 중성 pH 에 <strong>붙어서 멈춥니다</strong>. 그 갈라지는 지점이 물의 이온화를 무시할 수 없게 되는 곳입니다.</p></div>
-    <div class="graph-wrap"><canvas id="ph-graph" aria-label="희석 배율에 따른 pH 변화"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="formula-title">
-    <div class="analysis-head"><h2 id="formula-title">물도 산을 조금 내놓는다</h2><p>그 조금이 바닥을 받칩니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">H₂O ⇌ H⁺ + OH⁻ &nbsp;&nbsp;|&nbsp;&nbsp; K<sub>w</sub> = [H⁺][OH⁻] &nbsp;&nbsp;|&nbsp;&nbsp; [H⁺]² − C<sub>산</sub>[H⁺] − K<sub>w</sub> = 0 &nbsp;&nbsp;|&nbsp;&nbsp; 중성 pH = ½ pK<sub>w</sub></p>
-      <p>흔히 쓰는 pH = −log C 는 <strong>H⁺ 가 전부 산에서 왔다</strong>고 가정한 식입니다. 산이 충분히 진하면 맞지만, 농도가 10⁻⁷ mol/L 근처로 내려가면 <strong>물이 스스로 내놓는 H⁺ 와 비슷해집니다.</strong> 그때부터는 위의 2차 방정식을 풀어야 합니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p><strong>순수한 물도 아주 조금은 이온화합니다.</strong> 물 분자 약 5억 개 중 하나꼴로 H⁺ 와 OH⁻ 로 갈라집니다. 이 평형의 상수가 K<sub>w</sub> 이고 25°C 에서 1.0×10⁻¹⁴ 입니다. 그래서 순수한 물에도 [H⁺] = [OH⁻] = 10⁻⁷ mol/L 만큼은 항상 있습니다. <strong>이것이 아무리 희석해도 넘을 수 없는 바닥입니다.</strong></p><p><strong>왜 근사식이 극단적 희석에서 틀릴까요.</strong> pH = −log C 는 H⁺ 가 오직 산에서 온다고 봅니다. 산 농도가 10⁻⁸ 이면 이 식은 pH 8 이라는 답을 내놓는데, 이건 <strong>산을 넣었더니 염기성이 됐다</strong>는 뜻이라 말이 안 됩니다. 실제로는 물이 내놓는 10⁻⁷ 이 훨씬 크기 때문에 pH 는 7 바로 아래에 머뭅니다. 산은 아무리 묽어도 산이지, 염기가 될 수 없습니다.</p><p><strong>산성 용액에도 OH⁻ 는 항상 있습니다.</strong> [H⁺][OH⁻] = K<sub>w</sub> 라는 관계가 언제나 성립하기 때문입니다. pH 1 인 진한 염산에도 [OH⁻] = 10⁻¹³ mol/L 만큼은 존재합니다. 다만 H⁺ 보다 1조 배 적어서 무시할 뿐입니다. "산성이면 OH⁻ 가 없다"는 말은 틀렸습니다 — <strong>적을 뿐 0 은 아닙니다.</strong></p><p><strong>pH 7 이 중성이라는 말은 25°C 에서만 맞습니다.</strong> 중성의 진짜 정의는 [H⁺] = [OH⁻] 입니다. 이때 pH 는 ½pK<sub>w</sub> 인데, K<sub>w</sub> 가 온도에 따라 변하므로 중성 pH 도 함께 움직입니다. 60°C 물은 pH 가 6.51 이지만 여전히 <strong>완벽한 중성</strong>입니다. 우리 몸 속(37°C)의 중성은 약 6.81 입니다. 시험에서 "pH 7 이하면 산성"이라 쓸 때는 25°C 라는 전제가 숨어 있습니다.</p><p><strong>실험실에서는 어떨까요.</strong> 이 화면의 극단적 희석은 계산상의 이야기입니다. 실제로 10⁻⁹ mol/L 산 용액을 만들어 pH 를 재려 하면 공기 중 이산화탄소가 녹아들고, 용기 벽에 이온이 달라붙고, 측정기 자체의 한계까지 겹쳐 계산값이 그대로 나오지 않습니다. 그래도 <strong>"희석으로는 7을 넘길 수 없다"</strong>는 결론은 변하지 않습니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>

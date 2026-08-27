@@ -65,19 +65,6 @@
 }
 .stage-foot .btn { height: 40px; padding: 0 16px; font-size: 13.5px; }
 
-/* 무대 바로 아래에서 그래프로 건너뛰는 링크.
-   그래프가 접힌 화면 훨씬 아래라 있는 줄도 모르고 나가는 사람이 많았다.
-   새 컴포넌트를 만드는 대신 이미 있는 stage-foot 에 한 줄만 얹는다. */
-.graph-jump {
-  margin-right: auto; display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px; border-radius: 8px;
-  border: 1px solid var(--hairline); background: var(--surface-soft);
-  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
-}
-.graph-jump:hover { color: var(--ink); border-color: var(--muted); }
-.graph-jump:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 640px) { .graph-jump { width: 100%; margin: 0 0 8px; justify-content: center; } }
-
 .panel {
   background: var(--canvas);
   border: 1px solid var(--hairline);
@@ -402,12 +389,39 @@
       <div class="stage">
         <canvas id="canvas" aria-label="집단의 유전자형 분포"></canvas>
         <div class="stage-foot">
-          <a class="graph-jump" href="#analysis">↓ 세대에 따른 대립유전자 빈도</a>
           <button type="button" class="btn btn-primary" id="toggle">세대 진행</button>
           <button type="button" class="btn btn-ghost" id="reset">처음부터</button>
           <span class="share-said" id="stage-said"></span>
         </div>
       </div>
+
+      <section class="panel measurement-strip" aria-labelledby="genetics_evolution_measure">
+    <div class="panel-head"><h2 id="genetics_evolution_measure">실시간 측정값</h2></div>
+    <div class="panel-body">
+          <dl class="read">
+            <div><dt>세대</dt><dd id="r-gen">0</dd></div>
+            <div><dt>B 빈도 (검정)</dt><dd id="r-freq">—</dd></div>
+            <div><dt>BB : Bb : bb</dt><dd id="r-geno">—</dd></div>
+            <div><dt>겉모습 비율</dt><dd id="r-pheno">—</dd></div>
+            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
+          </dl>
+          <p class="note" id="note"></p>
+    </div>
+      </section>
+
+      <section class="analysis-panel" id="analysis" aria-labelledby="evo-graph-title">
+    <div class="analysis-head"><h2 id="evo-graph-title">세대에 따른 대립유전자 빈도</h2><p>파란선은 B(검정), 주황선은 b(흰색)의 빈도입니다. 환경을 바꾸면 선이 갈라지기 시작합니다.</p></div>
+    <div class="graph-wrap"><canvas id="eco-graph" aria-label="세대별 대립유전자 빈도 변화"></canvas></div>
+      </section>
+
+      <section class="analysis-panel" aria-labelledby="evo-formula-title">
+    <div class="analysis-head"><h2 id="evo-formula-title">유전이 변이를 만들고 환경이 고른다</h2><p>멘델의 법칙과 자연선택은 따로 배우지만 이어져 있습니다.</p></div>
+    <div class="formula-box">
+      <p class="formula-main">p² + 2pq + q² = 1, &nbsp;&nbsp; p + q = 1</p>
+      <p>어떤 힘도 작용하지 않으면 대립유전자 빈도는 <strong>세대가 지나도 변하지 않습니다</strong>(하디–바인베르크 평형). 진화란 이 평형이 깨지는 것이고, 그 원인이 자연선택·유전적 부동·돌연변이입니다.</p>
+      <details><summary>더 알아보기</summary><div class="proof"><p>B의 빈도를 p, b의 빈도를 q라 하면 p + q = 1입니다. 부모가 무작위로 만난다면 자손이 BB일 확률은 p × p = p², Bb는 2pq(BB 순서 두 가지), bb는 q²입니다. 셋을 더하면 (p + q)² = 1이 됩니다.</p><p>중요한 것은 <strong>이 비율이 다음 세대에도 그대로 유지된다</strong>는 점입니다. 우성 형질이라고 해서 세대가 갈수록 늘어나지 않습니다 — 흔한 오해입니다. 시뮬레이션에서 생존율을 50%로 두고 세대를 진행해 보면 빈도가 거의 변하지 않는 것을 볼 수 있습니다.</p><p>생존율을 바꾸면 평형이 깨집니다. 검은 개체가 유리하면 B를 가진 개체가 더 많이 살아남아 다음 세대에 B를 더 많이 남깁니다. 이것이 <strong>자연선택</strong>입니다.</p><p>다만 열성 대립유전자는 좀처럼 완전히 사라지지 않습니다. Bb인 개체가 겉으로는 검은색이라 선택을 피하면서 b를 계속 물려주기 때문입니다. 생존율을 극단으로 두고 여러 세대를 돌려도 b가 남아 있는 것을 확인해 보세요.</p><p>집단을 작게 하면 다른 일이 일어납니다. 생존율이 50%여도 빈도가 크게 출렁이고, 때로는 한쪽이 우연히 사라집니다. 이것이 <strong>유전적 부동</strong>이며, 작은 집단일수록 강하게 나타납니다.</p></div></details>
+    </div>
+      </section>
     </div>
 
     <div>
@@ -467,24 +481,8 @@
         </div>
       </div>
 
-
-
     </div>
   </div>
-
-  <section class="panel measurement-strip" aria-labelledby="genetics_evolution_measure">
-    <div class="panel-head"><h2 id="genetics_evolution_measure">실시간 측정값</h2></div>
-    <div class="panel-body">
-          <dl class="read">
-            <div><dt>세대</dt><dd id="r-gen">0</dd></div>
-            <div><dt>B 빈도 (검정)</dt><dd id="r-freq">—</dd></div>
-            <div><dt>BB : Bb : bb</dt><dd id="r-geno">—</dd></div>
-            <div><dt>겉모습 비율</dt><dd id="r-pheno">—</dd></div>
-            <div><dt>상태</dt><dd id="r-state" class="gap">—</dd></div>
-          </dl>
-          <p class="note" id="note"></p>
-    </div>
-  </section>
 
   <div class="panel share-strip">
         <div class="panel-head"><h2>공유</h2></div>
@@ -499,19 +497,6 @@
         </div>
       </div>
 
-  <section class="analysis-panel" id="analysis" aria-labelledby="evo-graph-title">
-    <div class="analysis-head"><h2 id="evo-graph-title">세대에 따른 대립유전자 빈도</h2><p>파란선은 B(검정), 주황선은 b(흰색)의 빈도입니다. 환경을 바꾸면 선이 갈라지기 시작합니다.</p></div>
-    <div class="graph-wrap"><canvas id="eco-graph" aria-label="세대별 대립유전자 빈도 변화"></canvas></div>
-  </section>
-
-  <section class="analysis-panel" aria-labelledby="evo-formula-title">
-    <div class="analysis-head"><h2 id="evo-formula-title">유전이 변이를 만들고 환경이 고른다</h2><p>멘델의 법칙과 자연선택은 따로 배우지만 이어져 있습니다.</p></div>
-    <div class="formula-box">
-      <p class="formula-main">p² + 2pq + q² = 1, &nbsp;&nbsp; p + q = 1</p>
-      <p>어떤 힘도 작용하지 않으면 대립유전자 빈도는 <strong>세대가 지나도 변하지 않습니다</strong>(하디–바인베르크 평형). 진화란 이 평형이 깨지는 것이고, 그 원인이 자연선택·유전적 부동·돌연변이입니다.</p>
-      <details><summary>더 알아보기</summary><div class="proof"><p>B의 빈도를 p, b의 빈도를 q라 하면 p + q = 1입니다. 부모가 무작위로 만난다면 자손이 BB일 확률은 p × p = p², Bb는 2pq(BB 순서 두 가지), bb는 q²입니다. 셋을 더하면 (p + q)² = 1이 됩니다.</p><p>중요한 것은 <strong>이 비율이 다음 세대에도 그대로 유지된다</strong>는 점입니다. 우성 형질이라고 해서 세대가 갈수록 늘어나지 않습니다 — 흔한 오해입니다. 시뮬레이션에서 생존율을 50%로 두고 세대를 진행해 보면 빈도가 거의 변하지 않는 것을 볼 수 있습니다.</p><p>생존율을 바꾸면 평형이 깨집니다. 검은 개체가 유리하면 B를 가진 개체가 더 많이 살아남아 다음 세대에 B를 더 많이 남깁니다. 이것이 <strong>자연선택</strong>입니다.</p><p>다만 열성 대립유전자는 좀처럼 완전히 사라지지 않습니다. Bb인 개체가 겉으로는 검은색이라 선택을 피하면서 b를 계속 물려주기 때문입니다. 생존율을 극단으로 두고 여러 세대를 돌려도 b가 남아 있는 것을 확인해 보세요.</p><p>집단을 작게 하면 다른 일이 일어납니다. 생존율이 50%여도 빈도가 크게 출렁이고, 때로는 한쪽이 우연히 사라집니다. 이것이 <strong>유전적 부동</strong>이며, 작은 집단일수록 강하게 나타납니다.</p></div></details>
-    </div>
-  </section>
 </main>
 
 <script src="/assets/js/session.js"></script>
