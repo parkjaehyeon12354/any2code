@@ -100,7 +100,10 @@ test('생명과학 상수가 코드에 실제로 있다', () => {
      누가 무심코 바꾸면 물리적으로 틀린 화면이 된다.
      전부 브라우저에서도 재확인했다. */
   const eco = read(path.join(SIM_DIR, 'ecology-population.html'));
-  assert.match(eco, /const r = 0\.5/, '피식자 번식률 0.5');
+  /* 번식률 r 은 상수에서 슬라이더로 바뀌었다. 기본값은 그대로 0.5 여야
+     N*=13.33, P*=25 라는 검증값이 유지된다. */
+  assert.match(eco, /birth: 0\.5 \}/, '피식자 번식률 기본값 0.5');
+  assert.match(eco, /id="birth"[^>]*value="0\.5"/, '번식률 슬라이더 기본값 0.5');
   assert.match(eco, /const e = 0\.3/, '전환효율 0.3');
   assert.match(eco, /const m = 0\.08/, '포식자 사망률 0.08');
 
@@ -235,6 +238,22 @@ test('열과 통계의 측정 속력은 실제 표본에서 나온다', () => {
   assert.match(tg, /const va = sampleRms\(0\) \|\| vRms/,
     '측정 속력이 표본이 아니라 이론식이다 — 입자 수를 줄여도 안 흔들린다');
   assert.match(tg, /i < S\.count/, 'seed 가 고정 개수를 쓴다 — 슬라이더가 안 먹는다');
+});
+
+
+test('개체와 생태계의 번식률이 조작 변수다', () => {
+  /* 이 화면 본문은 "피식자에게 좋은 일을 해주면 정작 늘어나는 건 포식자" 라고
+     단언한다. P* = r/a 이고 N* = m/(ea) 라 번식률은 포식자 균형점만 올린다.
+     r 이 상수로 박혀 있으면 학생이 그 주장을 확인할 방법이 없다.
+     실측(a=0.02): r 0.2/0.5/1.2 -> P* 10.0/25.0/60.0, N* 은 13.33 고정. */
+  const ec = read(path.join(SIM_DIR, 'ecology-population.html'));
+  assert.match(ec, /id="birth"/, '번식률 슬라이더가 없다');
+  assert.match(ec, /const pStar = \(\) => S\.birth \/ S\.attack;/,
+    '포식자 균형점이 번식률을 안 읽는다 — 슬라이더를 움직여도 P* 가 그대로다');
+  /* 미분식도 같이 읽어야 한다. 균형점 표시만 고치면 숫자는 변하는데
+     실제 개체수 곡선은 옛 번식률로 도는 따로국밥이 된다. */
+  assert.match(ec, /const dN = S\.birth \* N - a \* N \* P;/,
+    '피식자 미분식이 번식률을 안 읽는다');
 });
 
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
