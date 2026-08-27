@@ -474,7 +474,29 @@
               <output id="kr-out">0.040 /s</output>
             </div>
             <input type="range" id="kr" min="0.02" max="0.20" step="0.005" value="0.04">
-            <span class="hint">평형 상수 K = k<sub>f</sub> ÷ k<sub>r</sub> 입니다. 이 둘만이 평형을 정합니다.</span>
+            <span class="hint">25°C 기준값입니다. 평형 상수 K = k<sub>f</sub> ÷ k<sub>r</sub> —
+            <strong>촉매는 이 비를 못 바꾸지만 온도는 바꿉니다.</strong></span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><label>반응열 ΔH</label><output id="dh-out">열중성 0 kJ/mol</output></div>
+            <div class="chips" id="kinds">
+              <button type="button" id="dh-exo" aria-pressed="false">발열<small>ΔH = −50</small></button>
+              <button type="button" id="dh-zero" aria-pressed="true">열중성<small>ΔH = 0</small></button>
+              <button type="button" id="dh-endo" aria-pressed="false">흡열<small>ΔH = +50</small></button>
+            </div>
+            <span class="hint">열중성이면 온도를 올려도 K 가 그대로입니다 — 빨라지기만 합니다.</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <label for="temp">온도</label>
+              <output id="temp-out">25 °C</output>
+            </div>
+            <input type="range" id="temp" min="5" max="95" step="1" value="25">
+            <span class="hint"><strong>촉매와 무엇이 다른지 보세요.</strong> 촉매는 도달만 빠르게 하고
+            K 는 그대로지만, 온도는 <strong>K 자체를 바꿉니다</strong>(반트호프 식).
+            발열 반응을 75°C 로 올리면 K 가 2 에서 0.11 로 떨어집니다.</span>
           </div>
 
           <div class="ctrl">
@@ -585,7 +607,7 @@
        [A]eq = [A]0/(1+K),  K = kf/kr,  τ = 1/(kf+kr)
      직접 계산해 검증했다: kf=.08 kr=.04 A0=.5 → K=2, [A]eq=0.1667, τ=8.33s */
 
-  const S = { kf: 0.08, kr: 0.04, a0: 0.5, cat: 1 };
+  const S = { kf: 0.08, kr: 0.04, a0: 0.5, cat: 1, temp: 25, dH: 0 };
   let running = true;
   let t = 0;                 // 반응 시각 (초)
   let flips = 0;             // 지금까지 일어난 전환 횟수
@@ -599,10 +621,29 @@
   const gctx = graph.getContext('2d');
   let DPR = 1;
 
-  // 촉매가 적용된 실제 속도상수 — 둘 다 같은 배율
-  const kfEff = () => S.kf * S.cat;
-  const krEff = () => S.kr * S.cat;
-  const Kconst = () => S.kf / S.kr;              // 촉매와 무관
+  /* 온도 효과 — 촉매와 무엇이 다른지가 이 화면의 두 번째 대비다.
+     촉매: kf 와 kr 을 같은 배율로 곱한다 → K 불변, 도달만 빠름
+     온도: 반트호프로 K 자체가 바뀐다 → 평형 위치가 옮겨간다
+
+     반트호프  ln(K2/K1) = −ΔH/R · (1/T2 − 1/T1)
+     아레니우스 kf(T) = kf(298)·exp(−Ea/R · (1/T − 1/298)),  Ea = 50 kJ/mol
+     kr 은 kf/K 로 따라온다 — 그래야 K 가 반트호프와 정확히 맞는다.
+
+     직접 계산해 검증: ΔH=−50kJ, 25→75°C 면 K 2.0 → 0.11 (발열은 작아진다)
+                      ΔH=+50kJ 면 2.0 → 36.33 (흡열은 커진다)
+                      ΔH=0 이면 2.0 그대로, kf 만 18.17배 빨라진다 */
+  const R_GAS = 8.314;                   // J/(mol·K)
+  const EA = 50000;                      // 활성화 에너지 J/mol
+  const T0 = 298;                        // 기준 25°C (K)
+  const tempK = () => S.temp + 273;
+
+  // 이 온도의 평형 상수 — 25°C 값 kf/kr 에서 반트호프로 옮긴다
+  const Kconst = () => (S.kf / S.kr) *
+    Math.exp(-(S.dH * 1000) / R_GAS * (1 / tempK() - 1 / T0));
+
+  // 촉매는 둘 다 같은 배율(K 불변), 온도는 아레니우스로 kf 를 올린다
+  const kfEff = () => S.kf * S.cat * Math.exp(-EA / R_GAS * (1 / tempK() - 1 / T0));
+  const krEff = () => kfEff() / Kconst();
   const aEq = () => S.a0 / (1 + Kconst());
   const bEq = () => S.a0 - aEq();
   const tau = () => 1 / (kfEff() + krEff());
@@ -866,7 +907,7 @@
     }
 
     el('note').textContent =
-      `K = ${S.kf.toFixed(3)} ÷ ${S.kr.toFixed(3)} = ${Kconst().toFixed(3)}. ` +
+      `K = ${Kconst().toFixed(3)} (${S.temp}°C, ΔH ${S.dH > 0 ? '+' : ''}${S.dH} kJ/mol). ` +
       `촉매는 두 속도상수를 같은 배율로 키우므로 K 는 변하지 않습니다. ` +
       `평형 도달 시간 τ = ${tau().toFixed(2)}초.`;
   }
@@ -876,12 +917,24 @@
     kf: (v) => Number(v).toFixed(3) + ' /s',
     kr: (v) => Number(v).toFixed(3) + ' /s',
     a0: (v) => Number(v).toFixed(2) + ' mol/L',
-    cat: (v) => Number(v) <= 1.001 ? '없음 (1배)' : Number(v).toFixed(1) + '배'
+    cat: (v) => Number(v) <= 1.001 ? '없음 (1배)' : Number(v).toFixed(1) + '배',
+    temp: (v) => Number(v) + ' °C'
   };
+
+  /* 반응열은 세 값 중 하나만 쓴다 — 연속 슬라이더로 두면 학생이
+     "발열이면 K 가 작아진다" 라는 구분을 잡기 어렵다. */
+  function setDH(v) {
+    S.dH = v;
+    el('dh-out').textContent = (v < 0 ? '발열 ' : v > 0 ? '흡열 +' : '열중성 ') + v + ' kJ/mol';
+    el('dh-exo').setAttribute('aria-pressed', String(v < 0));
+    el('dh-zero').setAttribute('aria-pressed', String(v === 0));
+    el('dh-endo').setAttribute('aria-pressed', String(v > 0));
+    restart(); readout();
+  }
 
   function restart() { t = 0; flips = 0; history = []; seed(); }
 
-  ['kf', 'kr', 'a0', 'cat'].forEach((k) => {
+  ['kf', 'kr', 'a0', 'cat', 'temp'].forEach((k) => {
     const input = el(k);
     input.addEventListener('input', () => {
       S[k] = Number(input.value);
@@ -892,6 +945,10 @@
     });
   });
 
+  el('dh-exo').addEventListener('click', () => setDH(-50));
+  el('dh-zero').addEventListener('click', () => setDH(0));
+  el('dh-endo').addEventListener('click', () => setDH(50));
+
   const presetBox = el('presets');
   presetBox.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
@@ -899,7 +956,7 @@
       S.kr = Number(b.dataset.kr);
       S.a0 = Number(b.dataset.a0);
       S.cat = Number(b.dataset.cat);
-      ['kf', 'kr', 'a0', 'cat'].forEach((k) => {
+      ['kf', 'kr', 'a0', 'cat', 'temp'].forEach((k) => {
         el(k).value = S[k];
         el(k + '-out').textContent = labels[k](S[k]);
       });
@@ -936,7 +993,7 @@
     try {
       const me = await Session.refresh();
       if (!me) { said.textContent = '로그인이 필요합니다.'; return; }
-      const q = new URLSearchParams({ kf: S.kf, kr: S.kr, a0: S.a0, cat: S.cat });
+      const q = new URLSearchParams({ kf: S.kf, kr: S.kr, a0: S.a0, cat: S.cat, temp: S.temp, dh: S.dH });
       const url = location.origin + location.pathname + '?' + q;
       const b = el('share-url');
       b.value = url; b.hidden = false; b.select();
@@ -947,7 +1004,7 @@
 
   function applyQuery() {
     const q = new URLSearchParams(location.search);
-    ['kf', 'kr', 'a0', 'cat'].forEach((k) => {
+    ['kf', 'kr', 'a0', 'cat', 'temp'].forEach((k) => {
       const v = Number(q.get(k));
       if (q.get(k) === null || !Number.isFinite(v)) return;
       const input = el(k);
@@ -955,6 +1012,8 @@
       S[k] = c; input.value = c;
       el(k + '-out').textContent = labels[k](c);
     });
+    const dh = Number(q.get('dh'));
+    if ([-50, 0, 50].includes(dh)) setDH(dh);
     syncPresets();
   }
 
