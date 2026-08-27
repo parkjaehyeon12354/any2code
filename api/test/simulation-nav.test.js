@@ -387,8 +387,10 @@ test('시뮬레이션 목록 페이지에 네비로 갈 수 있다', () => {
        서로 다른 사이트가 된다 — 실제로 그렇게 갈라진 적이 있다. */
     const n = (html.match(/href="\/simulation\/"/g) || []).length;
     assert.strictEqual(n, 2, name + ' 의 목록 링크가 ' + n + '개다 (드롭다운 트리거 1 + 모바일 1 이어야 한다)');
-    /* 과목 넷은 시뮬레이션 하나로 접혔다. 열 제목으로만 남아야 한다. */
-    assert.match(html, /<p class="mega-label">물리학<\/p>/, name + ' 에 과목 열이 없다');
+    /* 과목 넷은 시뮬레이션 하나로 접혔다. 열 제목으로 남되, 누르면 그 과목만
+       걸린 목록으로 가야 한다 — 푸터의 ?subject= 링크와 같은 경로다. */
+    assert.match(html, /<p class="mega-label"><a href="\/simulation\/\?subject=physics">물리학<\/a><\/p>/,
+      name + ' 의 과목 열 제목이 필터로 연결되지 않았다');
   }
 });
 
