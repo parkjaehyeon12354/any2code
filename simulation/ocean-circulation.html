@@ -729,14 +729,17 @@
     ctx.textAlign = 'center';
     ctx.fillText('육지', coast / 2, surface + 30);
 
-    // 나침반
+    /* 나침반 — 묵대는 항상 어둡다. 글자를 어두운 회색(rgba(60,70,80))으로
+       그려서 안 보였다. 원 안쪽에 얹으면 화살표와 겹치니 바깥 네 방향 그대로 두고
+       색만 밝게 한다. */
     ctx.save();
     ctx.translate(w - 58, 52);
-    ctx.strokeStyle = 'rgba(255,255,255,.55)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,.8)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = 'rgba(60,70,80,.9)';
-    ctx.font = '10px ui-sans-serif, system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.font = '600 11px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center';
     ctx.fillText('북', 0, -30); ctx.fillText('남', 0, 39);
     ctx.fillText('동', 33, 4); ctx.fillText('서', -33, 4);
     ctx.restore();
@@ -754,7 +757,8 @@
       const ax = bx + wdx * shift, ay = by + wdy * shift;
       arrow(ax, ay, wdx, wdy, 22);
     }
-    ctx.fillStyle = 'rgba(90,70,20,.9)';
+    /* 바람 화살표는 밝은 앰버인데 라벨만 어두운 갈색이라 안 보였다 */
+    ctx.fillStyle = 'rgba(255,224,168,.95)';
     ctx.font = '600 12px ui-sans-serif, system-ui';
     ctx.textAlign = 'left';
     ctx.fillText('바람 ' + dirName(S.wind) + '쪽으로', coast + 14, 22);
@@ -852,7 +856,10 @@
     const X = (T) => pad.l + (T - T0) / (T1 - T0) * gw;
     const Y = (s) => pad.t + gh - (s - S0) / (S1 - S0) * gh;
 
-    gctx.fillStyle = '#f7f7f5';
+    /* 예전에는 배경이 #f7f7f5 하드코딩이라 어두운 graph-wrap 위에 하얀 박스가
+       떠 보였다. 랩은 밝기 모드와 무관하게 어두우니(surface-dark) 캔버스도 어둡게 —
+       한 팔레트로 두 모드에서 다 맞는다. */
+    gctx.fillStyle = '#12181f';
     gctx.fillRect(0, 0, w, h);
 
     // 밀도 등고선
@@ -874,16 +881,16 @@
         started ? gctx.lineTo(xx, yy) : gctx.moveTo(xx, yy);
         started = true;
       }
-      gctx.strokeStyle = 'rgba(120,130,145,.45)';
+      gctx.strokeStyle = 'rgba(150,170,195,.4)';
       gctx.lineWidth = 1;
       gctx.stroke();
     }
 
     // 축
-    gctx.strokeStyle = 'rgba(120,120,120,.35)';
+    gctx.strokeStyle = 'rgba(255,255,255,.22)';
     gctx.lineWidth = 1;
     gctx.textAlign = 'center';
-    gctx.fillStyle = 'rgba(110,110,110,.95)';
+    gctx.fillStyle = 'rgba(225,232,240,.9)';
     for (let T = 0; T <= 30; T += 10) {
       gctx.beginPath(); gctx.moveTo(X(T), pad.t); gctx.lineTo(X(T), pad.t + gh); gctx.stroke();
       gctx.fillText(T + '°C', X(T), h - 12);
@@ -903,8 +910,8 @@
     gctx.textAlign = 'left';
     marks.forEach((m) => {
       gctx.beginPath(); gctx.arc(X(m.T), Y(m.s), 4, 0, Math.PI * 2);
-      gctx.fillStyle = 'rgba(120,130,145,.85)'; gctx.fill();
-      gctx.fillStyle = 'rgba(100,110,125,.95)';
+      gctx.fillStyle = 'rgba(150,170,195,.9)'; gctx.fill();
+      gctx.fillStyle = 'rgba(190,205,225,.95)';
       gctx.fillText(m.name, X(m.T) + 8, Y(m.s) + 4);
     });
 
@@ -913,7 +920,7 @@
     gctx.arc(X(S.temp), Y(S.salt), 7, 0, Math.PI * 2);
     gctx.fillStyle = '#e06c3a'; gctx.fill();
     gctx.strokeStyle = '#fff'; gctx.lineWidth = 2.5; gctx.stroke();
-    gctx.fillStyle = '#b4471f';
+    gctx.fillStyle = '#ff9d6b';
     gctx.font = '600 12px ui-sans-serif, system-ui';
     gctx.fillText('지금 물 ' + density(S.temp, S.salt).toFixed(1), X(S.temp) + 11, Y(S.salt) - 9);
   }
