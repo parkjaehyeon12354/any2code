@@ -365,6 +365,31 @@ test('지구 계절의 근일점 날짜가 조작 변수다', () => {
   assert.match(es, /- 79\) \/ 365\.24/, '춘분 기준까지 바꿔 버렸다 — 낮 길이가 깨진다');
 });
 
+
+test('시뮬레이션 목록 페이지에 네비로 갈 수 있다', () => {
+  /* simulation/index.html 은 파일도 멀쩡하고 라이브에서 200 인데,
+     어디서도 링크가 없어 주소를 직접 쳐야만 들어갈 수 있었다.
+     8/20 커밋에서 '목록 페이지를 없애고 드롭다운에서 바로 단진자로' 하며
+     지웠다가 파일만 되살아나고 링크는 안 돌아온 것이다.
+     드롭다운은 과목별로 흩어져 있어 21개를 한눈에 볼 곳이 목록뿐이다. */
+  const idx = read(path.join(SIM_DIR, 'index.html'));
+  assert.ok(idx.length > 1000, '목록 페이지가 비어 있다');
+
+  const pages = ['community.html', 'guide.html', 'Index.html', 'post.html']
+    .map((f) => [f, path.join(ROOT, f)])
+    .concat(fs.readdirSync(SIM_DIR).filter((f) => f.endsWith('.html'))
+      .map((f) => ['simulation/' + f, path.join(SIM_DIR, f)]));
+
+  for (const [name, file] of pages) {
+    const html = read(file);
+    if (!html.includes('mega-dropdown')) continue;
+    /* 과목 드롭다운 4개 + 모바일 메뉴 1개. 한쪽만 고치면 데스크톱과 모바일이
+       서로 다른 사이트가 된다 — 실제로 그렇게 갈라진 적이 있다. */
+    const n = (html.match(/href="\/simulation\/">/g) || []).length;
+    assert.strictEqual(n, 5, name + ' 의 목록 링크가 ' + n + '개다 (드롭다운 4 + 모바일 1 이어야 한다)');
+  }
+});
+
 test('화학 시뮬레이션이 교육과정 상수를 실제로 쓴다', () => {
   /* 숫자를 눈대중으로 넣으면 화면은 그럴듯한데 답이 틀린다.
      설계 단계에서 Solar 가 제시한 값도 두 건이 틀려 직접 계산으로 잡았다.

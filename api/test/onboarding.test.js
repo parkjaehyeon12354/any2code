@@ -305,15 +305,18 @@ test('시뮬레이션 상세 페이지에서도 드롭다운이 열린다', () =
   }
 });
 
-test('안 쓰는 시뮬레이션 목록 페이지로 가는 링크가 없다', () => {
+test('시뮬레이션 목록 페이지로 가는 길이 있다', () => {
+  /* 예전에는 "목록 페이지는 안 쓴다"며 링크가 없어야 통과하는 검사였다.
+     그런데 파일은 계속 남아 라이브에서 200 이었고, 시뮬이 8개에서 21개로
+     늘면서 과목별 드롭다운만으로는 전체를 한눈에 볼 곳이 없어졌다.
+     목록을 되살렸으니 이제는 링크가 있어야 한다. */
   const files = ['Index.html', 'community.html', 'guide.html', 'post.html',
-                 'science.html', 'settings.html', 'admin.html', 'terms.html', 'privacy.html',
                  'simulation/index.html', 'simulation/pendulum.html',
                  'simulation/electromagnetic-induction.html'];
   for (const f of files) {
     const html = readRoot(f);
-    assert.ok(!/href="\/simulation\/"/.test(html),
-      `${f} 에 /simulation/ 링크가 남아 있다 — 안 쓰기로 한 페이지다`);
+    assert.ok(/href="\/simulation\/"/.test(html),
+      `${f} 에 시뮬레이션 목록 링크가 없다`);
   }
 });
 
