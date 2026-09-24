@@ -23,7 +23,7 @@ Azure Static Web Apps 한 서비스 위에서 프런트엔드·백엔드·데이
 │  ┌─────────────────────────▼──────────────────────────────┐  │
 │  │  [2] 애플리케이션 계층 — Azure Functions (Node.js 22)     │  │
 │  │      auth · posts · profile · reports · admin · llmChat  │  │
-│  │      HTTP 트리거 6종 / REST 엔드포인트 30개                │  │
+│  │      HTTP 트리거 6종 / REST 엔드포인트 32개                │  │
 │  └─────────────────────────┬──────────────────────────────┘  │
 └────────────────────────────┼─────────────────────────────────┘
                              │
@@ -61,7 +61,7 @@ HTTP 트리거 기반 함수 6개로 도메인을 분리했습니다.
 |---|---|---|
 | `auth.js` | 소셜 로그인·세션 | `/api/auth/{provider}/start`, `/callback`, `/logout` |
 | `posts.js` | 질문·답변·투표 | `/api/posts`, `/posts/{id}/comments`, `/vote` |
-| `profile.js` | 프로필·약관 동의 | `/api/profile`, `/profile/terms`, `/me` |
+| `profile.js` | 프로필·약관 동의·계정 삭제 | `/api/profile`, `/profile/terms`, `/profile/delete`, `/me` |
 | `reports.js` | 신고 접수 | `/api/reports`, `/api/appeals` |
 | `admin.js` | 운영·제재·크레딧 | `/api/moderation/*` (8종) |
 | `llmChat.js` | AI 과학 도우미 | `/api/llm/chat` |
@@ -140,7 +140,7 @@ OpenAI 호환 엔드포인트이므로 `openai` 패키지에서 `baseURL`만 교
 ```
 로컬 개발 → git push (main) → GitHub Actions → Azure Static Web Apps
                                     │
-                              node --test (테스트 304개)
+                              node --test (테스트 322개)
                                     │
                               정적 자산 + Functions 동시 배포
 ```
@@ -149,7 +149,7 @@ OpenAI 호환 엔드포인트이므로 `openai` 패키지에서 `baseURL`만 교
 평균 약 1분 40초 내에 반영됩니다. 정적 파일과 백엔드 함수가 함께 배포되어
 프런트와 API 버전이 어긋나지 않습니다.
 
-**테스트 304개**가 저장소에 포함되어 있으며, 물리·화학 계산식의 정확성
+**테스트 322개**가 저장소에 포함되어 있으며, 물리·화학 계산식의 정확성
 (반트호프 식, 네른스트 식, 로트카-볼테라 모델 등)과 UI 일관성을 함께 검증합니다.
 테스트 작성 시에는 **역검증**을 수행합니다 — 코드를 의도적으로 되돌려
 해당 테스트가 실제로 실패하는지 확인한 뒤 원복하며, 이를 통해
@@ -159,9 +159,9 @@ OpenAI 호환 엔드포인트이므로 `openai` 패키지에서 `baseURL`만 교
 
 | 항목 | 수치 |
 |---|---|
-| 소스 파일 | 85개 (HTML·JS·CSS) |
-| 코드 라인 수 | 약 38,000 줄 |
+| 소스 파일 | 87개 (HTML·JS·CSS) |
+| 코드 라인 수 | 약 39,000 줄 |
 | 시뮬레이션 | 21종 (물리 5 · 화학 6 · 생명 6 · 지구과학 4) |
 | 조작 변수 | 76개 (슬라이더 기준) |
-| API 엔드포인트 | 30개 |
-| 자동화 테스트 | 304개 |
+| API 엔드포인트 | 32개 |
+| 자동화 테스트 | 322개 |

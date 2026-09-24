@@ -106,7 +106,7 @@ Hermes 에이전트 환경에서 **Claude Code**를 주 개발 도구로, **Sola
    │                    │ fetch(/api/*)             │
    │  [2] 애플리케이션 — Azure Functions (Node.js 22) │
    │      auth · posts · profile                    │
-   │      reports · admin · llmChat  (API 30개)      │
+   │      reports · admin · llmChat  (API 32개)      │
    └───────────────────────┬────────────────────────┘
                            │
         ┌──────────────────┼──────────────────┐
@@ -144,7 +144,7 @@ React·Vue 같은 SPA 프레임워크와 번들러를 의도적으로 배제했�
 |---|---|
 | `auth` | 소셜 로그인, 세션 발급·검증 |
 | `posts` | 질문·답변·투표 |
-| `profile` | 프로필, 약관 동의 |
+| `profile` | 프로필, 약관 동의, 계정 삭제 |
 | `reports` | 신고 접수 |
 | `admin` | 운영·제재·크레딧 관리 |
 | `llmChat` | AI 과학 도우미 |
@@ -194,7 +194,7 @@ AI 과학 도우미는 Upstage **Solar Pro4**를 사용합니다. OpenAI 호환
 ```
 로컬 개발 → git push (main) → GitHub Actions → Azure 배포
                                     │
-                          node --test (테스트 304개)
+                          node --test (테스트 322개)
 ```
 
 `main` 브랜치 푸시 시 자동으로 배포되며 약 1분 40초 내에 반영됩니다.
@@ -204,9 +204,9 @@ AI 과학 도우미는 Upstage **Solar Pro4**를 사용합니다. OpenAI 호환
 
 | 항목 | 수치 |
 |---|---|
-| 소스 파일 | 85개 (HTML·JS·CSS) |
-| 코드 라인 수 | 약 38,000줄 |
+| 소스 파일 | 87개 (HTML·JS·CSS) |
+| 코드 라인 수 | 약 39,000줄 |
 | 시뮬레이션 | 21종 (물리 5 · 화학 6 · 생명 6 · 지구과학 4) |
 | 조작 변수 | 76개 |
-| API 엔드포인트 | 30개 |
-| 자동화 테스트 | 304개 |
+| API 엔드포인트 | 32개 |
+| 자동화 테스트 | 322개 |
