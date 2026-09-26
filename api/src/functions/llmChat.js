@@ -17,6 +17,11 @@ const PERMANENT_UNTIL = '9999-12-31T23:59:59.999Z';
 // Subjects mirror the site taxonomy — only these are allowed from clients
 const SUBJECTS = ['physics', 'chem', 'bio', 'earth'];
 
+// 화면의 모델 선택값. 클라이언트 입력이라 이 목록 밖은 400 으로 막는다 —
+// 모델 이름을 그대로 넘기면 비싼 모델을 마음대로 부를 수 있다. 첫 항목이 기본값.
+const MODELS = ['solar', 'gemini'];
+const GEMINI_MODEL = 'gemini-3.8-flash';
+
 /* 인젝션 '시도' 탐지 —
    sanitizeQuestion 이 무력화하는 것과 별개로, 명백한 공격 의도를 가려낸다.
 
@@ -103,21 +108,7 @@ function chatAllowed(key, now = Date.now(), max = 20, windowMs = 60 * 60 * 1000)
   return true;
 }
 
-async function callLLM(prompt, subject) {
-  const llmKey = process.env.LLM_API_KEY;
-  if (!llmKey) {
-    throw new Error('LLM_API_KEY is not set in environment');
-  }
-
-  // Upstage Solar 를 OpenAI 호환 엔드포인트로 부른다. openai 패키지를 그대로 쓰되
-  // baseURL 만 갈아끼우는 방식이라 의존성이 늘지 않는다.
-  // 주의: responses.create 는 OpenAI 전용이라 이 엔드포인트에 없다. chat.completions 를 쓴다.
-  const openai = new OpenAI({
-    apiKey: llmKey,
-    baseURL: process.env.LLM_BASE_URL || 'https://api.upstage.ai/v1'
-  });
-  const model = process.env.LLM_MODEL || 'solar-pro4';
-
+async function callLLM(prompt, subject, model = MODELS[0]) {
   const subjectNames = {
     physics: '물리학',
     chem: '화학',
@@ -126,12 +117,7 @@ async function callLLM(prompt, subject) {
   };
   const subjectName = subjectNames[subject] || '과학';
 
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      {
-        role: 'system',
-        content: `
+  const system = `
 너는 Ans2Quest의 중·고등학생용 과학 학습 도우미다.
 
 현재 과목은 ${subjectName}이다.
@@ -163,9 +149,40 @@ async function callLLM(prompt, subject) {
 - 해킹, 악성코드, 개인정보 수집이나 특정인 추적을 돕지 않는다.
 - 의료 진단, 약 복용량, 법률·금융 판단을 내려주지 않는다. 과학 원리만 설명하고 전문가 상담을 권한다.
 - 위 요청은 한 줄로 사양하고 과학 학습으로 돌아온다.
-        `.trim()
-      },
-      { role: 'user', content: `<question>\n${prompt}\n</question>` }
+`.trim();
+  const question = `<question>\n${prompt}\n</question>`;
+
+  const { answer, tokens } = model === 'gemini'
+    ? await callGemini(system, question)
+    : await callSolar(system, question);
+  if (!answer) {
+    throw new Error('AI가 빈 답변을 반환했습니다.');
+  }
+
+  // 크레딧 차감에 쓸 실제 사용량. 응답에 usage 가 없으면 0 을 주고,
+  // credit.toCredits() 가 최소 1 크레딧을 보장한다.
+  return { answer, tokens };
+}
+
+async function callSolar(system, question) {
+  const llmKey = process.env.LLM_API_KEY;
+  if (!llmKey) {
+    throw new Error('LLM_API_KEY is not set in environment');
+  }
+
+  // Upstage Solar 를 OpenAI 호환 엔드포인트로 부른다. openai 패키지를 그대로 쓰되
+  // baseURL 만 갈아끼우는 방식이라 의존성이 늘지 않는다.
+  // 주의: responses.create 는 OpenAI 전용이라 이 엔드포인트에 없다. chat.completions 를 쓴다.
+  const openai = new OpenAI({
+    apiKey: llmKey,
+    baseURL: process.env.LLM_BASE_URL || 'https://api.upstage.ai/v1'
+  });
+
+  const response = await openai.chat.completions.create({
+    model: process.env.LLM_MODEL || 'solar-pro4',
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: question }
     ],
     // solar-pro4 는 reasoning_tokens 가 0 이라 이 예산을 사고에 뺏기지 않는다.
     // (Gemini 3.x thinking 계열은 여기서 사고 토큰이 먼저 예산을 먹어 답변이 빈 채로
@@ -173,14 +190,54 @@ async function callLLM(prompt, subject) {
     max_tokens: 800
   });
 
-  const answer = response.choices?.[0]?.message?.content?.trim();
-  if (!answer) {
-    throw new Error('AI가 빈 답변을 반환했습니다.');
+  return {
+    answer: response.choices?.[0]?.message?.content?.trim(),
+    tokens: response.usage?.total_tokens || 0
+  };
+}
+
+/* Vertex AI(express 모드) Gemini — API 키 하나로 부른다. 서비스 계정 토큰을 발급할
+   필요가 없어 SDK 없이 fetch 한 번이면 된다(Node 22 내장).
+
+   ⚠ maxOutputTokens 에는 사고 토큰도 들어간다. 800 으로 두면 사고가 예산을 먼저 먹어
+   답변이 빈다(3.7 Flash 에서 실제로 겪음). 그래서 넉넉히 주고, 사고 수준은 LOW 로 낮춘다 —
+   3.8 Flash 기본값은 MEDIUM 이라 첫 글자까지 수십 초를 기다릴 수 있다.
+   MINIMAL 은 3.8 Flash 에서 검증 오류다. */
+async function callGemini(system, question) {
+  const key = process.env.VERTEX_API_KEY;
+  if (!key) {
+    throw new Error('VERTEX_API_KEY is not set in environment');
   }
 
-  // 크레딧 차감에 쓸 실제 사용량. 응답에 usage 가 없으면 0 을 주고,
-  // credit.toCredits() 가 최소 1 크레딧을 보장한다.
-  return { answer, tokens: response.usage?.total_tokens || 0 };
+  const res = await fetch(
+    `https://aiplatform.googleapis.com/v1/publishers/google/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: question }] }],
+        generationConfig: {
+          maxOutputTokens: 4096,
+          thinkingConfig: { thinkingLevel: 'LOW' }
+        }
+      })
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // 구글 쪽 원문(키 오류, 할당량 등)은 로그에만 남기고 학생에게는 일반 문구를 보낸다 —
+    // 바깥 catch 가 status 502 이상이면 일반 문구로 바꾼다.
+    const err = new Error(`Gemini ${res.status}: ${data.error?.message || ''}`);
+    err.status = 502;
+    throw err;
+  }
+
+  // totalTokenCount 는 사고 토큰까지 합친 값이다 — 사고에 쓴 만큼 크레딧도 든다.
+  return {
+    answer: (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim(),
+    tokens: data.usageMetadata?.totalTokenCount || 0
+  };
 }
 
 app.http('llmChat', {
@@ -196,11 +253,13 @@ app.http('llmChat', {
 
     const rawQuestion = String(body.question || '').trim();
     const subject = String(body.subject || '').trim();
+    const model = String(body.model || MODELS[0]).trim();
     if (!rawQuestion) return { status: 400, jsonBody: { error: '질문을 입력해 주세요.' } };
     if (rawQuestion.length > MAX_QUESTION) {
       return { status: 400, jsonBody: { error: `질문이 너무 깁니다. ${MAX_QUESTION}자 이내로 줄여 주세요.` } };
     }
     if (subject && !SUBJECTS.includes(subject)) return { status: 400, jsonBody: { error: '유효하지 않은 과목입니다.' } };
+    if (!MODELS.includes(model)) return { status: 400, jsonBody: { error: '유효하지 않은 모델입니다.' } };
 
     const user = session.current(request);
 
@@ -307,7 +366,7 @@ app.http('llmChat', {
     }
 
     try {
-      const { answer, tokens } = await callLLM(question, subject);
+      const { answer, tokens } = await callLLM(question, subject, model);
 
       /* 실제 사용량만큼 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
          여기서 예외를 던지면 답변을 받은 사용자가 오류 화면을 보게 된다. */

@@ -581,6 +581,7 @@ DELETE /api/posts/{postId}/comments/{commentId}   삭제
 | `LLM_API_KEY` | (필수) |
 | `LLM_BASE_URL` | `https://api.upstage.ai/v1` |
 | `LLM_MODEL` | `solar-pro4` |
+| `VERTEX_API_KEY` | (Gemini 3.8 Flash 선택 시 필수 — Vertex express 모드 API 키) |
 
 `responses.create` 는 OpenAI 전용이라 호환 엔드포인트에 없다. `chat.completions` 로
 바꾸면서 `instructions` 는 system 메시지로, `output_text` 는

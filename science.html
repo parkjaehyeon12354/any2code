@@ -86,7 +86,8 @@
     .science-chat { overflow: hidden; }
     .chat-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--hairline); }
     .chat-head strong { color: var(--ink); font-size: 16px; }
-    .chat-head-right { display: flex; align-items: center; gap: 10px; }
+    /* 모델·크레딧·과목 셋이 375px 에서 한 줄을 넘는다 — 넘치면 다음 줄로 내린다 */
+    .chat-head-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     /* 크레딧 배지 — 남은 양을 늘 보이게 둔다. 다 쓰고 나서야 알면 늦다.
        색은 토큰만 쓴다(하드코딩 금지). 적을 때는 경고색으로 바뀐다. */
     .credit-badge {
@@ -329,6 +330,10 @@
           <div class="chat-head">
             <strong>AI 과학 도우미</strong>
             <div class="chat-head-right">
+              <select id="model" class="subject-select" aria-label="AI 모델 선택">
+                <option value="solar">Solar Pro 4</option>
+                <option value="gemini">Gemini 3.8 Flash</option>
+              </select>
               <span class="credit-badge" id="credit-badge" hidden>
                 <span id="credit-remaining">—</span> 크레딧
               </span>

@@ -2,7 +2,17 @@ const messagesEl = document.getElementById('messages');
 const qEl = document.getElementById('q');
 const askBtn = document.getElementById('ask');
 const subjEl = document.getElementById('subject');
+const modelEl = document.getElementById('model');
 const formEl = document.getElementById('chat-form');
+
+/* 고른 모델을 쿠키에 1년 기억해 다음 방문에도 그대로 쓴다.
+   쿠키 값은 사용자가 고칠 수 있으므로 목록에 있는 값일 때만 받아들인다 —
+   없는 값을 넣으면 선택 상자가 빈칸이 된다. 서버도 목록 밖은 400 으로 막는다. */
+const savedModel = (document.cookie.match(/(?:^|;\s*)ai_model=([^;]*)/) || [])[1];
+if ([...modelEl.options].some((o) => o.value === savedModel)) modelEl.value = savedModel;
+modelEl.addEventListener('change', () => {
+  document.cookie = `ai_model=${modelEl.value}; max-age=31536000; path=/; SameSite=Lax; Secure`;
+});
 
 /* ── 답변 렌더링 ──
    LLM 은 마크다운 + LaTeX 를 섞어서 돌려준다. 예전에는 textContent 로 그대로
@@ -150,7 +160,7 @@ async function askQuestion() {
       method: 'POST',
       credentials: 'same-origin',      // 로그인 필수 — 쿠키를 반드시 실어 보낸다
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, subject: subjEl.value })
+      body: JSON.stringify({ question, subject: subjEl.value, model: modelEl.value })
     });
     const data = await response.json();
     if (data.answer) {
