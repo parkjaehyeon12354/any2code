@@ -19,7 +19,8 @@ const SUBJECTS = ['physics', 'chem', 'bio', 'earth'];
 
 // 화면의 모델 선택값. 클라이언트 입력이라 이 목록 밖은 400 으로 막는다 —
 // 모델 이름을 그대로 넘기면 비싼 모델을 마음대로 부를 수 있다. 첫 항목이 기본값.
-const MODELS = ['solar', 'gemini'];
+// 목록은 크레딧 가격표의 키다 — 값을 매기지 않은 모델은 부를 수 없다.
+const MODELS = Object.keys(credit.MODEL_COST);
 const GEMINI_MODEL = 'gemini-3.8-flash';
 
 /* 인젝션 '시도' 탐지 —
@@ -152,16 +153,13 @@ async function callLLM(prompt, subject, model = MODELS[0]) {
 `.trim();
   const question = `<question>\n${prompt}\n</question>`;
 
-  const { answer, tokens } = model === 'gemini'
+  const answer = model === 'gemini'
     ? await callGemini(system, question)
     : await callSolar(system, question);
   if (!answer) {
     throw new Error('AI가 빈 답변을 반환했습니다.');
   }
-
-  // 크레딧 차감에 쓸 실제 사용량. 응답에 usage 가 없으면 0 을 주고,
-  // credit.toCredits() 가 최소 1 크레딧을 보장한다.
-  return { answer, tokens };
+  return answer;
 }
 
 async function callSolar(system, question) {
@@ -184,16 +182,14 @@ async function callSolar(system, question) {
       { role: 'system', content: system },
       { role: 'user', content: question }
     ],
+    // 크레딧이 질문 1번 = 약 3,000 토큰(system 600 + 질문 + 답변) 기준이라 답변에 2,400 을 준다.
     // solar-pro4 는 reasoning_tokens 가 0 이라 이 예산을 사고에 뺏기지 않는다.
     // (Gemini 3.x thinking 계열은 여기서 사고 토큰이 먼저 예산을 먹어 답변이 빈 채로
     //  finish_reason: length 가 떨어졌다. 모델을 바꿀 때 이 값을 반드시 재확인할 것.)
-    max_tokens: 800
+    max_tokens: 2400
   });
 
-  return {
-    answer: response.choices?.[0]?.message?.content?.trim(),
-    tokens: response.usage?.total_tokens || 0
-  };
+  return response.choices?.[0]?.message?.content?.trim();
 }
 
 /* Vertex AI(express 모드) Gemini — API 키 하나로 부른다. 서비스 계정 토큰을 발급할
@@ -233,11 +229,7 @@ async function callGemini(system, question) {
     throw err;
   }
 
-  // totalTokenCount 는 사고 토큰까지 합친 값이다 — 사고에 쓴 만큼 크레딧도 든다.
-  return {
-    answer: (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim(),
-    tokens: data.usageMetadata?.totalTokenCount || 0
-  };
+  return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
 }
 
 app.http('llmChat', {
@@ -336,11 +328,9 @@ app.http('llmChat', {
       return { status: 429, jsonBody: { error: '너무 자주 요청하고 있습니다. 잠시 후 다시 시도해 주세요.' } };
     }
 
-    /* 크레딧 확인.
-
-       ⚠ "이번 요청에 얼마나 들지" 는 답변을 받아봐야 안다. 그래서 미리 견적을 내
-       막지 않고, 잔액이 남아 있는지만 본다. 결과적으로 마지막 한 번은 잔액을
-       초과할 수 있는데, 답변을 받다가 잘리는 것보다 낫다고 판단했다. */
+    /* 크레딧 확인. 모델마다 값이 고정이라 묻기 전에 모자란지 안다.
+       잔액이 남아 있어도 그 모델 값보다 적으면 막는다(예: 200 남았는데 Gemini 300). */
+    const cost = credit.MODEL_COST[model];
     let bal;
     try {
       bal = await credit.balance(user.sub);
@@ -349,13 +339,15 @@ app.http('llmChat', {
       context.error('크레딧 조회 실패:', e.message);
       bal = null;
     }
-    if (bal && bal.remaining <= 0) {
+    if (bal && bal.remaining < cost) {
       return {
         status: 402,
         jsonBody: {
-          error: 'AI 도우미 크레딧을 모두 사용했습니다.',
+          error: bal.remaining <= 0
+            ? 'AI 도우미 크레딧을 모두 사용했습니다.'
+            : `이 모델은 질문 1번에 ${cost} 크레딧이 필요합니다. 남은 크레딧은 ${bal.remaining} 입니다.`,
           credit: {
-            remaining: 0,
+            remaining: bal.remaining,
             granted: bal.granted,
             used: bal.used,
             // 3시간마다 채워지므로 언제 풀리는지 함께 알려준다
@@ -366,13 +358,13 @@ app.http('llmChat', {
     }
 
     try {
-      const { answer, tokens } = await callLLM(question, subject, model);
+      const answer = await callLLM(question, subject, model);
 
-      /* 실제 사용량만큼 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
+      /* 답변을 받은 뒤에만 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
          여기서 예외를 던지면 답변을 받은 사용자가 오류 화면을 보게 된다. */
       let after = null;
       try {
-        after = await credit.consume(user.sub, tokens, user.name);
+        after = await credit.consume(user.sub, model, user.name);
       } catch (e) {
         context.error('크레딧 차감 실패:', e.message);
       }

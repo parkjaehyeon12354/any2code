@@ -1,28 +1,22 @@
-/* AI 도우미 크레딧.
+/* AI 도우미 크레딧 — 모델마다 질문 1번에 고정으로 뺀다(할당제).
 
-   왜 '횟수' 가 아니라 '토큰' 인가 —
-   실측해보니 답변 길이가 크게 갈렸다(같은 과학 질문인데 394 ~ 1080 토큰).
-   횟수로 세면 짧게 묻는 학생이 손해를 본다. 실제로 쓴 만큼 차감한다.
+   예전에는 실제 토큰 수로 뺐다(30 토큰 = 1 크레딧). 그런데 안전 규칙이 붙어
+   system 프롬프트가 600 토큰이 되자, 질문과 상관없이 매번 20 크레딧이 기본으로
+   빠져 쓸 수 있는 횟수가 반토막 났다. 학생 입장에서도 "한 번에 얼마" 가 읽기 쉽다.
 
-   단가 근거 (solar-pro4, system 프롬프트 포함 실측 4회):
-     렌츠의 법칙            394 토큰
-     단진자 주기 유도      1080 토큰
-     광합성과 호흡          470 토큰
-     산과 염기              699 토큰
-     평균 661, 최소 394, 최대 1080
+   값은 질문 1번을 약 3,000 토큰으로 보고 모델 단가대로 매겼다:
+     solar  100 크레딧 (3,000 ÷ 30)
+     gemini 300 크레딧 (토큰 단가가 Solar 의 약 3배)
+   3시간마다 2,000 크레딧 → Solar 만 20회, Gemini 만 6회. 섞어 써도 된다.
 
-   30 토큰 = 1 크레딧으로 두면
-     평균  661 / 30 ≈ 23 크레딧  → 200 크레딧으로 약 8 회
-     최소  394 / 30 ≈ 14 크레딧  → 약 14 회
-     최대 1080 / 30 ≈ 36 크레딧  → 약 5 회
-   목표는 "평균 8회". 짧게 물으면 더 쓰고, 긴 유도를 시키면 덜 쓴다.
+   고정이라 묻기 전에 값을 안다. 그래서 잔액이 그 값보다 적으면 미리 막는다 —
+   토큰 기준일 때처럼 마지막 한 번이 잔액을 넘는 일이 없다.
 
-   ⚠ 잔액이 모자라도 요청은 막지 않는다. 답변을 받고 나서야 실제 사용량을 알 수
-   있기 때문이다. 대신 잔액이 0 이하가 되면 다음 요청이 막힌다. 즉 마지막 한 번은
-   초과할 수 있는데, 그게 "답변을 받다가 잘리는" 것보다 낫다.
+   ⚠ 첫 항목이 기본 모델이다. llmChat 이 이 표의 키를 허용 목록으로 쓰므로,
+   모델을 늘리려면 여기에 값을 매겨야 한다.
 
    ── 주기 초기화 ──
-   00시를 기준으로 3시간마다 200 크레딧으로 되돌아간다(00·03·06·09·12·15·18·21시).
+   00시를 기준으로 3시간마다 2,000 크레딧으로 되돌아간다(00·03·06·09·12·15·18·21시).
 
    스케줄러를 두지 않고 '읽을 때 판단' 한다. 문서에 마지막 구간을 적어두고, 지금
    구간과 다르면 그 자리에서 사용량을 0 으로 본다. 크론이 없어도 되고, 안 쓰는
@@ -34,8 +28,8 @@
 
 const { container, query } = require('./db');
 
-const TOKENS_PER_CREDIT = 30;
-const FREE_CREDITS = 200;
+const MODEL_COST = { solar: 100, gemini: 300 };
+const FREE_CREDITS = 2000;
 const RESET_HOURS = 3;
 
 /* 문서 id.
@@ -65,9 +59,6 @@ function msUntilReset(now = Date.now()) {
   const period = RESET_HOURS * 60 * 60 * 1000;
   return period - ((now + 9 * 60 * 60 * 1000) % period);
 }
-
-/** 토큰 사용량을 크레딧으로 환산. 최소 1 — 0 크레딧으로 쓰는 일은 없어야 한다. */
-const toCredits = (tokens) => Math.max(1, Math.ceil((tokens || 0) / TOKENS_PER_CREDIT));
 
 /* 잔액 문서는 사용자당 하나다(id = pk = sub).
    없으면 아직 한 번도 안 쓴 사람이므로 무료 크레딧을 그대로 돌려준다 —
@@ -100,12 +91,13 @@ async function balance(sub) {
   };
 }
 
-/* 실제 사용량을 차감한다. 답변을 받은 뒤에 부른다.
+/* 모델 값만큼 차감한다. 답변을 받은 뒤에 부른다 — 호출이 실패하면 빼지 않는다.
 
    ⚠ 차감에 실패해도 답변은 이미 나갔다. 그 경우 조용히 넘어가되 로그를 남긴다 —
    여기서 예외를 던지면 답변을 받은 사용자에게 오류 화면을 보여주게 된다. */
-async function consume(sub, tokens, userName) {
-  const cost = toCredits(tokens);
+async function consume(sub, model, userName) {
+  const cost = MODEL_COST[model];
+  if (!cost) throw new Error('알 수 없는 모델: ' + model);
   const nowMs = Date.now();
   const now = new Date(nowMs).toISOString();
   const period = currentPeriod(nowMs);
@@ -201,7 +193,7 @@ async function grant(sub, amount, userName) {
 }
 
 module.exports = {
-  balance, consume, grant, toCredits,
+  balance, consume, grant,
   currentPeriod, msUntilReset,
-  TOKENS_PER_CREDIT, FREE_CREDITS, RESET_HOURS
+  MODEL_COST, FREE_CREDITS, RESET_HOURS
 };

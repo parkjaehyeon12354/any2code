@@ -331,8 +331,8 @@
             <strong>AI 과학 도우미</strong>
             <div class="chat-head-right">
               <select id="model" class="subject-select" aria-label="AI 모델 선택">
-                <option value="solar">Solar Pro 4</option>
-                <option value="gemini">Gemini 3.8 Flash</option>
+                <option value="solar">Solar Pro 4 · 100</option>
+                <option value="gemini">Gemini 3.8 Flash · 300</option>
               </select>
               <span class="credit-badge" id="credit-badge" hidden>
                 <span id="credit-remaining">—</span> 크레딧
@@ -518,10 +518,10 @@
       if (!c || typeof c.remaining !== 'number') return;
       creditNum.textContent = c.remaining;
       creditBadge.hidden = false;
-      // 남은 양에 따라 색을 바꾼다. 25 는 평균 한 번 분량(23크레딧)에 가깝다 —
-      // "다음 질문이 마지막" 이라는 신호다.
-      creditBadge.classList.toggle('empty', c.remaining <= 0);
-      creditBadge.classList.toggle('low', c.remaining > 0 && c.remaining <= 25);
+      // 남은 양에 따라 색을 바꾼다. 값은 모델 선택지에 적힌 질문 1번 값(Solar 100,
+      // Gemini 300)이다 — 100 미만이면 어느 모델로도 못 묻고, 300 미만이면 Gemini 를 못 쓴다.
+      creditBadge.classList.toggle('empty', c.remaining < 100);
+      creditBadge.classList.toggle('low', c.remaining >= 100 && c.remaining < 300);
 
       // 언제 다시 채워지는지 알려준다. 없으면 막연히 기다리게 된다.
       var tip = c.granted ? '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음' : '';
