@@ -43,6 +43,19 @@ const RESET_HOURS = 3;
    profile.js 가 `'user:' + sub` 를 쓰는 것과 같은 이유다. */
 const docId = (sub) => 'credit:' + sub;
 
+/* 이 사용자의 크레딧 문서. 반드시 id 로 집는다.
+
+   ⚠ 8/24 에 40분쯤 id 를 sub 그대로 쓴 옛 문서가 운영 DB 에 남아 있다(4개).
+   type·pk 로만 찾으면 두 개가 잡히고, 옛 것(period 없음)이 먼저 오면 매번 새 구간으로
+   착각해 사용량이 쌓이지 않았다 — 해당 계정은 한도가 사실상 없었다. */
+async function readDoc(sub) {
+  const rows = await query({
+    query: "SELECT * FROM c WHERE c.type = 'credit' AND c.pk = @s AND c.id = @id",
+    parameters: [{ name: '@s', value: sub }, { name: '@id', value: docId(sub) }]
+  });
+  return rows[0];
+}
+
 /* 지금이 속한 초기화 구간의 시작 시각(ISO).
 
    한국 시간(UTC+9) 기준 00시부터 3시간 단위로 끊는다. 같은 구간 안에서는 항상
@@ -64,11 +77,7 @@ function msUntilReset(now = Date.now()) {
    없으면 아직 한 번도 안 쓴 사람이므로 무료 크레딧을 그대로 돌려준다 —
    가입 시점에 문서를 만들지 않아도 되게 해서, 기존 사용자도 자동으로 포함된다. */
 async function balance(sub) {
-  const rows = await query({
-    query: "SELECT * FROM c WHERE c.type = 'credit' AND c.pk = @s",
-    parameters: [{ name: '@s', value: sub }]
-  });
-  const doc = rows[0];
+  const doc = await readDoc(sub);
   const now = Date.now();
   const period = currentPeriod(now);
   const resetInMs = msUntilReset(now);
@@ -103,11 +112,7 @@ async function consume(sub, model, userName) {
   const period = currentPeriod(nowMs);
   const c = container();
 
-  const rows = await query({
-    query: "SELECT * FROM c WHERE c.type = 'credit' AND c.pk = @s",
-    parameters: [{ name: '@s', value: sub }]
-  });
-  const doc = rows[0];
+  const doc = await readDoc(sub);
 
   // 구간이 바뀌었으면 이전 사용량은 버리고 새로 센다.
   const rolled = doc && doc.period !== period;
@@ -148,11 +153,7 @@ async function grant(sub, amount, userName) {
   const now = new Date(nowMs).toISOString();
   const period = currentPeriod(nowMs);
   const c = container();
-  const rows = await query({
-    query: "SELECT * FROM c WHERE c.type = 'credit' AND c.pk = @s",
-    parameters: [{ name: '@s', value: sub }]
-  });
-  const doc = rows[0];
+  const doc = await readDoc(sub);
 
   if (!doc) {
     await c.items.create({
@@ -193,7 +194,7 @@ async function grant(sub, amount, userName) {
 }
 
 module.exports = {
-  balance, consume, grant,
+  balance, consume, grant, docId,
   currentPeriod, msUntilReset,
   MODEL_COST, FREE_CREDITS, RESET_HOURS
 };

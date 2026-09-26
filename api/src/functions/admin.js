@@ -166,11 +166,12 @@ app.http('adminCredits', {
         query: "SELECT c.userSub, c.oauthName, c.displayName, c.email, c.provider FROM c WHERE c.type = 'user'"
       });
       const credits = await query({
-        query: "SELECT c.pk, c.granted, c.used, c.period, c.updatedAt FROM c WHERE c.type = 'credit'"
+        query: "SELECT c.id, c.pk, c.granted, c.used, c.period, c.updatedAt FROM c WHERE c.type = 'credit'"
       });
 
+      // id 가 sub 그대로인 옛 문서(8/24)는 건너뛴다 — credit.js readDoc 과 같은 이유
       const byId = {};
-      for (const c of credits) byId[c.pk] = c;
+      for (const c of credits) if (c.id === credit.docId(c.pk)) byId[c.pk] = c;
 
       const now = Date.now();
       const period = credit.currentPeriod(now);

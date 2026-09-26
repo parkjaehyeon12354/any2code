@@ -25,7 +25,8 @@ const session = require('../src/lib/session');
 const credit = require('../src/lib/credit');
 const db = require('../src/lib/db');
 const { createFake } = require('./fake-container');
-db._setContainer(createFake().fake);
+const { fake, state } = createFake();
+db._setContainer(fake);
 
 const cookieFor = (sub) => {
   const c = session.issue({ sub, name: '학생', email: 's@example.com', provider: 'google' });
@@ -93,6 +94,16 @@ test('잔액이 모델 값보다 적으면 묻기 전에 막는다 — 200 남�
 
   const s = await ask({ question: '짧게', model: 'solar' }, cookieFor(sub));
   assert.strictEqual(s.jsonBody.credit.remaining, 100);
+});
+
+test('id 가 sub 그대로인 옛 크레딧 문서(8/24)가 있어도 사용량이 쌓인다', async () => {
+  // 운영 DB 에 실제로 남아 있는 모양 — period 가 없다. 조회에서 먼저 잡히게 앞에 둔다.
+  const sub = 'google:legacy';
+  state.docs.unshift({ id: sub, type: 'credit', pk: sub, userSub: sub, used: 212, granted: 200 });
+  await credit.consume(sub, 'solar');
+  const after = await credit.consume(sub, 'gemini');
+  assert.strictEqual(after.used, 400, '옛 문서를 집으면 매번 새 구간으로 착각해 300 만 남는다');
+  assert.strictEqual((await credit.balance(sub)).remaining, 1600);
 });
 
 test('Gemini 오류 원문은 학생에게 보이지 않고, 실패한 질문은 차감하지 않는다', async () => {
