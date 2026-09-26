@@ -233,3 +233,33 @@ test('목록은 사용자 기준이다 — 아직 안 쓴 사람도 나와야 �
   assert.ok(/c\.type = 'user'/.test(seg.slice(0, 1200)),
     'user 문서를 기준으로 조회해야 한다');
 });
+
+test('설정 화면의 다음 충전 시각은 한국 시간 정시이고, 기기 시간대와 무관하다', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '../../settings.html'), 'utf8');
+  const start = html.indexOf('function nextResetLabel');
+  const end = html.indexOf('\n  }\n', start) + 4;
+  assert.ok(start > 0, 'settings.html 에서 nextResetLabel 을 찾지 못했다');
+  const label = new Function(html.slice(start, end) + '\nreturn nextResetLabel;')();
+
+  const saved = process.env.TZ;
+  process.env.TZ = 'America/New_York';   // 한국이 아닌 기기 — getHours() 로 짜면 여기서 틀린다
+  try {
+    const cases = [
+      ['2026-09-26T15:00:10Z', '03시 (3시간 0분 뒤)'],   // 한국 00:00:10
+      ['2026-09-26T16:52:00Z', '03시 (1시간 8분 뒤)'],   // 한국 01:52
+      ['2026-09-27T11:59:30Z', '21시 (1분 뒤)'],         // 한국 20:59:30
+      ['2026-09-27T14:30:00Z', '00시 (30분 뒤)']         // 한국 23:30 → 자정
+    ];
+    for (const [iso, want] of cases) {
+      const now = Date.parse(iso);
+      assert.strictEqual(label(credit.msUntilReset(now), now), want, iso);
+    }
+    // 서버가 준 "남은 시간" 에 기기 시계(4분 느림)를 더해도 같은 정시를 가리킨다 — 반올림이 없으면 02시
+    const now = Date.parse('2026-09-26T16:52:00Z');
+    assert.match(label(credit.msUntilReset(now), now - 4 * 60000), /^03시/);
+  } finally {
+    if (saved === undefined) delete process.env.TZ; else process.env.TZ = saved;
+  }
+});

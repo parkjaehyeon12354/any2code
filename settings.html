@@ -370,6 +370,16 @@
   <div id="panel" hidden>
     <p class="result" id="result" role="status" hidden></p>
 
+    <div class="card">
+      <div class="card-head">
+        <h2>AI 도우미 크레딧</h2>
+        <p>AI 과학 도우미는 질문할 때마다 크레딧을 씁니다. 3시간마다 다시 채워집니다.</p>
+      </div>
+      <div class="card-body">
+        <dl class="rows" id="credit"></dl>
+      </div>
+    </div>
+
     <form id="form">
       <div class="card">
         <div class="card-head">
@@ -701,11 +711,32 @@
     }
   });
 
+  /* 다음 충전 시각을 한국 시간으로 적는다. 브라우저 시간대가 달라도 서버(credit.js)와
+     같은 시각이 나와야 한다 — getHours() 를 쓰면 로컬 시간대로 나온다.
+     충전은 항상 정시라, 기기 시계가 조금 틀려도 가장 가까운 정시로 반올림해 맞춘다. */
+  function nextResetLabel(resetInMs, now) {
+    const at = Math.round((now + resetInMs) / 3600000) * 3600000;
+    const h = new Date(at + 9 * 3600000).getUTCHours();
+    const m = Math.ceil(resetInMs / 60000);
+    const left = m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분';
+    return String(h).padStart(2, '0') + '시 (' + left + ' 뒤)';
+  }
+
+  // /api/me 가 잔액과 다음 충전까지 남은 시간을 준다. 조회에 실패하면 null 이다.
+  function renderCredit(c) {
+    el('credit').innerHTML = c
+      ? '<div><dt>남은 크레딧</dt><dd>' + c.remaining + ' / ' + c.granted + '</dd></div>' +
+        '<div><dt>다음 충전</dt><dd>' + nextResetLabel(c.resetInMs, Date.now()) + '</dd></div>' +
+        '<div><dt>충전 시각</dt><dd>매일 00·03·06·09·12·15·18·21시 (한국 시간)</dd></div>'
+      : '<div><dt>남은 크레딧</dt><dd>지금은 불러오지 못했습니다.</dd></div>';
+  }
+
   // 로그인 확인이 끝난 뒤에 화면을 고른다. 비로그인에게 빈 폼을 보여주면
   // 채우고 저장한 다음에야 로그인하라는 말을 듣게 된다.
   Session.refresh().then(function (user) {
     if (!user) { el('gate').hidden = false; return; }
     el('panel').hidden = false;
+    renderCredit(user.credit);
     load();
   });
 })();
