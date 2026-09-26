@@ -162,6 +162,16 @@ app.http('couponRedeem', {
         parameters: [{ name: '@p', value: 'coupon' }, { name: '@id', value: 'coupon:' + code }]
       });
       if (!coupon) return { status: 404, jsonBody: { error: '없는 쿠폰 코드입니다.' } };
+
+      /* 내가 이미 쓴 쿠폰인지를 한도 검사보다 먼저 본다. 1명용 쿠폰을 쓴 사람이 다시 넣으면
+         "모두 사용된 쿠폰" 이 떠서 남이 먼저 쓴 줄 안다(라이브에서 실제로 그렇게 떴다).
+         동시에 두 번 누르는 경우는 아래 create 충돌이 막는다. */
+      const [mine] = await query({
+        query: "SELECT c.id FROM c WHERE c.type = 'couponUse' AND c.pk = @s AND c.id = @id",
+        parameters: [{ name: '@s', value: user.sub }, { name: '@id', value: useId }]
+      });
+      if (mine) return { status: 409, jsonBody: { error: '이미 사용한 쿠폰입니다.' } };
+
       if (coupon.expiresAt && coupon.expiresAt <= new Date().toISOString()) {
         return { status: 410, jsonBody: { error: '기간이 지난 쿠폰입니다.' } };
       }

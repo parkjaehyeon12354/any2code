@@ -83,6 +83,9 @@ test('없는 코드 404, 모양이 틀리면 400, 다 쓴 쿠폰·기간 지난 
   const [once] = await issue({ kind: 'credit', amount: 10, maxUses: 1 });
   assert.strictEqual((await redeem('google:c', once)).jsonBody.ok, true);
   assert.strictEqual((await redeem('google:d', once)).status, 410, '한 명 한도');
+  // 쓴 본인이 다시 넣으면 "모두 사용됨" 이 아니라 "이미 사용함" — 남이 먼저 쓴 줄 알면 안 된다
+  const again = await redeem('google:c', once);
+  assert.deepStrictEqual([again.status, again.jsonBody.error], [409, '이미 사용한 쿠폰입니다.']);
 
   const [exp] = await issue({ kind: 'credit', amount: 10, maxUses: 9 });
   state.docs.find((d) => d.code === exp.replace(/-/g, '')).expiresAt = '2020-01-01T00:00:00.000Z';
