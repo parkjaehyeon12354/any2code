@@ -339,6 +339,12 @@ app.http('llmChat', {
       context.error('크레딧 조회 실패:', e.message);
       bal = null;
     }
+    /* 무료는 Solar 만, 요금제가 있어야 Gemini 를 고를 수 있다(credit.PLANS).
+       화면도 막지만 화면은 고칠 수 있으니 여기서 판정한다. 잔액을 못 읽었으면 무료로 본다. */
+    const models = bal ? bal.models : credit.PLANS.free.models;
+    if (!models.includes(model)) {
+      return { status: 403, jsonBody: { error: '이 모델은 요금제 전용입니다. 설정에서 쿠폰을 등록하면 쓸 수 있습니다.' } };
+    }
     if (bal && bal.remaining < cost) {
       return {
         status: 402,
@@ -349,6 +355,7 @@ app.http('llmChat', {
           credit: {
             remaining: bal.remaining,
             granted: bal.granted,
+            bonus: bal.bonus,
             used: bal.used,
             // 3시간마다 채워지므로 언제 풀리는지 함께 알려준다
             resetInMs: bal.resetInMs
@@ -377,6 +384,7 @@ app.http('llmChat', {
                 spent: after.cost,
                 remaining: after.remaining,
                 granted: after.granted,
+                bonus: after.bonus,
                 resetInMs: after.resetInMs
               }
             : null

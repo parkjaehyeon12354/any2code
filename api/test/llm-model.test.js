@@ -2,7 +2,8 @@
    (1) 목록 밖의 모델은 호출 전에 막는다(클라이언트 입력이다),
    (2) Gemini 는 사고 수준 LOW + 넉넉한 출력 예산으로 부른다 — 예산이 작으면 사고가
        먼저 먹어 답변이 빈다,
-   (3) 크레딧은 모델마다 고정으로 뺀다(Solar 100, Gemini 300). 모자라면 묻기 전에 막는다.
+   (3) 크레딧은 모델마다 고정으로 뺀다(Solar 100, Gemini 300). 모자라면 묻기 전에 막는다,
+   (4) 무료는 Solar 만 — Gemini 는 요금제가 있어야 한다.
    두 제공자 대신 fetch 를 가로채 요청 모양을 본다(openai 패키지도 전역 fetch 를 쓴다). */
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -36,6 +37,12 @@ const ask = (body, cookie = cookieFor('google:1')) => routes.llmChat.handler({
   headers: { get: (k) => ({ cookie, 'content-length': '100' }[k.toLowerCase()] ?? null) },
   json: async () => body
 }, { error: () => {}, warn: () => {}, log: () => {} });
+
+// Gemini 를 쓰려면 요금제가 있어야 한다. 테스트 사용자에게 Pro 를 준다(extra 로 이번 구간 상태를 덧붙임)
+const givePro = (sub, extra = {}) => state.docs.push({
+  id: credit.docId(sub), type: 'credit', pk: sub, plan: 'pro', planUntil: '2999-01-01T00:00:00.000Z', ...extra
+});
+givePro('google:1');
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 const calls = [];
@@ -71,7 +78,17 @@ test('Gemini 는 Vertex 에 키 헤더·사고 LOW·넉넉한 예산으로 요�
   assert.match(call.body.contents[0].parts[0].text, /^<question>\n단진자 주기\?\n<\/question>$/);
 });
 
+test('무료 사용자가 Gemini 를 고르면 403 이고 외부 호출이 나가지 않는다', async () => {
+  calls.length = 0;
+  const res = await ask({ question: '짧게', model: 'gemini' }, cookieFor('google:free'));
+  assert.strictEqual(res.status, 403);
+  assert.match(res.jsonBody.error, /요금제/);
+  assert.strictEqual(calls.length, 0);
+  assert.strictEqual((await ask({ question: '짧게', model: 'solar' }, cookieFor('google:free'))).jsonBody.credit.spent, 100);
+});
+
 test('모델마다 고정으로 뺀다 — Solar 100, Gemini 300, 모델을 안 보내면 Solar', async () => {
+  givePro('google:fixed');
   const cookie = cookieFor('google:fixed');
   const solar = await ask({ question: '짧게', model: 'solar' }, cookie);
   assert.strictEqual(solar.jsonBody.answer, '솔라 답변');
@@ -79,12 +96,12 @@ test('모델마다 고정으로 뺀다 — Solar 100, Gemini 300, 모델을 안 
   assert.strictEqual((await ask({ question: '짧게', model: 'gemini' }, cookie)).jsonBody.credit.spent, 300);
   const dflt = await ask({ question: '짧게' }, cookie);
   assert.strictEqual(dflt.jsonBody.credit.spent, 100);
-  assert.strictEqual(dflt.jsonBody.credit.remaining, 2000 - 100 - 300 - 100);
+  assert.strictEqual(dflt.jsonBody.credit.remaining, 8000 - 100 - 300 - 100, 'Pro 한도는 8000');
 });
 
 test('잔액이 모델 값보다 적으면 묻기 전에 막는다 — 200 남으면 Gemini 402, Solar 는 된다', async () => {
   const sub = 'google:low';
-  for (let i = 0; i < 6; i++) await credit.consume(sub, 'gemini');   // 1800 사용 → 200 남음
+  givePro(sub, { period: credit.currentPeriod(), granted: 8000, used: 7800 });   // 200 남음
   calls.length = 0;
   const g = await ask({ question: '짧게', model: 'gemini' }, cookieFor(sub));
   assert.strictEqual(g.status, 402);
@@ -110,11 +127,12 @@ test('Gemini 오류 원문은 학생에게 보이지 않고, 실패한 질문은
   const saved = global.fetch;
   global.fetch = async () => json({ error: { message: 'API key not valid' } }, 403);
   const sub = 'google:err';
+  givePro(sub);
   try {
     const res = await ask({ question: '단진자 주기?', model: 'gemini' }, cookieFor(sub));
     assert.strictEqual(res.status, 502);
     assert.doesNotMatch(res.jsonBody.error, /API key/);
-    assert.strictEqual((await credit.balance(sub)).remaining, 2000);
+    assert.strictEqual((await credit.balance(sub)).remaining, 8000);
   } finally {
     global.fetch = saved;
   }

@@ -10,7 +10,17 @@ function createFake() {
 
   const fake = {
     items: {
-      create: async (d) => { state.docs.push(d); return { resource: d }; },
+      /* 실제 Cosmos 처럼 같은 (id, pk) 가 있으면 409 로 실패한다. 대입으로 넣기만 하면
+         "한 사람 한 번" 처럼 create 충돌에 기대는 검사가 테스트에서 통과하고 실서버와 갈라진다. */
+      create: async (d) => {
+        if (state.docs.some((x) => x.id === d.id && x.pk === d.pk)) {
+          const e = new Error('Conflict: 같은 id 의 문서가 이미 있습니다.');
+          e.code = 409;
+          throw e;
+        }
+        state.docs.push(d);
+        return { resource: d };
+      },
       upsert: async (d) => {
         state.docs = state.docs.filter((x) => x.id !== d.id);
         state.docs.push(d);

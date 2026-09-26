@@ -332,6 +332,16 @@ mark {
   box-shadow: 0 0 0 3px rgba(15, 92, 74, .18);
 }
 .set-sentence input:invalid { border-color: var(--error); }
+/* 쿠폰 발급 — 같은 문장형에 선택 상자·날짜·메모가 들어간다 */
+.set-sentence select {
+  height: 44px; padding: 0 10px;
+  font-family: var(--font-body); font-size: 14px; color: var(--ink);
+  background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-md);
+}
+.set-sentence select:focus-visible { outline: none; border-color: var(--primary-active); box-shadow: 0 0 0 3px rgba(15, 92, 74, .18); }
+.set-sentence input[type="date"] { width: 170px; }
+.set-sentence input[type="text"] { width: 100%; text-align: left; }
+.cp-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; white-space: nowrap; }
 
 /* 환경 변수 표시 — .mod-summary 와 같은 모양이지만 항목 이름이 길어 dt 가 넓다.
    자손(div)이 아니라 직계 자식(> div)이어야 한다 — dd 안의 .cell-sub 주석까지
@@ -472,6 +482,7 @@ mark {
     <a href="#appeals" data-nav="appeals">소명</a>
     <a href="#held" data-nav="held">보류 게시물</a>
     <a href="#credits" data-nav="credits">AI 크레딧</a>
+    <a href="#coupons" data-nav="coupons">쿠폰</a>
     <a href="#settings" data-nav="settings">설정</a>
   </nav>
 
@@ -609,6 +620,81 @@ mark {
           <table class="table">
             <thead><tr><th scope="col">이름</th><th scope="col">로그인</th><th scope="col">남음</th><th scope="col">사용</th><th scope="col">마지막 사용</th><th scope="col"></th></tr></thead>
             <tbody id="cr-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 쿠폰 ── -->
+    <section id="coupons">
+      <div class="page-head">
+        <h1>쿠폰</h1>
+        <p>크레딧 충전 쿠폰과 요금제 쿠폰을 발급합니다. 사용자는 설정 화면에서 코드를 입력합니다.</p>
+      </div>
+
+      <p class="mock-banner">
+        <span class="mark">ⓘ</span>
+        <span><strong>충전 크레딧은 3시간 초기화로 사라지지 않고 다 쓸 때까지 남습니다.</strong>
+        요금제 쿠폰은 3시간마다 채워지는 양을 늘리고 Gemini 를 열어 줍니다. 같은 요금제를 또 쓰면
+        기간이 이어 붙고, 다른 요금제가 적용 중인 사람은 쓸 수 없습니다.</span>
+      </p>
+
+      <pre class="mod-result" id="cp-result" hidden></pre>
+
+      <div class="panel">
+        <div class="panel-head"><h3>새 쿠폰</h3></div>
+        <div class="panel-body">
+          <form id="cp-form">
+            <div class="field-row">
+              <span class="legend">주는 것</span>
+              <p class="set-sentence">
+                <select id="cp-kind" aria-label="쿠폰 종류">
+                  <option value="credit">크레딧 충전</option>
+                  <option value="plan">요금제</option>
+                </select>
+                <span id="cp-credit-part">
+                  <input type="number" id="cp-amount" min="1" max="100000" step="1" value="3000" inputmode="numeric" aria-label="충전 크레딧">
+                  크레딧
+                </span>
+                <span id="cp-plan-part" hidden>
+                  <select id="cp-plan" aria-label="요금제"></select>
+                  <input type="number" id="cp-days" min="1" max="366" step="1" value="30" inputmode="numeric" aria-label="기간 (일)">
+                  일
+                </span>
+              </p>
+            </div>
+            <div class="field-row">
+              <span class="legend">수량과 기한</span>
+              <p class="set-sentence">
+                코드
+                <input type="number" id="cp-count" min="1" max="50" step="1" value="1" inputmode="numeric" aria-label="코드 개수">
+                개, 코드마다
+                <input type="number" id="cp-max" min="1" max="1000" step="1" value="1" inputmode="numeric" aria-label="코드마다 쓸 수 있는 사람 수">
+                명까지, 만료
+                <input type="date" id="cp-exp" aria-label="만료일 (비우면 없음)">
+              </p>
+              <span class="check-note">만료일을 비우면 기한이 없습니다. 한국 시간으로 그날 끝까지 쓸 수 있습니다.
+              한 사람은 같은 코드를 한 번만 쓸 수 있습니다.</span>
+            </div>
+            <div class="field-row">
+              <label class="legend" for="cp-memo">메모 (선택)</label>
+              <p class="set-sentence"><input type="text" id="cp-memo" maxlength="100" placeholder="예: 과학축전 시연용"></p>
+            </div>
+            <div class="field-row set-foot">
+              <button type="submit" class="btn btn-primary" id="cp-issue">발급</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>발급한 쿠폰 <span class="cell-muted" id="cp-total"></span></h3>
+        </div>
+        <div class="panel-scroll">
+          <table class="table">
+            <thead><tr><th scope="col">코드</th><th scope="col">내용</th><th scope="col">사용</th><th scope="col">만료</th><th scope="col">메모</th><th scope="col">발급</th></tr></thead>
+            <tbody id="cp-body"></tbody>
           </table>
         </div>
       </div>
@@ -1566,12 +1652,15 @@ Session.refresh().then(function (user) {
     }
     crBody.innerHTML = CREDITS.map((u) => {
       // 적게 남은 사람을 눈에 띄게 — 서버가 이미 그 순서로 준다
-      const cls = u.remaining <= 0 ? ' style="color:var(--badge-bad-fg)"'
-        : u.remaining <= 25 ? ' style="color:var(--badge-wait-fg)"' : '';
+      // 100 미만이면 어느 모델로도 못 묻고, 300 미만이면 Gemini 를 못 쓴다(science.html 배지와 같은 기준)
+      const cls = u.remaining < 100 ? ' style="color:var(--badge-bad-fg)"'
+        : u.remaining < 300 ? ' style="color:var(--badge-wait-fg)"' : '';
       return '<tr>'
-        + '<td>' + esc(u.name) + (u.email ? '<div class="cell-sub">' + esc(u.email) + '</div>' : '') + '</td>'
+        + '<td>' + esc(u.name) + (u.email ? '<div class="cell-sub">' + esc(u.email) + '</div>' : '')
+        + (u.plan !== 'free' ? '<div class="cell-sub">' + esc(u.planLabel) + ' · ' + fmtWhen(u.planUntil).slice(0, 5) + '까지</div>' : '') + '</td>'
         + '<td class="cell-muted">' + esc(u.provider || '—') + '</td>'
-        + '<td' + cls + '><strong>' + u.remaining + '</strong> / ' + u.granted + '</td>'
+        + '<td' + cls + '><strong>' + u.remaining + '</strong> / ' + u.granted
+        + (u.bonus ? '<div class="cell-sub">충전 ' + u.bonus + ' 포함</div>' : '') + '</td>'
         + '<td class="cell-muted">' + u.used + '</td>'
         + '<td class="cell-muted">' + fmtWhen(u.lastUsedAt) + '</td>'
         + '<td class="row-action"><button type="button" data-grant="' + esc(u.sub) + '">지급</button></td>'
@@ -1641,6 +1730,84 @@ Session.refresh().then(function (user) {
   });
 
   loadCredits();
+
+  /* ── 쿠폰 ──
+     값 검사와 상한은 서버(coupon.js)가 한다. 화면은 받은 문구를 그대로 보여 준다. */
+  const cpBody = document.getElementById('cp-body');
+  const cpTotal = document.getElementById('cp-total');
+  const cpResult = document.getElementById('cp-result');
+  const cpForm = document.getElementById('cp-form');
+  const cpKind = document.getElementById('cp-kind');
+  const cpPlan = document.getElementById('cp-plan');
+  const cpIssue = document.getElementById('cp-issue');
+  const num = (id) => Number(document.getElementById(id).value);
+
+  const cpSay = (msg) => { cpResult.textContent = msg; cpResult.hidden = false; };
+
+  cpKind.addEventListener('change', () => {
+    document.getElementById('cp-credit-part').hidden = cpKind.value !== 'credit';
+    document.getElementById('cp-plan-part').hidden = cpKind.value !== 'plan';
+  });
+
+  async function loadCoupons() {
+    try {
+      const res = await fetch('/api/moderation/coupons', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      const data = await res.json();
+      // 요금제 목록은 서버 표(credit.PLANS)에서 받는다 — 화면에 따로 적어 두면 갈라진다
+      if (!cpPlan.options.length) {
+        cpPlan.innerHTML = data.plans.map((p) =>
+          '<option value="' + esc(p.id) + '">' + esc(p.label) + ' (3시간마다 ' + p.credits + ')</option>').join('');
+      }
+      const list = data.coupons || [];
+      cpTotal.textContent = list.length + '개';
+      cpBody.innerHTML = list.length ? list.map((c) => '<tr>'
+        + '<td class="cp-code">' + esc(c.code) + '</td>'
+        + '<td>' + (c.kind === 'credit' ? '+' + c.amount + ' 크레딧' : esc(c.planLabel) + ' ' + c.days + '일') + '</td>'
+        + '<td' + (c.used >= c.maxUses ? ' class="cell-muted"' : '') + '>' + c.used + ' / ' + c.maxUses + '</td>'
+        + '<td class="cell-muted">' + (c.expiresAt ? fmtWhen(c.expiresAt).slice(0, 5) : '없음') + '</td>'
+        + '<td class="cell-muted">' + esc(c.memo || '') + '</td>'
+        + '<td class="cell-muted">' + fmtWhen(c.createdAt) + '</td>'
+        + '</tr>').join('')
+        : '<tr><td colspan="6" class="empty">아직 발급한 쿠폰이 없습니다.</td></tr>';
+    } catch (e) {
+      cpSay('쿠폰 목록을 불러오지 못했습니다: ' + e.message);
+    }
+  }
+
+  cpForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = {
+      kind: cpKind.value,
+      count: num('cp-count'),
+      maxUses: num('cp-max'),
+      expiresOn: document.getElementById('cp-exp').value || null,
+      memo: document.getElementById('cp-memo').value
+    };
+    if (body.kind === 'credit') body.amount = num('cp-amount');
+    else { body.plan = cpPlan.value; body.days = num('cp-days'); }
+
+    cpIssue.disabled = true;
+    try {
+      const res = await fetch('/api/moderation/coupons', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.status);
+      // 코드는 한 줄에 하나 — 그대로 복사해 나눠 줄 수 있게
+      cpSay('발급했습니다 (' + data.codes.length + '개):\n' + data.codes.join('\n'));
+      await loadCoupons();
+    } catch (e) {
+      cpSay('발급하지 못했습니다: ' + e.message);
+    } finally {
+      cpIssue.disabled = false;
+    }
+  });
+
+  loadCoupons();
 
   // ── 섹션 전환 ──
   // location.hash 를 쓰면 뒤로가기와 새로고침이 공짜로 동작한다.

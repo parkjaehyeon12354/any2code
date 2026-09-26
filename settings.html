@@ -146,6 +146,8 @@
   border-color: rgba(189, 59, 59, .25);
   color: var(--badge-bad-fg);
 }
+/* 쿠폰 결과는 입력칸 바로 아래에 — 맨 위 안내는 화면 밖이라 안 보인다 */
+.card-body .result { margin: var(--sp-md) 0 0; }
 
 .gate { padding: var(--sp-section) 0; text-align: center; }
 .gate p { margin-bottom: var(--sp-lg); font-size: 15px; color: var(--muted); }
@@ -373,7 +375,8 @@
     <div class="card">
       <div class="card-head">
         <h2>AI 도우미 크레딧</h2>
-        <p>AI 과학 도우미는 질문할 때마다 크레딧을 씁니다. 3시간마다 다시 채워집니다.</p>
+        <p>AI 과학 도우미는 질문할 때마다 크레딧을 씁니다. 3시간마다 다시 채워지고,
+        쿠폰으로 충전한 크레딧은 다 쓸 때까지 남습니다.</p>
       </div>
       <div class="card-body">
         <dl class="rows" id="credit"></dl>
@@ -435,6 +438,25 @@
         <a href="#" class="btn btn-ghost" data-logout>로그아웃</a>
       </div>
     </div>
+
+    <form class="card" id="coupon-form">
+      <div class="card-head">
+        <h2>쿠폰</h2>
+        <p>받은 쿠폰 코드를 입력하면 크레딧이 충전되거나 요금제가 적용됩니다.</p>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="f-coupon">쿠폰 코드</label>
+          <input type="text" id="f-coupon" autocomplete="off" autocapitalize="characters"
+                 spellcheck="false" maxlength="20" placeholder="XXXX-XXXX-XXXX">
+          <span class="hint">대소문자와 하이픈(-)은 구분하지 않습니다. 쿠폰 하나는 한 번만 쓸 수 있습니다.</span>
+        </div>
+        <p class="result" id="coupon-result" role="status" hidden></p>
+      </div>
+      <div class="foot">
+        <button type="submit" class="btn btn-primary" id="coupon-use">사용</button>
+      </div>
+    </form>
 
     <!-- 맨 아래에 둔다. 실수로 누르는 걸 최대한 어렵게 하는 위치다.
 
@@ -722,14 +744,53 @@
     return String(h).padStart(2, '0') + '시 (' + left + ' 뒤)';
   }
 
-  // /api/me 가 잔액과 다음 충전까지 남은 시간을 준다. 조회에 실패하면 null 이다.
+  const kstDay = (iso) => new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(0, 10);
+
+  /* /api/me(와 쿠폰 사용 응답)가 주는 크레딧 상태. 조회에 실패하면 null 이다.
+     free 는 3시간마다 채워지는 몫의 남은 양, bonus 는 쿠폰으로 충전한 잔액이다. */
   function renderCredit(c) {
     el('credit').innerHTML = c
-      ? '<div><dt>남은 크레딧</dt><dd>' + c.remaining + ' / ' + c.granted + '</dd></div>' +
+      ? '<div><dt>요금제</dt><dd>' + esc(c.planLabel) +
+          (c.planUntil ? ' · ' + kstDay(c.planUntil) + '까지' : '') + '</dd></div>' +
+        '<div><dt>남은 크레딧</dt><dd>' + c.free + ' / ' + c.granted + '</dd></div>' +
+        '<div><dt>충전 잔액</dt><dd>' + (c.bonus ? c.bonus + ' (다 쓸 때까지 유지)' : '없음') + '</dd></div>' +
         '<div><dt>다음 충전</dt><dd>' + nextResetLabel(c.resetInMs, Date.now()) + '</dd></div>' +
         '<div><dt>충전 시각</dt><dd>매일 00·03·06·09·12·15·18·21시 (한국 시간)</dd></div>'
       : '<div><dt>남은 크레딧</dt><dd>지금은 불러오지 못했습니다.</dd></div>';
   }
+
+  /* 쿠폰. 결과는 입력칸 아래에 보여 준다. 성공하면 칸을 비우고 크레딧 카드를 바로 고친다 —
+     새로고침해야 반영되면 "안 된 건가" 하고 또 누른다(두 번째는 '이미 사용' 이 뜬다). */
+  const couponForm = el('coupon-form');
+  const couponInput = el('f-coupon');
+  const couponBtn = el('coupon-use');
+  const couponResult = el('coupon-result');
+
+  couponForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    couponBtn.disabled = true;
+    try {
+      const res = await fetch('/api/coupon/redeem', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput.value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '쿠폰을 처리하지 못했습니다.');
+      couponResult.textContent = data.message;
+      couponResult.classList.remove('bad');
+      couponInput.value = '';
+      renderCredit(data.credit);
+      Session.refresh();   // 다른 화면(AI 도우미 배지·모델 선택)이 읽는 캐시도 새 값으로
+    } catch (err) {
+      couponResult.textContent = err.message;
+      couponResult.classList.add('bad');
+    } finally {
+      couponResult.hidden = false;
+      couponBtn.disabled = false;
+    }
+  });
 
   // 로그인 확인이 끝난 뒤에 화면을 고른다. 비로그인에게 빈 폼을 보여주면
   // 채우고 저장한 다음에야 로그인하라는 말을 듣게 된다.

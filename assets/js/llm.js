@@ -6,13 +6,28 @@ const modelEl = document.getElementById('model');
 const formEl = document.getElementById('chat-form');
 
 /* 고른 모델을 쿠키에 1년 기억해 다음 방문에도 그대로 쓴다.
-   쿠키 값은 사용자가 고칠 수 있으므로 목록에 있는 값일 때만 받아들인다 —
-   없는 값을 넣으면 선택 상자가 빈칸이 된다. 서버도 목록 밖은 400 으로 막는다. */
-const savedModel = (document.cookie.match(/(?:^|;\s*)ai_model=([^;]*)/) || [])[1];
-if ([...modelEl.options].some((o) => o.value === savedModel)) modelEl.value = savedModel;
+   쿠키 값은 사용자가 고칠 수 있으므로 고를 수 있는 선택지일 때만 받아들이고,
+   아니면 첫 선택지(Solar)로 둔다. 서버도 목록 밖은 400, 요금제 밖은 403 으로 막는다. */
+function pickModel() {
+  const want = (document.cookie.match(/(?:^|;\s*)ai_model=([^;]*)/) || [])[1];
+  const open = [...modelEl.options].filter((o) => !o.disabled);
+  modelEl.value = (open.find((o) => o.value === want) || open[0]).value;
+}
+pickModel();
 modelEl.addEventListener('change', () => {
   document.cookie = `ai_model=${modelEl.value}; max-age=31536000; path=/; SameSite=Lax; Secure`;
 });
+
+/* 요금제가 허용한 모델만 고를 수 있게 한다(무료는 Solar 만). science.html 이 로그인
+   정보를 받을 때마다 부른다. 쿠키는 고치지 않는다 — 요금제를 받으면 원래 고른
+   모델로 돌아온다. 묻고 나서야 403 을 받지 않게 미리 잠그는 안내용이다. */
+window.setAllowedModels = (models) => {
+  for (const o of modelEl.options) {
+    o.disabled = !models.includes(o.value);
+    o.textContent = o.textContent.replace(' (요금제 전용)', '') + (o.disabled ? ' (요금제 전용)' : '');
+  }
+  pickModel();
+};
 
 /* ── 답변 렌더링 ──
    LLM 은 마크다운 + LaTeX 를 섞어서 돌려준다. 예전에는 textContent 로 그대로

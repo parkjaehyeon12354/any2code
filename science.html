@@ -524,7 +524,10 @@
       creditBadge.classList.toggle('low', c.remaining >= 100 && c.remaining < 300);
 
       // 언제 다시 채워지는지 알려준다. 없으면 막연히 기다리게 된다.
-      var tip = c.granted ? '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음' : '';
+      // remaining 은 3시간 몫 + 쿠폰 충전분이라, 충전분이 있으면 나눠 적는다.
+      var tip = !c.granted ? ''
+        : c.bonus ? '3시간 몫 ' + (c.remaining - c.bonus) + ' / ' + c.granted + ' 남음 · 충전 잔액 ' + c.bonus
+        : '전체 ' + c.granted + ' 크레딧 중 ' + c.remaining + ' 남음';
       if (typeof c.resetInMs === 'number' && c.resetInMs > 0) {
         var m = Math.ceil(c.resetInMs / 60000);
         var when = m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분';
@@ -536,6 +539,8 @@
 
     /* 로그인 상태면 처음부터 잔액을 보여준다. 쓰기 시작한 뒤에야 알면 늦다. */
     function showCredit(user) {
+      // 무료(와 비로그인)는 Solar 만 고를 수 있다 — 요금제가 허용한 모델 목록을 넘긴다
+      window.setAllowedModels((user && user.credit && user.credit.models) || ['solar']);
       if (!user || !user.authenticated || !user.credit) {
         creditBadge.hidden = true;
         return;

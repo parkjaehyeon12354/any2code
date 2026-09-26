@@ -142,16 +142,17 @@ test('경계 직전에는 남은 시간이 1분 이내', () => {
   assert.ok(ms <= 60000, `15시 직전인데 ${Math.round(ms / 1000)}초 남았다고 나온다`);
 });
 
-test('구간이 바뀌면 사용량을 0으로 본다', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
-  // balance / consume 양쪽 모두 period 를 비교해야 한다.
-  // 한쪽만 하면 잔액은 회복됐는데 차감이 옛 값에 누적되는 식으로 어긋난다.
-  assert.ok(/doc\.period === period \? doc\.used : 0/.test(src),
-    'balance 가 구간을 비교해야 한다');
-  assert.ok(/doc\.period !== period/.test(src),
-    'consume 이 구간을 비교해야 한다');
+test('구간이 바뀌면 사용량을 0으로 보고, 한도는 지금 요금제 값이다', () => {
+  // balance·consume·관리자 목록이 모두 view() 하나로 판정한다 — 한쪽만 구간을 비교하면
+  // 잔액은 회복됐는데 차감이 옛 값에 누적되는 식으로 어긋난다.
+  const now = Date.parse('2026-09-26T16:00:00Z');             // 한국 01:00, 00시 구간
+  const period = credit.currentPeriod(now);
+  const old = { period: credit.currentPeriod(now - 3 * 3600e3), granted: 2000, used: 1500, bonus: 700 };
+  const v = credit.view(old, now);
+  assert.deepStrictEqual([v.used, v.granted, v.free, v.bonus, v.remaining], [0, 2000, 2000, 700, 2700]);
+  assert.strictEqual(credit.view({ ...old, period }, now).used, 1500, '같은 구간이면 그대로');
+  const none = credit.view(undefined, now);
+  assert.deepStrictEqual([none.plan, none.remaining, none.models.join()], ['free', 2000, 'solar']);
 });
 
 test('credit 문서 id 는 sanction 과 겹치지 않는다', () => {
@@ -170,10 +171,8 @@ test('credit 문서 id 는 sanction 과 겹치지 않는다', () => {
   assert.ok(!/id: sub, type: 'credit'/.test(src),
     "id 에 sub 을 그대로 쓰면 sanction 문서와 충돌한다");
 
-  // pk 는 sub 그대로여야 한다 — 조회가 pk 로 걸린다
-  const writes = src.match(/id: docId\(sub\), type: 'credit', pk: sub,/g) || [];
-  assert.ok(writes.length >= 3,
-    `문서를 쓰는 모든 곳이 같은 규칙이어야 한다 (현재 ${writes.length}곳)`);
+  // pk 는 sub 그대로여야 한다 — 조회가 pk 로 걸린다. 쓰는 곳은 save() 한 군데다
+  assert.ok(/id: docId\(sub\), type: 'credit', pk: sub,/.test(src), 'save() 가 접두사 id 로 써야 한다');
 });
 
 test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
@@ -189,10 +188,9 @@ test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
 
   assert.ok(!/\.item\(sub, sub\)\.patch\(/.test(src),
     'credit 문서에 patch 를 쓰면 옛 문서에서 실패한다 — upsert 를 쓸 것');
-  // consume 과 grant 양쪽 모두 upsert 여야 한다
-  const upserts = src.match(/items\.upsert\(/g) || [];
-  assert.ok(upserts.length >= 2,
-    `consume 과 grant 둘 다 upsert 여야 한다 (현재 ${upserts.length}곳)`);
+  // 문서 쓰기는 save() 의 upsert 한 곳으로 모았다 — 차감·지급·쿠폰이 모두 그리로 간다
+  assert.ok(!/\.patch\(/.test(src), 'credit.js 에 patch 가 있으면 안 된다');
+  assert.strictEqual((src.match(/items\.upsert\(/g) || []).length, 1, '쓰는 곳은 save() 하나여야 한다');
 });
 
 /* ── 관리자 크레딧 지급 ── */

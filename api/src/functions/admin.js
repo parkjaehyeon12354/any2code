@@ -166,7 +166,7 @@ app.http('adminCredits', {
         query: "SELECT c.userSub, c.oauthName, c.displayName, c.email, c.provider FROM c WHERE c.type = 'user'"
       });
       const credits = await query({
-        query: "SELECT c.id, c.pk, c.granted, c.used, c.period, c.updatedAt FROM c WHERE c.type = 'credit'"
+        query: "SELECT * FROM c WHERE c.type = 'credit'"
       });
 
       // id 가 sub 그대로인 옛 문서(8/24)는 건너뛴다 — credit.js readDoc 과 같은 이유
@@ -174,22 +174,23 @@ app.http('adminCredits', {
       for (const c of credits) if (c.id === credit.docId(c.pk)) byId[c.pk] = c;
 
       const now = Date.now();
-      const period = credit.currentPeriod(now);
 
       const rows = users.map((u) => {
         const c = byId[u.userSub];
-        // 구간이 지난 문서는 이미 초기화된 것으로 본다 — balance() 와 같은 규칙
-        const fresh = c && c.period === period;
-        const granted = fresh ? c.granted : credit.FREE_CREDITS;
-        const used = fresh ? c.used : 0;
+        // 구간·요금제·충전 잔액 판정은 balance() 와 같은 함수로 한다
+        const v = credit.view(c, now);
         return {
           sub: u.userSub,
           name: u.displayName || u.oauthName || '(이름 없음)',
           email: u.email || null,
           provider: u.provider || null,
-          granted,
-          used,
-          remaining: Math.max(0, granted - used),
+          granted: v.granted,
+          used: v.used,
+          bonus: v.bonus,
+          remaining: v.remaining,
+          plan: v.plan,
+          planLabel: v.planLabel,
+          planUntil: v.planUntil,
           lastUsedAt: c ? c.updatedAt : null
         };
       });
