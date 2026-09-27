@@ -13,6 +13,7 @@ const path = require('node:path');
 process.env.SESSION_SECRET = 's'.repeat(48);
 process.env.VERTEX_API_KEY = 'test-vertex-key';
 process.env.LLM_API_KEY = 'test-solar-key';
+process.env.ADMIN_EMAILS = 'boss@example.com';
 
 const azPath = require.resolve('@azure/functions');
 const routes = {};
@@ -29,8 +30,8 @@ const { createFake } = require('./fake-container');
 const { fake, state } = createFake();
 db._setContainer(fake);
 
-const cookieFor = (sub) => {
-  const c = session.issue({ sub, name: '학생', email: 's@example.com', provider: 'google' });
+const cookieFor = (sub, email = 's@example.com') => {
+  const c = session.issue({ sub, name: '학생', email, provider: 'google' });
   return `${c.name}=${encodeURIComponent(c.value)}`;
 };
 const ask = (body, cookie = cookieFor('google:1')) => routes.llmChat.handler({
@@ -168,4 +169,23 @@ test('Gemini 안전 필터가 막으면 오류가 아니라 거절 문구를 주
   } finally {
     geminiBody = null;
   }
+});
+
+test('관리자는 요금제가 없고 크레딧이 0 이어도 Gemini 로 묻고, 잔액이 줄지 않는다', async () => {
+  /* 관리자 판정은 요청마다 ADMIN_EMAILS 로 한다. 문서에는 관리자라고 쓰지 않으므로 무료 · 다 쓴 상태로 둔다. */
+  const sub = 'google:boss';
+  state.docs.push({ id: credit.docId(sub), type: 'credit', pk: sub, period: credit.currentPeriod(), granted: 2000, used: 2000 });
+  const res = await ask({ question: '단진자 주기?', model: 'gemini' }, cookieFor(sub, 'boss@example.com'));
+  assert.strictEqual(res.status, undefined, JSON.stringify(res.jsonBody));
+  assert.deepStrictEqual([res.jsonBody.credit.spent, res.jsonBody.credit.unlimited], [0, true]);
+  const doc = state.docs.find((d) => d.id === credit.docId(sub));
+  assert.strictEqual(doc.used, 2000, '관리자 질문이 잔액 문서를 바꾸면 안 된다');
+
+  const bal = await credit.balance(sub, { admin: true });
+  assert.deepStrictEqual([bal.plan, bal.planLabel, bal.unlimited, bal.models.join()], ['admin', '관리자', true, 'solar,gemini']);
+  // 같은 상태의 일반 계정은 그대로 막힌다(무료라 Gemini 403, Solar 는 크레딧 0 이라 402)
+  const kid = 'google:kid-empty';
+  state.docs.push({ id: credit.docId(kid), type: 'credit', pk: kid, period: credit.currentPeriod(), granted: 2000, used: 2000 });
+  assert.strictEqual((await ask({ question: '짧게', model: 'gemini' }, cookieFor(kid))).status, 403);
+  assert.strictEqual((await ask({ question: '짧게', model: 'solar' }, cookieFor(kid))).status, 402);
 });

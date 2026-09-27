@@ -342,7 +342,8 @@ app.http('llmChat', {
     const cost = credit.MODEL_COST[model];
     let bal;
     try {
-      bal = await credit.balance(user.sub);
+      // 관리자는 요청마다 ADMIN_EMAILS 로 판정한다(쿠키의 role 은 로그인 시점에 박제돼 믿지 않는다)
+      bal = await credit.balance(user.sub, { admin: session.isAdmin(user.email) });
     } catch (e) {
       // 잔액을 못 읽었다고 학습을 막지는 않는다. 로그만 남기고 통과시킨다.
       context.error('크레딧 조회 실패:', e.message);
@@ -354,7 +355,7 @@ app.http('llmChat', {
     if (!models.includes(model)) {
       return { status: 403, jsonBody: { error: '이 모델은 요금제 전용입니다. 설정에서 쿠폰을 등록하면 쓸 수 있습니다.' } };
     }
-    if (bal && bal.remaining < cost) {
+    if (bal && !bal.unlimited && bal.remaining < cost) {
       return {
         status: 402,
         jsonBody: {
@@ -378,11 +379,14 @@ app.http('llmChat', {
 
       /* 답변을 받은 뒤에만 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
          여기서 예외를 던지면 답변을 받은 사용자가 오류 화면을 보게 된다. */
-      let after = null;
-      try {
-        after = await credit.consume(user.sub, model, user.name);
-      } catch (e) {
-        context.error('크레딧 차감 실패:', e.message);
+      // 관리자(무제한)는 차감하지 않는다 — 잔액 문서도 건드리지 않는다
+      let after = bal && bal.unlimited ? { ...bal, cost: 0 } : null;
+      if (!after) {
+        try {
+          after = await credit.consume(user.sub, model, user.name);
+        } catch (e) {
+          context.error('크레딧 차감 실패:', e.message);
+        }
       }
 
       return {
@@ -394,7 +398,8 @@ app.http('llmChat', {
                 remaining: after.remaining,
                 granted: after.granted,
                 bonus: after.bonus,
-                resetInMs: after.resetInMs
+                resetInMs: after.resetInMs,
+                unlimited: !!after.unlimited
               }
             : null
         }

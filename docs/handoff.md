@@ -1,6 +1,6 @@
 # 인수인계 — Ans2Quest
 
-마지막 갱신: 2026-09-27 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교
+마지막 갱신: 2026-09-27 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교 · 관리자 요금제
 
 새 대화를 시작하는 사람이 **이 파일 하나만 읽고** 이어받을 수 있게 쓴 문서입니다.
 프로젝트 전체 상태는 [progress.md](progress.md)에, 도구·환경 규칙은 저장소 밖
@@ -15,7 +15,7 @@
 
 ```
 https://ans2quest.com          라이브
-테스트 343개 통과
+테스트 344개 통과
 ```
 
 확인 명령:
@@ -24,7 +24,7 @@ https://ans2quest.com          라이브
 cd D:/코딩/any2code && git status --short && cd api && node --test
 ```
 
-`pass 343` 면 이 문서와 같은 상태입니다.
+`pass 344` 면 이 문서와 같은 상태입니다.
 
 **`/science`(AI 과학 도우미)는 모델 두 개 중에 고릅니다.** **Solar Pro 4**(기본, Upstage,
 키 `LLM_API_KEY`)와 **Gemini 3.8 Flash**(Vertex AI express 모드, 키 `VERTEX_API_KEY` —
@@ -122,6 +122,18 @@ Gemini 는 요금제 전용이고, 무료는 Solar 만 씁니다. 크레딧·요
   테마 키를 잠깐 빼고 끝나면 되돌려서 라이브에서도 15/15 다.
   `c81ac01`(범례 위치) 배포 뒤 11개 전부 통과 — legend 13 · units 13 · kinds 18 · blocks 15 · rows 13 · cols 13 ·
   scatter 7 · custom 15 · preset 7 · load 7, 콘솔 오류 0.
+
+## 9/27 — 관리자 요금제(크레딧 무제한)
+
+- 관리자(`ADMIN_EMAILS`)는 AI 도우미에서 **요금제 「관리자」 · 크레딧 무제한 · 모든 모델**. 질문해도 차감하지 않고,
+  잔액 문서도 건드리지 않는다(`credit.balance(sub, { admin })` → `asAdmin()` 이 보여 주는 값만 바꾼다).
+- **관리자 판정은 요청마다 `session.isAdmin(user.email)`** — 쿠키의 role 은 로그인 시점에 박제돼 믿지 않는다.
+  `ADMIN_EMAILS` 에서 빼면 다음 요청부터 원래 요금제로 돌아간다. 문서에 관리자라고 저장하지 않는다.
+- **관리자 요금제는 `PLANS` 에 넣지 않았다** — 쿠폰 발급은 `PLANS` 의 키만 받으므로, 넣으면 쿠폰 하나로
+  무제한이 새어 나간다. `coupon.test.js` 가 `plan: 'admin'` 발급이 400 인지 본다(넣으면 빨간불 확인).
+- 쓰는 곳: `llmChat.js`(한도·차감 건너뜀, 응답 `credit.unlimited`), `auth.js` `/api/me`, `coupon.js`(쿠폰 결과 화면도
+  관리자로). 화면: `/science` 배지 「무제한 크레딧」, 설정 크레딧 카드 「관리자 · 무제한」.
+- 테스트 `llm-model.test.js`(크레딧 0 · 무료인 관리자가 Gemini 로 묻고 잔액 그대로, 같은 상태의 학생은 403·402). 344개.
 
 ## 9/27 — AI 모델 비교와 두 가지 수정
 

@@ -50,7 +50,8 @@ test('관리자만 발급한다 — 학생은 403, 비로그인은 401', async (
 test('발급 값의 상한 — 오타 하나로 큰 값을 뿌리지 않는다', async () => {
   const bad = [
     { kind: 'credit', amount: 1000000 }, { kind: 'credit', amount: 0 }, { kind: 'credit', amount: 1.5 },
-    { kind: 'plan', plan: 'free', days: 30 }, { kind: 'plan', plan: 'vip', days: 30 },
+    { kind: 'plan', plan: 'free', days: 30 }, { kind: 'plan', plan: 'vip', days: 30 }, { kind: 'plan', plan: 'admin', days: 30 },   // admin: 쿠폰으로 무제한이 새면 안 된다
+   
     { kind: 'plan', plan: 'pro', days: 3650 }, { kind: 'gift', amount: 10 },
     { kind: 'credit', amount: 10, count: 500 }, { kind: 'credit', amount: 10, maxUses: 0 },
     { kind: 'credit', amount: 10, expiresOn: '2026-13-45' }, { kind: 'credit', amount: 10, expiresOn: '2020-01-01' }

@@ -207,7 +207,8 @@ app.http('couponRedeem', {
         ? `${coupon.amount} 크레딧을 충전했습니다.`
         : `${after.planLabel} 요금제가 ${kstDate(after.planUntil)}까지 적용됩니다.`;
       context.log(`쿠폰 사용: ${user.sub} ← ${code} (${coupon.kind})`);
-      return { jsonBody: { ok: true, message, credit: after } };
+      // 관리자는 화면에 '관리자 · 무제한' 이 그대로 보이게(쿠폰은 저장된 요금제·잔액에만 붙는다)
+      return { jsonBody: { ok: true, message, credit: session.isAdmin(user.email) ? credit.asAdmin(after) : after } };
     } catch (e) {
       context.error('쿠폰 사용 실패:', e.message);
       return dbFail(e, '쿠폰을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');

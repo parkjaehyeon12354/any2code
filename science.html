@@ -520,8 +520,14 @@
 
     window.updateCredit = function (c) {
       if (!c || typeof c.remaining !== 'number') return;
-      creditNum.textContent = c.remaining;
       creditBadge.hidden = false;
+      if (c.unlimited) {   // 관리자 — 차감하지 않으니 숫자 대신 '무제한'
+        creditNum.textContent = '무제한';
+        creditBadge.classList.remove('empty', 'low');
+        creditBadge.title = '관리자 요금제 · 크레딧을 차감하지 않습니다';
+        return;
+      }
+      creditNum.textContent = c.remaining;
       // 남은 양에 따라 색을 바꾼다. 값은 모델 선택지에 적힌 질문 1번 값(Solar 100,
       // Gemini 300)이다 — 100 미만이면 어느 모델로도 못 묻고, 300 미만이면 Gemini 를 못 쓴다.
       creditBadge.classList.toggle('empty', c.remaining < 100);

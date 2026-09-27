@@ -173,7 +173,7 @@ app.http('me', {
 
     // AI 크레딧 잔액. 실패해도 null 로 두고 로그인은 정상 처리한다.
     let creditBalance = null;
-    try { creditBalance = await credit.balance(user.sub); } catch { creditBalance = null; }
+    try { creditBalance = await credit.balance(user.sub, { admin: session.isAdmin(user.email) }); } catch { creditBalance = null; }
 
     return {
       jsonBody: {

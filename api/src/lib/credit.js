@@ -45,6 +45,12 @@ const PLANS = {
 };
 const FREE_CREDITS = PLANS.free.credits;
 
+/* 관리자 요금제 — 크레딧 무제한, 모든 모델. **PLANS 에 넣지 않는다**: 쿠폰 발급은 PLANS 의
+   키만 받으므로(coupon.js issueError), 여기 있으면 쿠폰 하나로 무제한이 새어 나간다.
+   누가 관리자인지는 요청마다 session.isAdmin(ADMIN_EMAILS) 으로 정하고, 문서에는 쓰지 않는다 —
+   ADMIN_EMAILS 에서 빼면 바로 원래 요금제로 돌아간다. 저장된 잔액은 건드리지 않고 보여 주는 값만 바꾼다. */
+const asAdmin = (v) => ({ ...v, plan: 'admin', planLabel: '관리자', planUntil: null, models: Object.keys(MODEL_COST), unlimited: true });
+
 /* 문서 id.
 
    ⚠ `sub` 을 그대로 id 로 쓰면 안 된다. Cosmos 는 (id, partitionKey) 로 문서를
@@ -131,8 +137,9 @@ async function save(sub, doc, fields, userName) {
   return next;
 }
 
-async function balance(sub) {
-  return view(await readDoc(sub));
+async function balance(sub, { admin = false } = {}) {
+  const v = view(await readDoc(sub));
+  return admin ? asAdmin(v) : v;
 }
 
 /* 모델 값만큼 차감한다. 답변을 받은 뒤에 부른다 — 호출이 실패하면 빼지 않는다.
@@ -196,7 +203,7 @@ async function applyCoupon(sub, coupon, userName) {
 }
 
 module.exports = {
-  balance, consume, grant, view, planOf, couponBlock, applyCoupon, readDoc, docId,
+  balance, consume, grant, view, planOf, couponBlock, applyCoupon, readDoc, docId, asAdmin,
   currentPeriod, msUntilReset,
   MODEL_COST, PLANS, FREE_CREDITS, RESET_HOURS
 };

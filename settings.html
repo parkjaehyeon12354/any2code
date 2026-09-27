@@ -749,7 +749,10 @@
   /* /api/me(와 쿠폰 사용 응답)가 주는 크레딧 상태. 조회에 실패하면 null 이다.
      free 는 3시간마다 채워지는 몫의 남은 양, bonus 는 쿠폰으로 충전한 잔액이다. */
   function renderCredit(c) {
-    el('credit').innerHTML = c
+    el('credit').innerHTML = c && c.unlimited   // 관리자 — 차감하지 않으니 한도·충전 시각이 뜻이 없다
+      ? '<div><dt>요금제</dt><dd>' + esc(c.planLabel) + '</dd></div>' +
+        '<div><dt>남은 크레딧</dt><dd>무제한 (관리자는 차감하지 않습니다)</dd></div>'
+      : c
       ? '<div><dt>요금제</dt><dd>' + esc(c.planLabel) +
           (c.planUntil ? ' · ' + kstDay(c.planUntil) + '까지' : '') + '</dd></div>' +
         '<div><dt>남은 크레딧</dt><dd>' + c.free + ' / ' + c.granted + '</dd></div>' +
