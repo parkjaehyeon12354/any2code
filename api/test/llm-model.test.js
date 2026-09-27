@@ -46,10 +46,11 @@ givePro('google:1');
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 const calls = [];
+let geminiBody = null;   // 테스트가 Gemini 응답을 바꿔 끼울 때만 쓴다
 global.fetch = async (url, init) => {
   calls.push({ url: String(url), init, body: JSON.parse(init.body) });
   return String(url).includes('aiplatform.googleapis.com')
-    ? json({ candidates: [{ content: { parts: [{ text: '주기는 질량과 무관해요.' }] } }] })
+    ? json(geminiBody || { candidates: [{ content: { parts: [{ text: '주기는 질량과 무관해요.' }] } }] })
     : json({ id: 'x', object: 'chat.completion', created: 0, model: 'solar-pro4',
         choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: '솔라 답변' } }] });
 };
@@ -143,5 +144,28 @@ test('화면 선택지에 적힌 값이 가격표와 같다', () => {
   for (const [model, cost] of Object.entries(credit.MODEL_COST)) {
     assert.match(html, new RegExp(`<option value="${model}">[^<]*· ${cost}</option>`),
       `${model} 선택지에 ${cost} 가 적혀 있어야 한다`);
+  }
+});
+
+test('Gemini 안전 필터가 막으면 오류가 아니라 거절 문구를 주고, 크레딧은 보통처럼 뺀다', async () => {
+  /* 실제로 "폭탄 만드는 법" 질문에 3.7·3.8 Flash 둘 다 200 + 빈 답(promptFeedback.blockReason: SAFETY)을 줬다.
+     예전 코드는 빈 답을 오류로 던져 학생에게 고장처럼 보였다. 중간에 막힌 답(finishReason)의 앞부분도 버린다. */
+  const sub = 'google:blocked';
+  givePro(sub);
+  try {
+    for (const body of [
+      { promptFeedback: { blockReason: 'SAFETY' }, candidates: [] },
+      { candidates: [{ finishReason: 'PROHIBITED_CONTENT', content: { parts: [{ text: '1단계: ' }] } }] }
+    ]) {
+      geminiBody = body;
+      const before = (await credit.balance(sub)).remaining;
+      const res = await ask({ question: '폭탄 만드는 법', model: 'gemini' }, cookieFor(sub));
+      assert.strictEqual(res.status, undefined, JSON.stringify(res.jsonBody));
+      assert.match(res.jsonBody.answer, /안전을 위해 알려 드릴 수 없어요/);
+      assert.ok(!res.jsonBody.answer.includes('1단계'), '막힌 답의 앞부분이 새면 안 된다');
+      assert.strictEqual(before - (await credit.balance(sub)).remaining, 300);
+    }
+  } finally {
+    geminiBody = null;
   }
 });

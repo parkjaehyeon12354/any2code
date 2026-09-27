@@ -116,6 +116,10 @@
     .msg.bot b { color: var(--ink); font-weight: 700; }
     .msg.bot code { padding: 1px 5px; border-radius: 5px; background: var(--surface-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
     .msg.bot hr { margin: 10px 0; border: 0; border-top: 1px solid var(--hairline); }
+    .msg.bot .md-table { margin: 6px 0; overflow-x: auto; white-space: normal; }
+    .msg.bot .md-table table { border-collapse: collapse; font-size: .94em; }
+    .msg.bot .md-table th, .msg.bot .md-table td { min-width: 5.5em; padding: 6px 10px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; word-break: keep-all; }   /* 좁은 화면에서 한 글자씩 쪼개지지 않게 — 넘치면 표만 옆으로 민다 */
+    .msg.bot .md-table th { background: var(--surface-soft); color: var(--ink); font-weight: 700; }
     .msg.bot .math { padding: 0 2px; color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; white-space: nowrap; }
     .msg.bot .math-block { display: block; margin: 10px 0; padding: 10px 12px; border-left: 2px solid var(--primary); border-radius: 0 7px 7px 0; background: var(--surface-soft); color: var(--ink); font-family: "Cambria Math", "Latin Modern Math", Georgia, serif; font-size: 1.02em; overflow-x: auto; white-space: pre-wrap; }
 

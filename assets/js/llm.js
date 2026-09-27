@@ -134,6 +134,14 @@ function renderAnswer(el, raw) {
     .replace(/^\s*[-*]\s+(.*)$/gm, '• $1')
     .replace(/^\s*---+\s*$/gm, '<hr>');
 
+  // 3-1) 마크다운 표 — | 로 감싼 줄 + 둘째 줄이 |---| 구분선일 때만 표로 본다(Gemini 가 비교를
+  //      표로 쓴다. 전에는 | 기호가 그대로 보였다). 칸 글자는 2) 에서 이미 이스케이프됐다.
+  work = work.replace(/^[ \t]*\|.*\|[ \t]*\n[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*(?:\n[ \t]*\|.*\|[ \t]*)*/gm, (tbl) => {
+    const rows = tbl.trim().split('\n').map((l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
+    const tr = (cells, tag) => `<tr>${cells.map((c) => `<${tag}>${c}</${tag}>`).join('')}</tr>`;
+    return `<div class="md-table"><table><thead>${tr(rows[0], 'th')}</thead><tbody>${rows.slice(2).map((r) => tr(r, 'td')).join('')}</tbody></table></div>`;
+  });
+
   // 4) 자리표시자를 실제 수식 노드로 되돌린다.
   work = work
     .replace(/\u0000B(\d+)\u0000/g, (m, i) => `<span class="math-block">${escapeAnswerHtml(blocks[+i])}</span>`)

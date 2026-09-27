@@ -229,8 +229,17 @@ async function callGemini(system, question) {
     throw err;
   }
 
+  /* 구글 안전 필터가 막으면 200 인데 답이 없다(질문 차단은 promptFeedback.blockReason, 답 차단은
+     finishReason). 그대로 두면 '빈 답변' 오류가 떠서 학생은 거절 대신 고장을 본다. Solar 가 규칙대로
+     한 줄 사양하는 것과 같게 거절 문구로 바꾼다 — 차단돼도 구글 요금은 나가므로 크레딧도 보통처럼 뺀다.
+     중간에 막힌 답의 앞부분은 버린다. */
+  const finish = data.candidates?.[0]?.finishReason;
+  if (data.promptFeedback?.blockReason || GEMINI_BLOCKED.includes(finish)) return SAFETY_REFUSAL;
+
   return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
 }
+const GEMINI_BLOCKED = ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII'];
+const SAFETY_REFUSAL = '그 내용은 안전을 위해 알려 드릴 수 없어요. 반응의 원리나 실험실 안전 수칙처럼 과학 공부에 도움이 되는 질문이라면 기꺼이 도와 드릴게요.';
 
 app.http('llmChat', {
   route: 'llm/chat',
