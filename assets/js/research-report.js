@@ -10,6 +10,8 @@
   const SIZE={table:{r:[1,30],c:[1,8],def:[3,3],what:'표 크기',hint:'첫 행은 머리글(굵게)입니다.'},
               graph:{r:[2,30],c:[2,6],def:[5,2],what:'그래프 데이터',hint:'행 = 측정값 개수, 첫 열 = X값, 나머지 열 = Y값(계열 하나씩, 최대 5개).'}};
   const KIND={text:'',table:' · 표',graph:' · 그래프'};
+  // cells 의 행 수 한도 — 그래프는 첫 행(계열 이름)이 더 있다
+  const rowRange=type=>{const h=type==='graph'?1:0;return[SIZE[type].r[0]+h,SIZE[type].r[1]+h];};
   let custom={title:'',sections:[]};let pending=null;
   const preset=()=>layout.dataset.preset;
   const read=key=>JSON.parse(localStorage.getItem(key)||'null');
@@ -116,12 +118,17 @@
         const kind=input('select','kind');kind.append(new Option('꺾은선','line'),new Option('막대','bar'));kind.value=s.kind;
         const opts=el('div','graph-opts');opts.append(field('모양',kind),field('X축 이름',input('input','x','예: 길이(m)')),field('Y축 이름',input('input','y','예: 주기(s)')));li.append(opts);
       }
-      const wrap=el('div','grid-wrap field');const t=el('table','grid');
+      const [lo,hi]=rowRange(s.type);const wrap=el('div','grid-wrap field');const t=el('table','grid');
       s.cells.forEach((r,ri)=>{const tr=el('tr');r.forEach((v,ci)=>{const td=el('td');const f=el('input');f.value=v;f.dataset.i=i;f.dataset.r=ri;f.dataset.c=ci;
         if(s.type==='graph'){if(ri===0){f.placeholder=ci===0?'X':`Y${ci}`;f.setAttribute('aria-label',ci===0?'X 열 이름':`Y${ci} 계열 이름`);}else{f.inputMode='decimal';f.setAttribute('aria-label',`${ri}번째 값 ${ci===0?'X':'Y'+ci}`);}}
         else f.setAttribute('aria-label',ri===0?`머리글 ${ci+1}열`:`${ri+1}행 ${ci+1}열`);
-        td.append(f);tr.append(td);});t.append(tr);});
-      wrap.append(t);li.append(wrap);return li;
+        td.append(f);tr.append(td);});
+        // 행마다 끝에 삭제 — 머리글(이름) 행은 지우지 않는다. 최소 행 수에 닿으면 꺼진다
+        const x=el('td','row-x');if(ri>0){const d=el('button','grid-btn','×');d.type='button';d.dataset.act='row-del';d.dataset.i=i;d.dataset.r=ri;
+          d.setAttribute('aria-label',s.type==='graph'?`${ri}번째 값 행 삭제`:`${ri+1}행 삭제`);d.disabled=s.cells.length<=lo;x.append(d);}
+        tr.append(x);t.append(tr);});
+      const more=el('button','grid-btn row-add','+ 행 추가');more.type='button';more.dataset.act='row-add';more.dataset.i=i;more.disabled=s.cells.length>=hi;
+      wrap.append(t);li.append(wrap,more);return li;
     }));
   }
   fields.forEach(field=>field.addEventListener('input',render));
@@ -130,7 +137,17 @@
   const filled=s=>[s.name,s.body,s.x,s.y,...(s.cells||[]).flat()].some(v=>v&&v.trim());
   list.addEventListener('click',e=>{
     const b=e.target.closest('button[data-act]');if(!b)return;const s=custom.sections;const i=+b.dataset.i;
-    if(b.dataset.act==='del'){
+    if(b.dataset.act==='row-add'){
+      const cells=s[i].cells;cells.push(Array(cells[0].length).fill(''));renderList();
+      list.querySelector(`input[data-i="${i}"][data-r="${cells.length-1}"][data-c="0"]`).focus();
+    }else if(b.dataset.act==='row-del'){
+      const cells=s[i].cells;const r=+b.dataset.r;
+      if(cells[r].some(v=>v.trim())&&!window.confirm('이 행을 지울까요? 적은 값도 함께 사라집니다.'))return;
+      cells.splice(r,1);renderList();
+      // 같은 자리(없으면 위)의 삭제 버튼으로. 다 꺼졌으면 행 추가로
+      const next=list.querySelector(`[data-i="${i}"][data-act="row-del"][data-r="${Math.min(r,cells.length-1)}"]`);
+      (next&&!next.disabled?next:list.querySelector(`[data-i="${i}"][data-act="row-add"]`)).focus();
+    }else if(b.dataset.act==='del'){
       if(filled(s[i])&&!window.confirm('이 항목을 지울까요? 적은 내용도 함께 사라집니다.'))return;
       s.splice(i,1);renderList();(s.length?document.getElementById(`c-name-${Math.min(i,s.length-1)}`):addBtn).focus();
     }else{
