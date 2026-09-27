@@ -5,8 +5,9 @@
   function render(){fields.forEach(field=>{const out=document.getElementById('out-'+field.id);if(!out)return;const value=field.value.trim();out.textContent=field.id==='graph-x'?`X축: ${value||'독립변인'}`:field.id==='graph-y'?`Y축: ${value||'종속변인'}`:(value||empty(field.id));});}
   fields.forEach(field=>field.addEventListener('input',render));
   function save(){const data={};fields.forEach(field=>data[field.id]=field.value);try{localStorage.setItem(KEY,JSON.stringify(data));status.textContent=`임시 저장 완료 · ${new Date().toLocaleString('ko-KR')}`;}catch{status.textContent='브라우저 설정 때문에 임시 저장하지 못했습니다.';}}
-  function restore(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(!data)return;fields.forEach(field=>{if(typeof data[field.id]==='string')field.value=data[field.id];});status.textContent='이 브라우저에 임시 저장된 내용을 불러왔습니다.';}catch{status.textContent='저장된 내용을 읽지 못했습니다.';}render();}
-  document.getElementById('save-button').addEventListener('click',save);document.getElementById('print-button').addEventListener('click',()=>window.print());
+  // ask: 버튼으로 불러올 때 — 저장하지 않은 수정이 있으면 덮어쓰기 전에 묻는다
+  function restore(ask){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(!data){if(ask)status.textContent='불러올 임시 저장본이 없습니다.';return;}if(ask&&fields.some(field=>typeof data[field.id]==='string'&&field.value!==data[field.id])&&!window.confirm('지금 작성 중인 내용이 임시 저장본으로 바뀝니다. 불러올까요?'))return;fields.forEach(field=>{if(typeof data[field.id]==='string')field.value=data[field.id];});status.textContent='이 브라우저에 임시 저장된 내용을 불러왔습니다.';}catch{status.textContent='저장된 내용을 읽지 못했습니다.';}render();}
+  document.getElementById('save-button').addEventListener('click',save);document.getElementById('load-button').addEventListener('click',()=>restore(true));document.getElementById('print-button').addEventListener('click',()=>window.print());
   document.getElementById('reset-button').addEventListener('click',()=>{if(!window.confirm('작성 중인 내용과 이 브라우저의 임시 저장본을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.'))return;fields.forEach(field=>field.value='');try{localStorage.removeItem(KEY);}catch{}status.textContent='보고서 내용을 초기화했습니다.';render();fields[0].focus();});
   restore();
 })();
