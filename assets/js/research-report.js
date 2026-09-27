@@ -8,8 +8,8 @@
   const picker=document.getElementById('size-picker');const sizeR=document.getElementById('size-r');const sizeC=document.getElementById('size-c');
   // 표: 첫 행이 머리글. 그래프: 행 = 측정값 개수(+ 이름 행), 첫 열 = X, 나머지 열 = Y 계열(색이 다섯 개라 최대 5개)
   const SIZE={table:{r:[1,30],c:[1,8],def:[3,3],what:'표 크기',hint:'첫 행은 머리글(굵게)입니다.'},
-              graph:{r:[2,30],c:[2,6],def:[5,2],what:'그래프 데이터',hint:'행 = 측정값 개수, 첫 열 = X값, 나머지 열 = Y값(계열 하나씩, 최대 5개).'}};
-  const KIND={text:'',table:' · 표',graph:' · 그래프'};
+              graph:{r:[2,30],c:[2,6],def:[5,2],what:'그래프 데이터',hint:'행 = 측정값 개수, 첫 열 = X값, 나머지 열 = Y값(계열 하나씩, 최대 5개 · 산점도는 3개).'}};
+  const KIND={text:'',table:' · 표',graph:' · 그래프'};const SCATTER_MAX=3;
   // cells 의 행 수 한도 — 그래프는 첫 행(계열 이름)이 더 있다
   const rowRange=type=>{const h=type==='graph'?1:0;return[SIZE[type].r[0]+h,SIZE[type].r[1]+h];};
   let custom={title:'',sections:[]};let pending=null;
@@ -21,7 +21,7 @@
     const block=s=>{
       const type=s.type==='table'||s.type==='graph'?s.type:'text';const b={type,name:str(s.name)};
       if(type==='text'){b.body=str(s.body);return b;}
-      if(type==='graph'){b.kind=s.kind==='bar'?'bar':'line';b.x=str(s.x);b.y=str(s.y);}
+      if(type==='graph'){b.kind=s.kind==='bar'||s.kind==='scatter'?s.kind:'line';b.x=str(s.x);b.y=str(s.y);}
       const lim=SIZE[type];const rows=(Array.isArray(s.cells)?s.cells:[]).filter(Array.isArray).slice(0,lim.r[1]+(type==='graph'?1:0));
       const cols=Math.min(lim.c[1],Math.max(lim.c[0],...rows.map(r=>r.length)));
       b.cells=(rows.length?rows:[[]]).map(r=>Array.from({length:cols},(_,c)=>str(r[c])));
@@ -46,17 +46,19 @@
     return {lo:a,hi:b,ticks,fmt:v=>v.toLocaleString('ko-KR',{maximumFractionDigits:dec})};
   }
   function drawGraph(b){
-    const head=b.cells[0];const rows=b.cells.slice(1);const series=head.slice(1).map((h,j)=>({name:h.trim()||`Y${j+1}`,color:`var(--series-${j+1})`}));
-    const bar=b.kind==='bar';
-    // 막대: X는 이름표(글자 가능). 꺾은선: X도 숫자여야 하고 X 순으로 잇는다
-    const data=rows.map(r=>({label:r[0].trim(),x:num(r[0]),ys:r.slice(1).map(num)})).filter(d=>d.ys.some(y=>y!==null)&&(bar||d.x!==null));
+    const bar=b.kind==='bar';const dots=b.kind==='scatter';
+    // 산점도는 모든 계열 쌍이 서로 구분돼야 해서 팔레트 앞 3색까지만 쓴다(4색째 노랑↔주황이 검증 실패)
+    const end=dots?1+SCATTER_MAX:undefined;const head=b.cells[0].slice(0,end);const rows=b.cells.slice(1);
+    const series=head.slice(1).map((h,j)=>({name:h.trim()||`Y${j+1}`,color:`var(--series-${j+1})`}));
+    // 막대: X는 이름표(글자 가능). 꺾은선·산점도: X도 숫자여야 한다(꺾은선은 X 순으로 잇는다)
+    const data=rows.map(r=>({label:r[0].trim(),x:num(r[0]),ys:r.slice(1,end).map(num)})).filter(d=>d.ys.some(y=>y!==null)&&(bar||d.x!==null));
     if(!data.length)return[el('p','preview-text custom-empty',bar?'Y값에 숫자를 넣으면 막대그래프가 그려집니다.':'X·Y값에 숫자를 넣으면 그래프가 그려집니다.')];
     if(!bar)data.sort((p,q)=>p.x-q.x);
     const W=Math.min(640,Math.max(280,customOut.clientWidth||520));const H=Math.round(Math.min(300,W*.6));
     const m={l:46,r:14,t:26,b:40};const pw=W-m.l-m.r;const ph=H-m.t-m.b;
     const ys=data.flatMap(d=>d.ys).filter(y=>y!==null);const sy=bar?scale(Math.min(0,...ys),Math.max(0,...ys)):scale(Math.min(...ys),Math.max(...ys));
     const Y=v=>m.t+ph-(v-sy.lo)/(sy.hi-sy.lo)*ph;
-    const g=svg('svg',{class:'graph-svg',width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`${b.name.trim()||'그래프'} — ${bar?'막대':'꺾은선'}그래프`});
+    const g=svg('svg',{class:'graph-svg',width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`${b.name.trim()||'그래프'} — ${bar?'막대그래프':dots?'산점도':'꺾은선그래프'}`});
     sy.ticks.forEach(v=>{g.append(svg('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),style:'stroke:var(--hairline);stroke-width:1'}),svg('text',{x:m.l-6,y:Y(v)+4,'text-anchor':'end','font-size':11,style:'fill:var(--muted)'},sy.fmt(v)));});
     g.append(svg('line',{x1:m.l,x2:m.l,y1:m.t,y2:m.t+ph,style:'stroke:var(--muted);stroke-width:1'}));
     if(b.y.trim())g.append(svg('text',{x:m.l-6,y:12,'font-size':11,style:'fill:var(--body)'},b.y.trim()));
@@ -78,12 +80,13 @@
       sx.ticks.forEach(v=>g.append(svg('text',{x:X(v),y:m.t+ph+16,'text-anchor':'middle','font-size':11,style:'fill:var(--muted)'},sx.fmt(v))));
       series.forEach((s,j)=>{
         const pts=data.filter(d=>d.ys[j]!=null).map(d=>[X(d.x),Y(d.ys[j]),d]);if(!pts.length)return;
-        g.append(svg('polyline',{points:pts.map(p=>p[0]+','+p[1]).join(' '),style:`fill:none;stroke:${s.color};stroke-width:2`,'stroke-linejoin':'round','stroke-linecap':'round'}));
+        if(!dots)g.append(svg('polyline',{points:pts.map(p=>p[0]+','+p[1]).join(' '),style:`fill:none;stroke:${s.color};stroke-width:2`,'stroke-linejoin':'round','stroke-linecap':'round'}));
         pts.forEach(([x,y,d])=>{const dot=svg('g',{});dot.append(svg('circle',{cx:x,cy:y,r:12,fill:'transparent'}),svg('circle',{cx:x,cy:y,r:4,style:`fill:${s.color};stroke:var(--canvas);stroke-width:2`}),svg('title',{},`${s.name} · X ${d.x.toLocaleString('ko-KR')}: ${d.ys[j].toLocaleString('ko-KR')}`));g.append(dot);});
       });
     }
     const out=[g];
-    if(series.length>1){const lg=el('div','graph-legend');series.forEach(s=>{const it=el('span');const k=el('i',bar?'box':'');k.style.setProperty('--c',s.color);it.append(k,s.name);lg.append(it);});out.push(lg);}
+    if(series.length>1){const lg=el('div','graph-legend');series.forEach(s=>{const it=el('span');const k=el('i',bar?'box':dots?'dot':'');k.style.setProperty('--c',s.color);it.append(k,s.name);lg.append(it);});out.push(lg);}
+    if(b.cells[0].length>head.length)out.push(el('p','preview-text custom-empty',`산점도는 점 색이 섞이지 않게 계열 ${SCATTER_MAX}개까지만 그립니다. 나머지는 그래프를 나눠 주세요.`));
     return out;
   }
   function drawTable(b){
@@ -115,10 +118,10 @@
       li.append(head,field('이름',input('input','name',s.type==='table'?'예: 측정 결과표':s.type==='graph'?'예: 진자 길이와 주기':'예: 관찰 계기')));
       if(s.type==='text'){li.append(field('내용',input('textarea','body')));return li;}
       if(s.type==='graph'){
-        const kind=input('select','kind');kind.append(new Option('꺾은선','line'),new Option('막대','bar'));kind.value=s.kind;
+        const kind=input('select','kind');kind.append(new Option('꺾은선','line'),new Option('막대','bar'),new Option('산점도','scatter'));kind.value=s.kind;
         const opts=el('div','graph-opts');opts.append(field('모양',kind),field('X축 이름',input('input','x','예: 길이(m)')),field('Y축 이름',input('input','y','예: 주기(s)')));li.append(opts);
       }
-      const [lo,hi]=rowRange(s.type);const [clo,chi]=SIZE[s.type].c;const cols=s.cells[0].length;const wrap=el('div','grid-wrap field');const t=el('table','grid');
+      const [lo,hi]=rowRange(s.type);const clo=SIZE[s.type].c[0];const chi=s.kind==='scatter'?1+SCATTER_MAX:SIZE[s.type].c[1];const cols=s.cells[0].length;const wrap=el('div','grid-wrap field');const t=el('table','grid');
       const mini=(act,text,off,label)=>{const d=el('button','grid-btn',text);d.type='button';d.dataset.act=act;d.dataset.i=i;d.disabled=off;if(label)d.setAttribute('aria-label',label);return d;};
       // 맨 위 줄 = 열마다 삭제. 그래프의 X 열은 지우지 않는다. 최소 열 수에 닿으면 꺼진다
       const top=el('tr','col-x');
@@ -137,7 +140,10 @@
   }
   fields.forEach(field=>field.addEventListener('input',render));
   cTitle.addEventListener('input',()=>{custom.title=cTitle.value;render();});
-  list.addEventListener('input',e=>{const t=e.target;if(t.dataset.i==null)return;const s=custom.sections[+t.dataset.i];if(t.dataset.r!=null)s.cells[+t.dataset.r][+t.dataset.c]=t.value;else if(t.dataset.key)s[t.dataset.key]=t.value;else return;render();});
+  list.addEventListener('input',e=>{const t=e.target;if(t.dataset.i==null)return;const s=custom.sections[+t.dataset.i];if(t.dataset.r!=null)s.cells[+t.dataset.r][+t.dataset.c]=t.value;else if(t.dataset.key)s[t.dataset.key]=t.value;else return;
+    // 모양이 바뀌면 열 한도(산점도 4열)가 달라지니 입력칸을 다시 그린다
+    if(t.dataset.key==='kind'){renderList();document.getElementById(`c-kind-${t.dataset.i}`).focus();}
+    render();});
   const filled=s=>[s.name,s.body,s.x,s.y,...(s.cells||[]).flat()].some(v=>v&&v.trim());
   list.addEventListener('click',e=>{
     const b=e.target.closest('button[data-act]');if(!b)return;const s=custom.sections;const i=+b.dataset.i;
