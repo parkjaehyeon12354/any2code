@@ -21,7 +21,7 @@
     const block=s=>{
       const type=s.type==='table'||s.type==='graph'?s.type:'text';const b={type,name:str(s.name)};
       if(type==='text'){b.body=str(s.body);return b;}
-      if(type==='graph'){b.kind=KIND_OF[s.kind]?s.kind:'line';b.x=str(s.x);b.y=str(s.y);b.trend=s.trend===true;b.err=s.err==='sd'?'sd':'range';b.title=str(s.title);b.xu=str(s.xu);b.yu=str(s.yu);}
+      if(type==='graph'){b.kind=KIND_OF[s.kind]?s.kind:'line';b.x=str(s.x);b.y=str(s.y);b.trend=s.trend===true;b.err=s.err==='sd'?'sd':'range';b.title=str(s.title);b.xu=str(s.xu);b.yu=str(s.yu);b.legend=LEGEND_AT[s.legend]?s.legend:'bottom';}
       const lim=SIZE[type];const rows=(Array.isArray(s.cells)?s.cells:[]).filter(Array.isArray).slice(0,lim.r[1]+(type==='graph'?1:0));
       const cols=Math.min(lim.c[1],Math.max(lim.c[0],...rows.map(r=>r.length)));
       b.cells=(rows.length?rows:[[]]).map(r=>Array.from({length:cols},(_,c)=>str(r[c])));
@@ -64,11 +64,16 @@
   const maxCols=kind=>1+(MAX_Y[kind]||SIZE.graph.c[1]-1);
   const TOO_MANY={scatter:'산점도는 점 색이 섞이지 않게 계열 3개까지만 그립니다. 나머지는 그래프를 나눠 주세요.',pie:'원그래프는 둘째 열(첫 Y 열)만 씁니다.',hist:'히스토그램은 둘째 열(첫 Y 열)의 값만 씁니다.'};
   const TREND=['line','scatter'];   // 추세선을 켤 수 있는 모양
+  // 범례 위치. 계열 2개 이상이면 범례는 반드시 보인다(dataviz) — 숨김은 없다
+  const LEGEND_AT={bottom:'아래',top:'위',right:'오른쪽',left:'왼쪽'};
+  const SIDE_W=140;const SIDE_MIN=440;   // 옆 범례 폭, 이보다 좁은 칸이면 옆 범례를 아래로 내린다
+  const hasLegend=s=>s.kind==='pie'||(!['error','hist'].includes(s.kind)&&Math.min(s.cells[0].length,maxCols(s.kind))-1>=2);
+  let reserve=0;   // drawGraph 가 그리는 동안만 쓰는 옆 범례 몫
   const muted=t=>el('p','preview-text custom-empty',t);
   const tip=(n,t)=>{n.append(svg('title',{},t));return n;};
   // 판 — 왼쪽 여백은 가로 막대의 이름표 길이(글자 수)에 맞춰 넓힌다
   function frame(b,chars){
-    const W=Math.min(640,Math.max(280,customOut.clientWidth||520));const H=Math.round(Math.min(300,W*.6));
+    const W=Math.min(640,Math.max(280,(customOut.clientWidth||520)-reserve));const H=Math.round(Math.min(300,W*.6));
     const m={l:Math.round(Math.min(Math.max(46,(chars||0)*11+12),W*.34)),r:24,t:26,b:40};   // 오른쪽 24 — 끝 눈금(100%, 185)이 잘리지 않게
     const g=svg('svg',{class:'graph-svg',width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`${b.title.trim()||b.name.trim()||'그래프'} — ${KIND_OF[b.kind][2]}`});
     return {g,W,H,m,pw:W-m.l-m.r,ph:H-m.t-m.b};
@@ -218,7 +223,16 @@
   function drawGraph(b){
     const lim=MAX_Y[b.kind];const end=lim?1+lim:undefined;const head=b.cells[0].slice(0,end);
     const series=head.slice(1).map((h,j)=>({name:h.trim()||`Y${j+1}`,color:`var(--series-${j+1})`}));
-    const out=DRAW[b.kind](b,series,rowsOf(b,end));
+    const room=customOut.clientWidth||520;const side=(b.legend==='right'||b.legend==='left')&&room>=SIDE_MIN&&hasLegend(b);
+    reserve=side?SIDE_W+12:0;const out=DRAW[b.kind](b,series,rowsOf(b,end));reserve=0;
+    // 계열 범례(추세선 식 범례는 빼고)를 고른 자리로 옮긴다
+    const lg=out.find(n=>n.classList&&n.classList.contains('graph-legend')&&!n.querySelector('i.dash'));const g=out[0];
+    if(lg&&g instanceof SVGElement&&b.legend!=='bottom'){
+      out.splice(out.indexOf(lg),1);
+      if(side){const wrap=el('div','graph-side');lg.classList.add('vertical');wrap.append(...(b.legend==='left'?[lg,g]:[g,lg]));out[0]=wrap;}
+      else if(b.legend==='top')out.unshift(lg);
+      else out.splice(1,0,lg);   // 좁아서 옆에 못 두면 아래
+    }
     if(b.title.trim())out.unshift(el('p','graph-title',b.title.trim()));
     if(b.cells[0].length>head.length)out.push(muted(TOO_MANY[b.kind]));
     return out;
@@ -260,6 +274,7 @@
           field('Y축 이름',input('input','y',hist?'예: 도수':'예: 주기')),field('Y축 단위',input('input','yu',hist?'예: 명':'예: s')));
         li.append(axes);const extra=el('div','graph-extra');
         if(TREND.includes(s.kind)){const c=el('input');c.type='checkbox';c.id=`c-trend-${i}`;c.checked=s.trend;c.dataset.i=i;c.dataset.key='trend';const l=el('label','check');l.htmlFor=c.id;l.append(c,'추세선(최소제곱 직선과 식) 그리기');extra.append(l);}
+        if(hasLegend(s)){const at=input('select','legend');Object.entries(LEGEND_AT).forEach(([v,t])=>at.append(new Option(t,v)));at.value=s.legend;extra.append(field('범례 위치',at));}
         if(s.kind==='error'){const e=input('select','err');e.append(new Option('최소 ~ 최대','range'),new Option('평균 ± 표준편차','sd'));e.value=s.err;extra.append(field('오차 범위',e));}
         extra.append(el('p','graph-guide',KIND_OF[s.kind][3]));li.append(extra);
       }
@@ -331,7 +346,7 @@
   picker.addEventListener('submit',e=>{
     e.preventDefault();if(!pending)return;const rows=+sizeR.value;const cols=+sizeC.value;
     const cells=Array.from({length:rows+(pending==='graph'?1:0)},()=>Array(cols).fill(''));
-    add(pending==='graph'?{type:'graph',name:'',kind:'line',x:'',y:'',trend:false,err:'range',title:'',xu:'',yu:'',cells}:{type:'table',name:'',cells});
+    add(pending==='graph'?{type:'graph',name:'',kind:'line',x:'',y:'',trend:false,err:'range',title:'',xu:'',yu:'',legend:'bottom',cells}:{type:'table',name:'',cells});
   });
   document.getElementById('size-cancel').addEventListener('click',()=>{picker.hidden=true;document.getElementById('add-'+pending).focus();pending=null;});
   // 그래프 폭은 미리보기 칸 폭에 맞춰 그린다(글자가 줄어들지 않게)
