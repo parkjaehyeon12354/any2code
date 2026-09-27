@@ -288,7 +288,7 @@ state.theta += state.omega * DT;
 | 요청 크기 | 32KB 초과는 파싱 전 413 |
 | 킬 스위치 | `LOCKDOWN=1` → 모든 API 503 (Azure 포털에서만 조작 가능) |
 
-`npm audit` 취약점 0건. 테스트 338개 통과.
+`npm audit` 취약점 0건. 테스트 339개 통과.
 
 ### 비상 대응
 

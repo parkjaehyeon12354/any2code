@@ -890,6 +890,22 @@ test('네비 링크가 아무 데도 가지 않는 채로 남지 않는다', () 
   assert.deepStrictEqual(broken, [], '갈 수 있는 페이지인데 링크가 죽어 있다');
 });
 
+test('어떤 페이지에선 살아 있는 링크가 다른 페이지에선 # 이지 않다', () => {
+  /* 시뮬 19개 파일의 드롭다운에서 심화 탐구 하위 여섯 항목이 전부 href="#" 였다.
+     단진자·전자기 유도에선 /research/* 로 살아 있었다 — 옛 헤더를 복사해 만든 탓.
+     위 검사는 data-dropdown 트리거만 봐서 못 잡았다. 같은 글자의 링크끼리 비교한다. */
+  const real = new Map();
+  const dead = [];
+  for (const file of PAGES) {
+    const src = read(file);
+    for (const m of src.matchAll(/<a href="([^"#][^"]*)"[^>]*>([^<]+)<\/a>/g)) real.set(m[2].trim(), m[1]);
+    for (const m of src.matchAll(/<a href="#">([^<]+)<\/a>/g)) dead.push([path.relative(ROOT, file), m[1].trim()]);
+  }
+  const broken = dead.filter(([, label]) => real.has(label))
+    .map(([file, label]) => `${file}: "${label}" 가 href="#" 인데 다른 페이지에선 ${real.get(label)}`);
+  assert.deepStrictEqual(broken, [], '다른 페이지에선 살아 있는 링크가 여기선 죽어 있다');
+});
+
 test('시뮬레이션을 나열하지 않는 페이지도 갈 길은 있다', () => {
   /* research/* 처럼 개별 목록을 안 그리더라도, 최소한 시뮬레이션 목록으로는
      갈 수 있어야 막다른 페이지가 되지 않는다.
