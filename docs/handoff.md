@@ -109,7 +109,7 @@ Gemini 는 요금제 전용이고, 무료는 Solar 만 씁니다. 크레딧·요
   `val()` 가 붙인다 — **한글 단위(명·개·초)는 붙이고 기호(m·s·cm)는 띄운다**(「8명」, 「0.9 s」). 값 툴팁 · 원그래프
   범례 · 오차 막대 · 히스토그램 구간에 다 들어간다. 원그래프는 「값 단위」 하나만. 필드가 없던 옛 저장본도 그대로.
   확인 `pwtest/report-units.cjs`(13).
-- **라이브 확인(9/27, `2760eb8`)** — 보고서 확인 스크립트 9개는 `URL` 환경변수로 라이브를 볼 수 있다:
+- **라이브 확인(9/27, `2760eb8`)** — 보고서 확인 스크립트(지금 10개, `report-*.cjs`)는 `URL` 환경변수로 라이브를 볼 수 있다:
   `set URL=https://ans2quest.com/research/report?cachebust=<sha>` 후 `node report-kinds.cjs` 등. 먼저
   `node clear-cache.cjs` 로 자동화 크롬 캐시를 비운다(예전 JS 를 쓰지 않게). 저장본은 스크립트가 백업·복원한다.
   전부 통과, 단 `report-blocks` 의 「라이트 선 색」 1개는 **그 프로필이 `ans2quest_theme=dark` 라서** 다크 색이
