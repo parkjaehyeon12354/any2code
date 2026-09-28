@@ -29,6 +29,10 @@
       "rewrite": "/guide.html"
     },
     {
+      "route": "/custom",
+      "rewrite": "/custom.html"
+    },
+    {
       "route": "/research",
       "rewrite": "/research/index.html"
     },

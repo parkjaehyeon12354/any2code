@@ -906,6 +906,24 @@ test('어떤 페이지에선 살아 있는 링크가 다른 페이지에선 # �
   assert.deepStrictEqual(broken, [], '다른 페이지에선 살아 있는 링크가 여기선 죽어 있다');
 });
 
+test('커스텀(창작마당)이 모든 헤더와 모바일 메뉴에 있고 실제로 열린다', () => {
+  /* 35개 헤더에 한꺼번에 넣었다. 새 페이지를 옛 헤더로 복사하면 여기서 빠진다. */
+  const missing = [];
+  for (const p of PAGES) {
+    const html = read(p);
+    const mobileStart = html.indexOf('class="mobile-menu"');
+    if (mobileStart < 0) continue;   // 네비가 없는 화면(로그인·환영)
+    const rel = path.relative(ROOT, p);
+    const navStart = html.indexOf('class="nav-links"');
+    if (navStart >= 0 && !html.slice(navStart, mobileStart).includes('href="/custom"')) missing.push(`${rel}: 헤더`);
+    if (!html.slice(mobileStart).includes('<a href="/custom">커스텀</a>')) missing.push(`${rel}: 모바일 메뉴`);
+  }
+  assert.deepStrictEqual(missing, [], '커스텀 메뉴가 빠진 곳');
+  assert.ok(fs.existsSync(path.join(ROOT, 'custom.html')));
+  const routes = JSON.parse(read(path.join(ROOT, 'staticwebapp.config.json'))).routes;
+  assert.ok(routes.some((r) => r.route === '/custom' && r.rewrite === '/custom.html'), '/custom 경로 규칙이 없으면 404');
+});
+
 test('시뮬레이션을 나열하지 않는 페이지도 갈 길은 있다', () => {
   /* research/* 처럼 개별 목록을 안 그리더라도, 최소한 시뮬레이션 목록으로는
      갈 수 있어야 막다른 페이지가 되지 않는다.
