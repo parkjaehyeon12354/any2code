@@ -160,7 +160,7 @@ async function displayName(user) {
 /** 본인이 쓴 글·답변의 작성자명을 새 이름으로 맞춘다. 고친 개수를 돌려준다. */
 async function renameOwnContent(sub, name) {
   const rows = await query({
-    query: "SELECT c.id, c.pk FROM c WHERE c.type IN ('post', 'comment') AND c.authorSub = @u",
+    query: "SELECT c.id, c.pk FROM c WHERE c.type IN ('post', 'comment', 'workshop') AND c.authorSub = @u",
     parameters: [{ name: '@u', value: sub }]
   });
   const c = container();
@@ -347,12 +347,14 @@ async function purge(sub) {
       parameters: [{ name: '@s', value: sub }]
     }),
     query({
-      query: "SELECT c.id, c.pk, c.type FROM c WHERE c.type IN ('post', 'comment') AND c.authorSub = @s AND c.status != 'deleted'",
+      query: "SELECT c.id, c.pk, c.type FROM c WHERE c.type IN ('post', 'comment', 'workshop') AND c.authorSub = @s AND c.status != 'deleted'",
       parameters: [{ name: '@s', value: sub }]
     })
   ]);
 
   for (const row of content) {
+    // 창작마당 자료는 남길 이유가 없다 — 다른 사람 글에 달린 답변과 달리 스레드가 끊기지 않는다
+    if (row.type === 'workshop') { await c.item(row.id, row.pk).delete(); continue; }
     const emptyBody = row.type === 'post' ? '(탈퇴한 사용자의 글입니다.)' : '(탈퇴한 사용자의 답변입니다.)';
     await c.item(row.id, row.pk).patch([
       { op: 'set', path: '/status', value: 'deleted' },

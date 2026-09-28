@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/research-pages.css">
   <script src="/assets/js/theme.js"></script>
   <style>
     .custom-main { padding-bottom: var(--sp-section); }
@@ -28,7 +29,26 @@
     .custom-upload { margin-top: 56px; scroll-margin-top: 76px; padding: 28px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
     .custom-upload h2 { color: var(--ink); font-family: var(--font-display); font-size: 24px; }
     .custom-upload p { margin-top: 10px; color: var(--body); font-size: 14px; line-height: 1.75; word-break: keep-all; }
-    @media(max-width:700px){.custom-hero{padding:48px 0}.custom-content{padding-top:32px}.custom-empty{padding:44px 18px}.custom-upload{padding:22px}}
+    .custom-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .custom-count { color: var(--muted); font-size: 13px; }
+    .up-form { display: grid; gap: 16px; margin-bottom: 24px; padding: 24px; }
+    .up-form h2 { color: var(--ink); font-size: 18px; }
+    .up-row { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+    .up-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .up-msg { color: var(--muted); font-size: 13px; }
+    .up-msg.error { color: var(--error); }
+    .custom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; list-style: none; }
+    .custom-card { display: flex; flex-direction: column; gap: 10px; padding: 22px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .custom-card h3 { color: var(--ink); font-size: 17px; line-height: 1.4; word-break: keep-all; }
+    .custom-card p, .custom-card details { color: var(--body); font-size: 14px; line-height: 1.65; word-break: keep-all; }
+    .custom-card .body { margin-top: 8px; white-space: pre-wrap; }
+    .custom-card summary { cursor: pointer; color: var(--primary-active); font-weight: 650; }
+    .custom-card .open, .up-form .field-help a { color: var(--primary-active); font-weight: 700; }
+    .up-form .field-help a { text-decoration: underline; text-underline-offset: 3px; }
+    .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; color: var(--muted); font-size: 12.5px; }
+    .card-foot .btn { padding: 6px 12px; font-size: 12.5px; }
+    @media(max-width:700px){.custom-hero{padding:48px 0}.custom-content{padding-top:32px}.custom-empty{padding:44px 18px}.custom-upload{padding:22px}.up-form{padding:18px}.up-row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -126,8 +146,23 @@
         <a href="/custom?kind=inquiry" data-kind="inquiry">탐구 주제·실험 설계</a>
         <a href="/custom?kind=etc" data-kind="etc">기타</a>
       </nav>
-      <section class="custom-empty" aria-live="polite"><h2>아직 올라온 자료가 없습니다</h2><p id="empty-text">선생님과 관리자가 자료를 올리면 여기에 나타납니다.</p></section>
-      <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>지금은 선생님과 관리자만 자료를 올릴 수 있습니다. 올리기 기능이 열리면 이 화면에 올리기 버튼이 생기고, 올라온 자료는 누구나 둘러보고 가져다 쓸 수 있습니다.</p></section>
+      <div class="custom-bar"><span class="custom-count" id="count" aria-live="polite">불러오는 중…</span><button class="btn btn-primary" id="up-open" type="button" hidden>올리기</button></div>
+      <form class="up-form edu-panel" id="up-form" hidden>
+        <h2>자료 올리기</h2>
+        <div class="up-row">
+          <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션 조건</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
+          <div class="field"><label for="up-title">제목</label><input id="up-title" maxlength="60" required placeholder="예: 마찰력 탐구 보고서 양식"></div>
+        </div>
+        <div class="field"><label for="up-desc">설명 <span class="field-help">(선택)</span></label><textarea id="up-desc" maxlength="500" placeholder="어떤 수업·탐구에 쓰면 좋은지 적어 주세요."></textarea></div>
+        <div class="field" data-for="report"><span class="field-title">올릴 양식</span><p class="field-help" id="up-report"></p></div>
+        <div class="field" data-for="simulation" hidden><label for="up-link">공유 링크</label><input id="up-link" type="url" placeholder="https://ans2quest.com/simulation/…"><p class="field-help">시뮬레이션에서 조건을 맞춘 뒤 「공유 링크 만들기」로 복사한 주소를 붙여 넣으세요.</p></div>
+        <div class="field" data-for="text" hidden><label for="up-body">내용</label><textarea id="up-body" maxlength="4000"></textarea></div>
+        <div class="up-actions"><button class="btn btn-primary" type="submit">올리기</button><button class="btn btn-ghost" id="up-cancel" type="button">취소</button><span class="up-msg" id="up-msg" aria-live="polite"></span></div>
+      </form>
+      <p class="up-msg error" id="list-msg" role="alert" hidden></p>
+      <ul class="custom-grid" id="items" aria-label="올라온 자료"></ul>
+      <section class="custom-empty" id="empty" hidden><h2>아직 올라온 자료가 없습니다</h2><p id="empty-text">선생님과 관리자가 자료를 올리면 여기에 나타납니다.</p></section>
+      <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>자료는 선생님(티처 요금제)과 관리자만 올릴 수 있습니다. 올릴 수 있는 계정으로 로그인하면 목록 위에 올리기 버튼이 보입니다. 올라온 자료는 누구나 둘러볼 수 있고, 올린 사람과 관리자만 지울 수 있습니다.</p></section>
     </div>
   </main>
   <div class="mobile-menu" id="mobile-menu">
@@ -163,15 +198,6 @@
     <div class="mobile-menu-actions" id="mobile-cta"><a href="/signup" class="btn btn-primary" style="width:100%">회원가입</a></div>
   </div>
   <script src="/assets/js/session.js"></script><script src="/assets/js/nav-user.js"></script><script src="/assets/js/nav-dropdown.js"></script>
-  <script>
-    // ?kind= 로 고른 종류를 표시한다. 목록 API 가 생기면 같은 값으로 거른다
-    (function () {
-      var kind = new URLSearchParams(location.search).get('kind') || '';
-      var tabs = document.querySelectorAll('.kind-tabs a');
-      var tab = Array.prototype.find.call(tabs, function (a) { return a.dataset.kind === kind; }) || tabs[0];
-      tab.setAttribute('aria-current', 'page');
-      if (tab !== tabs[0]) document.getElementById('empty-text').textContent = tab.textContent + ' 자료가 올라오면 여기에 나타납니다.';
-    })();
-  </script>
+  <script src="/assets/js/custom-workshop.js"></script>
 </body>
 </html>

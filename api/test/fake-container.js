@@ -48,6 +48,7 @@ function createFake() {
           if (q.includes('c.pk = @p')) out = out.filter((d) => d.pk === p('@p'));
           if (q.includes('c.pk = @s')) out = out.filter((d) => d.pk === p('@s'));
           if (q.includes('c.id = @id')) out = out.filter((d) => d.id === p('@id'));
+          if (q.includes('c.kind = @k')) out = out.filter((d) => d.kind === p('@k'));
           if (q.includes('c.userSub = @u')) out = out.filter((d) => d.userSub === p('@u'));
           if (q.includes('c.authorSub = @u')) out = out.filter((d) => d.authorSub === p('@u'));
           if (q.includes('c.authorSub = @s')) out = out.filter((d) => d.authorSub === p('@s'));
