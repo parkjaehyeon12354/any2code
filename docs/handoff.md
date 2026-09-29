@@ -1,6 +1,6 @@
 # 인수인계 — Ans2Quest
 
-마지막 갱신: 2026-09-29 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교 · 관리자 요금제 · 커스텀(창작마당) HTML 실행 · 5×5 목록 · 대표 이미지 · 게임 · 퀴즈 종류
+마지막 갱신: 2026-09-29 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교 · 관리자 요금제 · 커스텀(창작마당) HTML 실행 · 5×5 목록 · 대표 이미지 · 게임 · 퀴즈 종류 · 휴대폰 좌우 여백(시뮬레이션 목록 · 커뮤니티 · 설정)
 
 새 대화를 시작하는 사람이 **이 파일 하나만 읽고** 이어받을 수 있게 쓴 문서입니다.
 프로젝트 전체 상태는 [progress.md](progress.md)에, 도구·환경 규칙은 저장소 밖
@@ -123,6 +123,20 @@ Gemini 는 요금제 전용이고, 무료는 Solar 만 씁니다. 크레딧·요
   `c81ac01`(범례 위치) 배포 뒤 11개 전부 통과 — legend 13 · units 13 · kinds 18 · blocks 15 · rows 13 · cols 13 ·
   scatter 7 · custom 15 · preset 7 · load 7, 콘솔 오류 0.
 
+## 9/29 — 커뮤니티 · 설정 휴대폰 여백 (`97a7653` · `25cb850`)
+
+- 원인은 시뮬레이션 목록(`ed0f73a`)과 같다: `<main class="container X">` 에 `X { padding: A 0 B }` 를 한 줄로 써서
+  `.container` 의 좌우 여백(24px)이 0 으로 덮였다 → 휴대폰에서 글이 화면 끝에 붙음. `padding-top` · `padding-bottom` 으로 나눠 씀.
+  이제 `container` 를 쓰는 main 25곳에 그런 줄이 없다(`/custom` · `/simulation/` · `/community` · `/settings` + 시뮬레이션 21개).
+- **`/community` 는 375px 에서 가로로 33px 넘치기도 했다** — 900px 이하 1열 격자가 `1fr` 이라 최솟값이 내용 폭이 되어,
+  옆으로 늘어선 과목 버튼 줄(408px)이 열을 넓혔다. `minmax(0, 1fr)` 로 바꿔 버튼 줄 안에서만 스크롤된다(보이는 폭 312 ·
+  전체 408). 넘치는 요소 찾기 `pwtest/overflow-find.cjs`(`U` 에 주소).
+- **`/settings` 는 `max-width: 680px` 가 `border-box`** 라 여백을 살리면 본문이 632px 로 준다 →
+  `calc(680px + 2 * var(--sp-lg))` 로 데스크톱 본문 680px 유지. 확인 `pwtest/settings-check.cjs`.
+- `/community` · `/simulation/` 은 데스크톱 본문 폭이 1200 → 1152px 로 다른 페이지와 같아졌다(여백이 생긴 만큼, 의도).
+- **라이브** — `/community` 375px 여백 24px · 페이지 넘침 0 · 과목 줄만 스크롤(캡처 확인), `/settings`(관리자 로그인 상태)
+  375px 여백 24px · 넘침 0, 1280px 본문 680px(캡처 확인). 354개.
+
 ## 9/29 — 창작마당 종류에 게임 · 퀴즈 (`6c56478`)
 
 - 사용자 요청 「검색 탭에 게임 퀴즈 같은 것도」 → 종류 필터에 새 종류, **게임 · 퀴즈 따로**(사용자 결정). 이제 여섯 개:
@@ -156,8 +170,8 @@ Gemini 는 요금제 전용이고, 무료는 Solar 만 씁니다. 크레딧·요
   지우기 · 탈퇴(`profile.purge`) 때 이미지도 지운다. 요청 상한 256KB → **352KB**(HTML 200KB 의 JSON + 이미지 base64 86KB).
 - `.custom-main` 은 좌우 여백을 `.container` 에 맡긴다 — `padding: X 0 Y` 한 줄로 쓰면 0 으로 덮여 휴대폰에서 카드가
   화면 끝에 붙는다. `/simulation/` 목록도 같았다 — `ed0f73a` 에서 같은 방법으로 고침(375px 0 → 24px, 개별 시뮬레이션 21개는
-  원래 정상). **`/community` · `/settings` 도 main 좌우 여백이 0** 이고, `/community` 는 375px 에서 가로로 33px 넘친다
-  (라이브 확인, 손대지 않음). 재는 스크립트 `pwtest/pad-check.cjs`(`PAGES` 에 경로 — Git Bash 에선 `MSYS_NO_PATHCONV=1`).
+  원래 정상). `/community` · `/settings` 도 같았다 — 위 「커뮤니티 · 설정 휴대폰 여백」에서 고침. 재는 스크립트
+  `pwtest/pad-check.cjs`(`PAGES` 에 경로 — Git Bash 에선 `MSYS_NO_PATHCONV=1`).
 - 테스트 `workshop.test.js` 「대표 이미지」 추가 + 탈퇴 테스트에 이미지. JPEG 머리 확인 · 지우기 · 탈퇴 · 캐시 규칙 순서 · 목록이
   이미지를 읽는지 — 다섯 곳을 하나씩 망가뜨려 빨간불 확인. 353개.
 - 로컬 `pwtest/custom-html.cjs` 18/18 — 5열 · `?kind=` · 30개 → 25개+쪽 · 2쪽 · 검색 · 기본 그림 · 대표 이미지 400×250 ·
