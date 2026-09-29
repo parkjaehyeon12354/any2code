@@ -15,7 +15,8 @@
 /* 이 페이지 전용. 공용 토큰/네비/푸터는 styles.css 에 있다.
    커뮤니티는 '훑어보고 찾는' 화면이라 랜딩보다 밀도가 높고 파티클도 없다. */
 
-.community { padding: var(--sp-xl) 0 var(--sp-section); }
+/* 좌우 여백은 .container 의 것을 쓴다 — padding 한 줄로 쓰면 0 으로 덮여 휴대폰에서 글이 화면 끝에 붙는다 */
+.community { padding-top: var(--sp-xl); padding-bottom: var(--sp-section); }
 
 .page-head {
   display: flex;
@@ -183,7 +184,8 @@
 
 
 @media (max-width: 900px) {
-  .community-layout { grid-template-columns: 1fr; }
+  /* 1fr 의 최솟값은 내용 폭이라, 옆으로 늘어선 과목 버튼 줄이 열을 넓혀 화면이 가로로 넘쳤다 — 줄 안에서만 스크롤되게 0 부터 */
+  .community-layout { grid-template-columns: minmax(0, 1fr); }
   .channels { position: static; }
   .channels .list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
   .channel { width: auto; white-space: nowrap; }
