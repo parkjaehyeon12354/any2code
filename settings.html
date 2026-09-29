@@ -15,7 +15,9 @@
 /* 이 페이지 전용. 공용 토큰·네비·버튼은 styles.css 에 있다.
    한 사람이 자기 것만 보는 화면이라 폭을 좁게 잡는다 — 커뮤니티처럼 훑는 화면이
    아니고, 입력란이 화면 끝까지 늘어나면 어디를 봐야 할지 모르게 된다. */
-.settings { max-width: 680px; padding: var(--sp-xl) 0 var(--sp-section); }
+/* 좌우 여백은 .container 의 것을 쓴다 — padding 한 줄로 쓰면 0 으로 덮여 휴대폰에서 글이 화면 끝에 붙는다.
+   최대 폭에 그 여백 두 쪽을 더해 데스크톱의 본문 폭(680px)은 그대로 둔다 */
+.settings { max-width: calc(680px + 2 * var(--sp-lg)); padding-top: var(--sp-xl); padding-bottom: var(--sp-section); }
 
 .page-head { margin-bottom: var(--sp-xl); }
 .page-head h1 {
