@@ -1,6 +1,6 @@
 /* 창작마당 자료 하나를 실행한다. 올린 글자는 textContent 로만, HTML 은 WorkshopFrame 격리 칸에서만. */
 (function () {
-  const KIND_LABEL = { report: '보고서 양식', simulation: '시뮬레이션', inquiry: '탐구 주제·실험 설계', etc: '기타' };
+  const KIND_LABEL = { report: '보고서 양식', simulation: '시뮬레이션', inquiry: '탐구 주제·실험 설계', game: '게임', quiz: '퀴즈', etc: '기타' };
   const ROLE_LABEL = { teacher: '선생님', admin: '관리자' };
   const $ = (id) => document.getElementById(id);
   const id = new URLSearchParams(location.search).get('id');

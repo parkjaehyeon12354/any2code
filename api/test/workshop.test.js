@@ -208,3 +208,31 @@ test('올린 HTML 은 사이트와 격리된 칸에서만 돈다', () => {
     assert.match(fs.readFileSync(path.join(ROOT, page), 'utf8'), /<script src="\/assets\/js\/workshop-frame\.js"><\/script>/);
   }
 });
+
+test('종류 목록이 서버 · 필터 · 올리기 폼 · 카드 그림 · 이름표 · 모든 헤더에서 같다', async () => {
+  /* 종류는 여섯 군데에 따로 적혀 있다. 한 곳만 빠지면 조용히 어긋난다 — 헤더 링크로 왔는데 필터에 없거나,
+     올린 자료가 어느 필터에도 안 걸려 목록에서 사라지거나, 카드 그림이 비거나 */
+  const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const KINDS = [...read('api/src/functions/workshop.js').match(/const KINDS = \[([^\]]+)\]/)[1].matchAll(/'(\w+)'/g)].map((m) => m[1]);
+  assert.deepStrictEqual(KINDS, ['report', 'simulation', 'inquiry', 'game', 'quiz', 'etc']);
+  for (const kind of ['game', 'quiz']) assert.strictEqual((await up(T1, { kind, title: kind + ' 자료', html: HTML })).status, 201);
+
+  const page = read('custom.html');
+  const order = (re) => [...page.matchAll(re)].map((m) => m[1]);
+  assert.deepStrictEqual(order(/<input type="checkbox" value="(\w+)"/g), KINDS, '종류 필터');
+  assert.deepStrictEqual(order(/<option value="(\w+)">/g), KINDS, '올리기 폼');
+  for (const k of KINDS) {
+    assert.match(page, new RegExp(`<symbol id="g-${k}"`), `카드 기본 그림 g-${k}`);
+    assert.match(page, new RegExp(`\.k-${k} \{ --k: #`), `종류 색 .k-${k}`);
+  }
+  for (const f of ['assets/js/custom-workshop.js', 'assets/js/custom-view.js']) {
+    const labels = read(f).match(/const KIND_LABEL = \{([^}]+)\}/)[1];
+    assert.deepStrictEqual([...labels.matchAll(/(\w+):/g)].map((m) => m[1]), KINDS, f);
+  }
+  const pages = fs.readdirSync(ROOT, { recursive: true }).filter((f) => f.endsWith('.html') && !/node_modules|^api[\/]/.test(f));
+  const withMenu = pages.filter((f) => read(f).includes('/custom?kind='));
+  assert.ok(withMenu.length >= 29, '헤더 드롭다운이 있는 페이지 ' + withMenu.length);
+  for (const f of withMenu) {
+    assert.deepStrictEqual([...read(f).matchAll(/href="\/custom\?kind=(\w+)"/g)].map((m) => m[1]), KINDS, f + ' 헤더의 「종류별로 보기」');
+  }
+});

@@ -12,7 +12,7 @@ const profile = require('../lib/profile');
    (assets/js/workshop-frame.js). 그 격리가 이 기능의 보안 전부다.
    대표 이미지(선택)는 따로 둔다: type 'workshopThumb', id 'thumb:<자료 id>', 같은 파티션 — 목록이 이미지를 싣지 않고,
    카드마다 /api/workshop-thumb/{id} 로 한 장씩 받는다(작은 문서 한 번 읽기). 없으면 화면이 종류별 그림을 그린다. */
-const KINDS = ['report', 'simulation', 'inquiry', 'etc'];
+const KINDS = ['report', 'simulation', 'inquiry', 'game', 'quiz', 'etc'];
 const LIMIT = { title: 60, desc: 500, htmlBytes: 200 * 1024, thumbBytes: 64 * 1024 };
 const PK = 'workshop';
 

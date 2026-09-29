@@ -2,7 +2,7 @@
    목록은 한 번에 다 받아 화면에서 거르고 25개(5×5)씩 쪽을 나눈다.
    올린 사람이 쓴 글자는 전부 textContent 로만 넣는다(innerHTML 금지). 올린 HTML 은 WorkshopFrame 격리 칸에서만 돈다. */
 (function () {
-  const KIND_LABEL = { report: '보고서 양식', simulation: '시뮬레이션', inquiry: '탐구 주제·실험 설계', etc: '기타' };
+  const KIND_LABEL = { report: '보고서 양식', simulation: '시뮬레이션', inquiry: '탐구 주제·실험 설계', game: '게임', quiz: '퀴즈', etc: '기타' };
   const MAX_BYTES = 200 * 1024;
   const THUMB_BYTES = 64 * 1024;   // 서버 한도와 같다(functions/workshop.js)
   const PER_PAGE = 25;

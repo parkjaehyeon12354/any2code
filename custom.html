@@ -30,7 +30,7 @@
     .filter-option input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
     .filter-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--k); }
     .filter-count { margin-left: auto; color: var(--muted); font-size: 12px; }
-    .k-report { --k: #2d6fa9; } .k-simulation { --k: #167a63; } .k-inquiry { --k: #b36600; } .k-etc { --k: #6656a8; }
+    .k-report { --k: #2d6fa9; } .k-simulation { --k: #167a63; } .k-inquiry { --k: #b36600; } .k-game { --k: #c0463f; } .k-quiz { --k: #a8407f; } .k-etc { --k: #6656a8; }
     .sim-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); margin-bottom: var(--sp-md); }
     .sim-toolbar-title { display: flex; align-items: baseline; gap: var(--sp-sm); flex-wrap: wrap; }
     .sim-toolbar h2 { color: var(--ink); font-size: 18px; }
@@ -162,6 +162,8 @@
             <a href="/custom?kind=report">보고서 양식</a>
             <a href="/custom?kind=simulation">시뮬레이션</a>
             <a href="/custom?kind=inquiry">탐구 주제·실험 설계</a>
+            <a href="/custom?kind=game">게임</a>
+            <a href="/custom?kind=quiz">퀴즈</a>
             <a href="/custom?kind=etc">기타</a>
           </div>
           <div class="mega-col">
@@ -181,13 +183,15 @@
     <section class="sim-intro">
       <p class="eyebrow">CUSTOM WORKSHOP</p>
       <h1>선생님이 만든 탐구 자료를 골라 바로 쓰세요</h1>
-      <p>시뮬레이션, 보고서 양식, 탐구 주제와 실험 설계 도구까지 — 선생님과 관리자가 AI 로 만든 HTML 을 이 사이트에서 바로 실행해 봅니다.</p>
+      <p>시뮬레이션, 보고서 양식, 탐구 설계 도구, 게임과 퀴즈까지 — 선생님과 관리자가 AI 로 만든 HTML 을 이 사이트에서 바로 실행해 봅니다.</p>
     </section>
     <!-- 대표 이미지가 없는 자료의 종류별 그림. 색은 카드의 --k 를 따른다(currentColor) -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
       <symbol id="g-report" viewBox="0 0 160 100"><rect x="58" y="16" width="44" height="58" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M66 32h28M66 42h28M66 52h18" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".75"/></symbol>
       <symbol id="g-simulation" viewBox="0 0 160 100"><path d="M20 60 Q45 20 70 50 T120 45 T150 30" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="70" cy="50" r="7" fill="currentColor"/><path d="M20 82h120" stroke="currentColor" stroke-width="1.5" opacity=".45"/></symbol>
       <symbol id="g-inquiry" viewBox="0 0 160 100"><path d="M70 16h20M74 16v20L58 70a5 5 0 0 0 4 7h36a5 5 0 0 0 4-7L86 36V16" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M63 62h34" stroke="currentColor" stroke-width="3" opacity=".6"/><circle cx="76" cy="55" r="3" fill="currentColor"/><circle cx="86" cy="49" r="2" fill="currentColor"/></symbol>
+      <symbol id="g-game" viewBox="0 0 160 100"><rect x="46" y="30" width="68" height="40" rx="20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M60 50h16M68 42v16" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="92" cy="46" r="3.5" fill="currentColor"/><circle cx="101" cy="54" r="3.5" fill="currentColor" opacity=".6"/></symbol>
+      <symbol id="g-quiz" viewBox="0 0 160 100"><path d="M60 18h40a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H78l-12 12V62h-6a8 8 0 0 1-8-8V26a8 8 0 0 1 8-8z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M73 33a7 7 0 1 1 10 6.3c-2 1-3 2.4-3 4.7v1.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="80" cy="52" r="2.3" fill="currentColor"/></symbol>
       <symbol id="g-etc" viewBox="0 0 160 100"><rect x="54" y="18" width="22" height="22" rx="4" fill="currentColor"/><rect x="84" y="18" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="54" y="48" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="84" y="48" width="22" height="22" rx="4" fill="currentColor" opacity=".6"/></symbol>
     </svg>
     <div class="sim-layout">
@@ -198,6 +202,8 @@
           <label class="filter-option k-report"><input type="checkbox" value="report" checked><span class="filter-dot"></span>보고서 양식 <span class="filter-count"></span></label>
           <label class="filter-option k-simulation"><input type="checkbox" value="simulation" checked><span class="filter-dot"></span>시뮬레이션 <span class="filter-count"></span></label>
           <label class="filter-option k-inquiry"><input type="checkbox" value="inquiry" checked><span class="filter-dot"></span>탐구 주제·실험 설계 <span class="filter-count"></span></label>
+          <label class="filter-option k-game"><input type="checkbox" value="game" checked><span class="filter-dot"></span>게임 <span class="filter-count"></span></label>
+          <label class="filter-option k-quiz"><input type="checkbox" value="quiz" checked><span class="filter-dot"></span>퀴즈 <span class="filter-count"></span></label>
           <label class="filter-option k-etc"><input type="checkbox" value="etc" checked><span class="filter-dot"></span>기타 <span class="filter-count"></span></label>
         </div>
       </aside>
@@ -212,7 +218,7 @@
         <form class="up-form edu-panel" id="up-form" hidden>
           <h2>자료 올리기</h2>
           <div class="up-row">
-            <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
+            <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션</option><option value="inquiry">탐구 주제·실험 설계</option><option value="game">게임</option><option value="quiz">퀴즈</option><option value="etc">기타</option></select></div>
             <div class="field"><label for="up-title">제목</label><input id="up-title" maxlength="60" required placeholder="예: 마찰력 탐구 보고서 양식"></div>
           </div>
           <div class="field"><label for="up-desc">설명 <span class="field-help">(선택)</span></label><textarea id="up-desc" maxlength="500" placeholder="어떤 수업·탐구에 쓰면 좋은지 적어 주세요."></textarea></div>
