@@ -220,7 +220,8 @@ test('종류 목록이 서버 · 필터 · 올리기 폼 · 카드 그림 · 이
   const page = read('custom.html');
   const order = (re) => [...page.matchAll(re)].map((m) => m[1]);
   assert.deepStrictEqual(order(/<input type="checkbox" value="(\w+)"/g), KINDS, '종류 필터');
-  assert.deepStrictEqual(order(/<option value="(\w+)">/g), KINDS, '올리기 폼');
+  const form = page.match(/<select id="up-kind">[\s\S]*?<\/select>/)[0];
+  assert.deepStrictEqual([...form.matchAll(/<option value="(\w+)">/g)].map((m) => m[1]), KINDS, '올리기 폼');
   for (const k of KINDS) {
     assert.match(page, new RegExp(`<symbol id="g-${k}"`), `카드 기본 그림 g-${k}`);
     assert.match(page, new RegExp(`\.k-${k} \{ --k: #`), `종류 색 .k-${k}`);
@@ -235,4 +236,49 @@ test('종류 목록이 서버 · 필터 · 올리기 폼 · 카드 그림 · 이
   for (const f of withMenu) {
     assert.deepStrictEqual([...read(f).matchAll(/href="\/custom\?kind=(\w+)"/g)].map((m) => m[1]), KINDS, f + ' 헤더의 「종류별로 보기」');
   }
+});
+
+const like = (cookie, id) => call('workshopLike', { cookie, id });
+const likes = () => state.docs.filter((d) => d.type === 'workshopLike');
+
+test('추천 — 로그인한 누구나 한 번, 다시 누르면 취소, 내 자료는 못 하고, 자료를 지우면 같이 지운다', async () => {
+  const KID = cookieFor('google:kid');
+  const it = (await up(T1, { kind: 'simulation', title: '추천 받을 자료', html: HTML })).jsonBody.item;
+  assert.deepStrictEqual([it.likes, it.liked], [0, false]);
+  assert.strictEqual((await like(null, it.id)).status, 401);
+  assert.strictEqual((await like(T1, it.id)).status, 403, '올린 사람은 자기 자료를 추천하지 못한다');
+  assert.strictEqual((await like(KID, 'w_none')).status, 404);
+  assert.strictEqual((await like(KID, credit.docId('google:t1'))).status, 404, '다른 종류의 문서는 추천 대상이 아니다');
+  assert.deepStrictEqual((await like(KID, it.id)).jsonBody, { liked: true, likes: 1 }, '학생도 추천한다');
+  assert.deepStrictEqual((await like(T2, it.id)).jsonBody, { liked: true, likes: 2 });
+  assert.deepStrictEqual((await like(KID, it.id)).jsonBody, { liked: false, likes: 1 }, '다시 누르면 취소');
+  assert.deepStrictEqual((await like(KID, it.id)).jsonBody, { liked: true, likes: 2 });
+  assert.strictEqual(likes().filter((l) => l.wid === it.id).length, 2, '한 사람 한 문서');
+
+  // 목록 · 실행 화면이 수와 「내가 눌렀나」를 보는 사람마다 준다 — 누른 사람의 sub 는 내보내지 않는다
+  const seen = async (cookie) => (await call('workshopList', { cookie })).jsonBody.items.find((x) => x.id === it.id);
+  assert.deepStrictEqual([(await seen(KID)).likes, (await seen(KID)).liked, (await seen(T1)).liked, (await seen(null)).liked], [2, true, false, false]);
+  const one = (await call('workshopGet', { cookie: T2, id: it.id })).jsonBody.item;
+  assert.deepStrictEqual([one.likes, one.liked], [2, true]);
+  assert.ok(!JSON.stringify((await call('workshopList', { cookie: KID })).jsonBody).includes('google:'), '추천한 사람의 sub 가 새면 안 된다');
+
+  // 자료를 지우면 추천도 — 남기면 목록이 매번 헛읽는다
+  assert.strictEqual((await call('workshopDelete', { cookie: T1, id: it.id })).status, 204);
+  assert.strictEqual(likes().filter((l) => l.wid === it.id).length, 0);
+});
+
+test('추천 — 탈퇴하면 그 사람이 누른 추천과 그 사람 자료에 달린 추천이 지워진다 · 분당 한도', async () => {
+  teacher('google:t3');
+  const T3 = cookieFor('google:t3'), FAN = cookieFor('google:fan');
+  const a = (await up(T3, { kind: 'etc', title: 't3 가 올린 자료', html: HTML })).jsonBody.item;
+  const b = (await up(T1, { kind: 'etc', title: 't1 이 올린 자료', html: HTML })).jsonBody.item;
+  await like(FAN, a.id); await like(T3, b.id); await like(FAN, b.id);
+  await profile.purge('google:t3');
+  assert.strictEqual(likes().filter((l) => l.wid === a.id).length, 0, '떠난 사람 자료에 달린 추천');
+  assert.deepStrictEqual(likes().filter((l) => l.wid === b.id).map((l) => l.userSub), ['google:fan'], '떠난 사람이 누른 추천만 지우고 남의 것은 둔다');
+
+  const SPAM = cookieFor('google:spam');
+  const codes = [];
+  for (let i = 0; i < 31; i++) codes.push((await like(SPAM, b.id)).status || 200);
+  assert.deepStrictEqual([codes[29], codes[30]], [200, 429], '분당 30번까지');
 });

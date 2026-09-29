@@ -5,13 +5,15 @@ const { container, query, dbFail } = require('../lib/db');
 const sanction = require('../lib/sanction');
 const credit = require('../lib/credit');
 const profile = require('../lib/profile');
+const settings = require('../lib/settings');
 
 /* 커스텀 창작마당 — 선생님(티처 요금제)과 관리자가 HTML(시뮬레이션·양식·도구)을 올리고, 누구나 실행해 본다.
    문서: type 'workshop', id 'w_…', pk 'workshop'(한 파티션 — 목록은 늘 전부 훑는다).
    HTML 은 여기서 거르지 않는다 — 화면이 사이트와 격리된 칸(sandbox, allow-same-origin 없음)에서만 실행한다
    (assets/js/workshop-frame.js). 그 격리가 이 기능의 보안 전부다.
    대표 이미지(선택)는 따로 둔다: type 'workshopThumb', id 'thumb:<자료 id>', 같은 파티션 — 목록이 이미지를 싣지 않고,
-   카드마다 /api/workshop-thumb/{id} 로 한 장씩 받는다(작은 문서 한 번 읽기). 없으면 화면이 종류별 그림을 그린다. */
+   카드마다 /api/workshop-thumb/{id} 로 한 장씩 받는다(작은 문서 한 번 읽기). 없으면 화면이 종류별 그림을 그린다.
+   추천: type 'workshopLike', id 'like:<자료 id>:<sub>', 같은 파티션 — id 가 (자료, 사람)이라 한 사람 한 번은 create 충돌이 막는다. */
 const KINDS = ['report', 'simulation', 'inquiry', 'game', 'quiz', 'etc'];
 const LIMIT = { title: 60, desc: 500, htmlBytes: 200 * 1024, thumbBytes: 64 * 1024 };
 const PK = 'workshop';
@@ -21,6 +23,24 @@ const rid = () => 'w_' + Math.random().toString(36).slice(2, 10) + Date.now().to
 // HTML 200KB(JSON 이스케이프로 조금 불어남) + 대표 이미지 64KB 의 base64(약 86KB)
 const tooBig = (request) => Number(request.headers.get('content-length') || 0) > 352 * 1024;
 const thumbId = (id) => 'thumb:' + id;
+const likeId = (wid, sub) => 'like:' + wid + ':' + sub;
+
+/* 추천 도배 — 분당 N번(커뮤니티 투표와 같은 값). 추천은 사람당 하나라 남는 건 RU 뿐이어서 인스턴스 메모리로 충분하다 */
+const likeLog = new Map();   // sub → [timestamp]
+function likeAllowed(sub, now = Date.now()) {
+  const arr = (likeLog.get(sub) || []).filter((t) => now - t < 60_000);
+  const ok = arr.length < settings.FIXED.voteMaxPerMin;
+  if (ok) arr.push(now);
+  likeLog.set(sub, arr);
+  return ok;
+}
+
+/* 자료 하나의 추천을 전부 지운다 — 자료를 지울 때. 남겨 두면 목록이 매번 헛읽는다 */
+async function deleteLikes(wid) {
+  const rows = await query({ query: "SELECT c.id FROM c WHERE c.type = 'workshopLike' AND c.pk = @p AND c.wid = @w",
+    parameters: [{ name: '@p', value: PK }, { name: '@w', value: wid }] });
+  for (const r of rows) await container().item(r.id, PK).delete().catch((e) => { if (e.code !== 404) throw e; });
+}
 
 /* 대표 이미지 — 화면이 400×250 JPEG 로 줄여 data URL 로 보낸다. 우리 출처에서 그대로 내려보내는 바이트라
    JPEG 만 받는다(머리 바이트까지 확인). SVG·HTML 을 이미지라고 우겨 넣지 못하게. 없으면 null. */
@@ -41,8 +61,9 @@ async function uploaderRole(user) {
 }
 
 /** 밖으로 내보낼 형태. 작성자 식별자(sub)는 넣지 않는다. HTML 은 실행 화면에서 하나씩만 받는다(full). */
-const publicItem = (d, viewerSub, admin, full = false) => ({
+const publicItem = (d, viewerSub, admin, full = false, like = { likes: 0, liked: false }) => ({
   id: d.id, kind: d.kind, title: d.title, desc: d.desc, author: d.authorName, role: d.authorRole, createdAt: d.createdAt, size: d.size, thumb: !!d.thumb,
+  likes: like.likes, liked: like.liked,
   mine: !!viewerSub && d.authorSub === viewerSub,
   canDelete: admin || (!!viewerSub && d.authorSub === viewerSub),
   ...(full ? { html: d.html } : {})
@@ -66,10 +87,15 @@ app.http('workshopList', {
         ? { query: `SELECT ${FIELDS} FROM c WHERE c.type = 'workshop' AND c.pk = @p AND c.kind = @k`,
             parameters: [{ name: '@p', value: PK }, { name: '@k', value: kind }] }
         : { query: `SELECT ${FIELDS} FROM c WHERE c.type = 'workshop' AND c.pk = @p`, parameters: [{ name: '@p', value: PK }] };
-      const [rows, role] = await Promise.all([query(spec), uploaderRole(user)]);
+      // ponytail: 추천을 목록마다 전부 읽어 센다 — 추천이 수천 개로 늘면 자료 문서에 수를 두고 patch incr 로 올린다
+      const likeSpec = { query: "SELECT c.wid, c.userSub FROM c WHERE c.type = 'workshopLike' AND c.pk = @p", parameters: [{ name: '@p', value: PK }] };
+      const [rows, role, likes] = await Promise.all([query(spec), uploaderRole(user), query(likeSpec)]);
       rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+      const count = {}, mine = new Set();
+      likes.forEach((l) => { count[l.wid] = (count[l.wid] || 0) + 1; if (user && l.userSub === user.sub) mine.add(l.wid); });
+      const like = (d) => ({ likes: count[d.id] || 0, liked: mine.has(d.id) });
       return {
-        jsonBody: { items: rows.map((d) => publicItem(d, user && user.sub, role === 'admin')), canUpload: !!role },
+        jsonBody: { items: rows.map((d) => publicItem(d, user && user.sub, role === 'admin', false, like(d))), canUpload: !!role },
         headers: { 'Cache-Control': 'no-store' }
       };
     } catch (e) {
@@ -139,7 +165,10 @@ app.http('workshopGet', {
       const doc = (await container().item(request.params.id, PK).read()).resource;
       if (!doc || doc.type !== 'workshop') return { status: 404, jsonBody: { error: '없는 자료입니다.' } };
       const admin = !!user && session.isAdmin(user.email);
-      return { jsonBody: { item: publicItem(doc, user && user.sub, admin, true) }, headers: { 'Cache-Control': 'no-store' } };
+      const likes = await query({ query: "SELECT c.userSub FROM c WHERE c.type = 'workshopLike' AND c.pk = @p AND c.wid = @w",
+        parameters: [{ name: '@p', value: PK }, { name: '@w', value: doc.id }] });
+      const like = { likes: likes.length, liked: !!user && likes.some((l) => l.userSub === user.sub) };
+      return { jsonBody: { item: publicItem(doc, user && user.sub, admin, true, like) }, headers: { 'Cache-Control': 'no-store' } };
     } catch (e) {
       if (e.code === 404) return { status: 404, jsonBody: { error: '없는 자료입니다.' } };
       context.error('창작마당 자료 조회 실패:', e.message);
@@ -165,6 +194,7 @@ app.http('workshopDelete', {
         return { status: 403, jsonBody: { error: '올린 사람과 관리자만 지울 수 있습니다.' } };
       }
       await item.delete();
+      await deleteLikes(doc.id).catch((e) => context.warn('추천 지우기 실패:', e.message));
       if (doc.thumb) await container().item(thumbId(doc.id), PK).delete().catch((e) => { if (e.code !== 404) context.warn('대표 이미지 지우기 실패:', e.message); });
       return { status: 204 };
     } catch (e) {
@@ -195,6 +225,45 @@ app.http('workshopThumb', {
       if (e.code === 404) return { status: 404, jsonBody: { error: '대표 이미지가 없습니다.' } };
       context.error('창작마당 대표 이미지 실패:', e.message);
       return dbFail(e, '대표 이미지를 불러오지 못했습니다.');
+    }
+  }
+});
+
+/* ── 추천 ── 로그인한 누구나, 자료마다 한 번, 다시 누르면 취소. 올린 사람은 자기 자료를 추천하지 못한다(추천순이 공정하게).
+   비추천은 없다(사용자 결정) — 선생님이 올린 자료에 깎이는 점수를 두지 않는다. */
+app.http('workshopLike', {
+  route: 'workshop/{id}/like',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = session.current(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인하면 추천할 수 있습니다.' } };
+    if (!likeAllowed(user.sub)) return { status: 429, jsonBody: { error: '너무 빠르게 누르고 있습니다. 잠시 후 다시 시도해 주세요.' } };
+    const wid = request.params.id;
+    try {
+      const doc = (await container().item(wid, PK).read()).resource;
+      if (!doc || doc.type !== 'workshop') return { status: 404, jsonBody: { error: '없는 자료입니다.' } };
+      if (doc.authorSub === user.sub) return { status: 403, jsonBody: { error: '내가 올린 자료는 추천할 수 없습니다.' } };
+
+      const id = likeId(wid, user.sub);
+      let had = false;
+      try { had = !!(await container().item(id, PK).read()).resource; } catch (e) { if (e.code !== 404) throw e; }
+      let liked;
+      if (had) {
+        await container().item(id, PK).delete().catch((e) => { if (e.code !== 404) throw e; });   // 두 번 눌려 이미 지워졌어도 결과는 같다
+        liked = false;
+      } else {
+        await container().items.create({ id, type: 'workshopLike', pk: PK, wid, userSub: user.sub, createdAt: new Date().toISOString() })
+          .catch((e) => { if (e.code !== 409) throw e; });                                        // 두 번 눌려 이미 있으면 결과는 같다
+        liked = true;
+      }
+      const likes = (await query({ query: "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'workshopLike' AND c.pk = @p AND c.wid = @w",
+        parameters: [{ name: '@p', value: PK }, { name: '@w', value: wid }] }))[0] || 0;
+      return { jsonBody: { liked, likes }, headers: { 'Cache-Control': 'no-store' } };
+    } catch (e) {
+      context.error('창작마당 추천 실패:', e.message);
+      return dbFail(e, '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }
 });

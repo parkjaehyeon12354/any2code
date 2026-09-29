@@ -54,6 +54,11 @@
     h3.append(open);
     const meta = el('p', 'ws-meta');
     meta.append(el('span', null, `${it.author} · ${shortDate(it.createdAt)}`));
+    if (it.likes) {
+      const lk = el('span', 'ws-like' + (it.liked ? ' on' : ''), '추천 ' + it.likes);
+      if (it.liked) lk.title = '내가 추천한 자료';
+      meta.append(lk);
+    }
     if (it.canDelete) {
       const del = el('button', 'ws-del', '지우기'); del.type = 'button';
       del.setAttribute('aria-label', `「${it.title}」 지우기`);
@@ -70,6 +75,8 @@
     const word = $('q').value.trim().toLocaleLowerCase('ko-KR');
     const list = items.filter((it) => on.includes(it.kind)
       && (!word || `${it.title} ${it.desc || ''} ${it.author}`.toLocaleLowerCase('ko-KR').includes(word)));
+    // 서버는 최신순으로 준다. 추천순은 추천 수, 같으면 최신 것부터
+    if ($('sort').value === 'likes') list.sort((a, b) => (b.likes || 0) - (a.likes || 0) || (a.createdAt < b.createdAt ? 1 : -1));
     const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
     page = Math.min(page, pages);
     const from = (page - 1) * PER_PAGE;
@@ -117,6 +124,7 @@
 
   boxes.forEach((b) => b.addEventListener('change', () => { page = 1; draw(); }));
   $('q').addEventListener('input', () => { page = 1; draw(); });
+  $('sort').addEventListener('change', () => { page = 1; draw(); });
 
   async function remove(it, btn) {
     if (!confirm(`「${it.title}」을(를) 지우시겠습니까? 지우면 복구할 수 없습니다.`)) return;

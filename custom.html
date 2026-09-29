@@ -37,7 +37,7 @@
     .custom-count { color: var(--muted); font-size: 13px; }
     .toolbar-side { display: flex; align-items: center; gap: var(--sp-sm); }
     .sim-search { position: relative; width: min(100%, 320px); }
-    .sim-search .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .sim-search::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 20px; pointer-events: none; }
     .sim-search input { width: 100%; height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); color: var(--ink); background: var(--canvas); font: 14px var(--font-body); }
     .sim-search input::placeholder { color: var(--muted); }
@@ -61,6 +61,10 @@
     .ws-card h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em; color: var(--ink); font-size: 14.5px; line-height: 1.4; font-weight: 650; word-break: keep-all; }
     .ws-meta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; color: var(--muted); font-size: 11.5px; }
     .ws-meta span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .ws-sort select { height: 44px; padding: 0 34px 0 12px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); color: var(--ink); background-color: var(--canvas); font: 14px var(--font-body); cursor: pointer; }
+    .ws-sort select:focus { outline: 2px solid color-mix(in srgb, var(--primary) 25%, transparent); border-color: var(--primary); }
+    .ws-like { flex: none; font-weight: 650; }
+    .ws-like.on { color: var(--primary-active); }
     .ws-del { position: relative; z-index: 1; flex: none; margin-left: auto; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 600 11.5px var(--font-body); cursor: pointer; }
     .ws-del:hover { background: var(--surface-soft); color: var(--error); }
     .pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; margin-top: var(--sp-xl); }
@@ -212,6 +216,7 @@
           <div class="sim-toolbar-title"><h2 id="ws-title">전체 자료</h2><span class="custom-count" id="count" aria-live="polite">불러오는 중…</span></div>
           <div class="toolbar-side">
             <label class="sim-search"><span class="sr-only">자료 검색</span><input type="search" id="q" placeholder="예: 포물선, 보고서" autocomplete="off"></label>
+            <label class="ws-sort"><span class="sr-only">정렬</span><select id="sort"><option value="new">최신순</option><option value="likes">추천순</option></select></label>
             <button class="btn btn-primary" id="up-open" type="button" hidden>올리기</button>
           </div>
         </div>

@@ -8,6 +8,29 @@
 
   const mount = () => $('v-stage').replaceChildren(WorkshopFrame.create(item.html, item.title));
 
+  /* 추천 — 다시 누르면 취소. 내가 올린 자료는 누를 수 없다(서버도 막는다) */
+  function showLike() {
+    const b = $('v-like');
+    b.setAttribute('aria-pressed', String(!!item.liked));
+    $('v-like-label').textContent = item.liked ? '추천함' : '추천';
+    $('v-likes').textContent = item.likes || 0;
+    if (item.mine) { b.disabled = true; b.title = '내가 올린 자료는 추천할 수 없습니다'; }
+  }
+  async function toggleLike() {
+    const b = $('v-like'), msg = $('v-like-msg');
+    b.disabled = true; msg.textContent = '';
+    let res = null, data = {};
+    try { res = await fetch('/api/workshop/' + encodeURIComponent(id) + '/like', { method: 'POST' }); data = await res.json(); } catch { /* 아래에서 알린다 */ }
+    b.disabled = false;
+    if (res && res.ok) { item.liked = data.liked; item.likes = data.likes; return showLike(); }
+    if (res && res.status === 401) {
+      const a = document.createElement('a'); a.href = '/login'; a.textContent = '로그인';
+      return msg.append(a, '하면 추천할 수 있습니다.');
+    }
+    msg.textContent = data.error || '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    showLike();
+  }
+
   function fail(message) {
     $('v-title').textContent = '자료를 열 수 없습니다';
     $('v-meta').textContent = message;
@@ -29,10 +52,12 @@
     $('v-meta').textContent = [item.author, ROLE_LABEL[item.role], new Date(item.createdAt).toLocaleDateString('ko-KR')].filter(Boolean).join(' · ');
     if (item.desc) { $('v-desc').textContent = item.desc; $('v-desc').hidden = false; }
     $('v-actions').hidden = false; $('v-note').hidden = false;
+    showLike();
     mount();
   }
 
   $('v-reload').addEventListener('click', mount);
+  $('v-like').addEventListener('click', toggleLike);
   $('v-full').addEventListener('click', () => {
     const stage = $('v-stage');
     if (stage.requestFullscreen) stage.requestFullscreen().catch(() => {});

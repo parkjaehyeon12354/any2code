@@ -341,7 +341,7 @@ async function checkDeletionOnLogin(user) {
 async function purge(sub) {
   const c = container();
 
-  const [selfDocs, content] = await Promise.all([
+  const [selfDocs, content, likes] = await Promise.all([
     query({
       query: "SELECT c.id, c.pk FROM c WHERE c.type IN ('user', 'credit', 'sanction', 'appeal') AND c.pk = @s",
       parameters: [{ name: '@s', value: sub }]
@@ -349,6 +349,11 @@ async function purge(sub) {
     query({
       query: "SELECT c.id, c.pk, c.type, c.thumb FROM c WHERE c.type IN ('post', 'comment', 'workshop') AND c.authorSub = @s AND c.status != 'deleted'",
       parameters: [{ name: '@s', value: sub }]
+    }),
+    // 이 사람이 누른 창작마당 추천 — 떠난 사람의 추천이 순위에 남지 않게
+    query({
+      query: "SELECT c.id, c.pk FROM c WHERE c.type = 'workshopLike' AND c.userSub = @u",
+      parameters: [{ name: '@u', value: sub }]
     })
   ]);
 
@@ -358,6 +363,10 @@ async function purge(sub) {
     if (row.type === 'workshop') {
       await c.item(row.id, row.pk).delete();
       if (row.thumb) await c.item('thumb:' + row.id, row.pk).delete().catch((e) => { if (e.code !== 404) throw e; });
+      // 그 자료에 달린 남의 추천도 — 남겨 두면 목록이 매번 헛읽는다(functions/workshop.js 의 deleteLikes 와 같은 일)
+      const onIt = await query({ query: "SELECT c.id FROM c WHERE c.type = 'workshopLike' AND c.pk = @p AND c.wid = @w",
+        parameters: [{ name: '@p', value: row.pk }, { name: '@w', value: row.id }] });
+      for (const l of onIt) await c.item(l.id, row.pk).delete().catch((e) => { if (e.code !== 404) throw e; });
       continue;
     }
     const emptyBody = row.type === 'post' ? '(탈퇴한 사용자의 글입니다.)' : '(탈퇴한 사용자의 답변입니다.)';
@@ -370,6 +379,9 @@ async function purge(sub) {
 
   for (const row of selfDocs) {
     await c.item(row.id, row.pk).delete();
+  }
+  for (const row of likes) {
+    await c.item(row.id, row.pk).delete().catch((e) => { if (e.code !== 404) throw e; });
   }
 }
 
