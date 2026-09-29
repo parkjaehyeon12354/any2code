@@ -1,6 +1,6 @@
 # 인수인계 — Ans2Quest
 
-마지막 갱신: 2026-09-28 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교 · 관리자 요금제 · 커스텀(창작마당) 올리기
+마지막 갱신: 2026-09-29 · AI 모델 선택(Gemini) · 크레딧 할당제 · 요금제/쿠폰 · 보고서 작성(프리셋 · 표 · 그래프) · AI 모델 비교 · 관리자 요금제 · 커스텀(창작마당) HTML 실행 · 5×5 목록 · 대표 이미지
 
 새 대화를 시작하는 사람이 **이 파일 하나만 읽고** 이어받을 수 있게 쓴 문서입니다.
 프로젝트 전체 상태는 [progress.md](progress.md)에, 도구·환경 규칙은 저장소 밖
@@ -15,7 +15,7 @@
 
 ```
 https://ans2quest.com          라이브
-테스트 351개 통과
+테스트 353개 통과
 ```
 
 확인 명령:
@@ -24,7 +24,7 @@ https://ans2quest.com          라이브
 cd D:/코딩/any2code && git status --short && cd api && node --test
 ```
 
-`pass 351` 면 이 문서와 같은 상태입니다.
+`pass 353` 면 이 문서와 같은 상태입니다.
 
 **`/science`(AI 과학 도우미)는 모델 두 개 중에 고릅니다.** **Solar Pro 4**(기본, Upstage,
 키 `LLM_API_KEY`)와 **Gemini 3.8 Flash**(Vertex AI express 모드, 키 `VERTEX_API_KEY` —
@@ -123,7 +123,61 @@ Gemini 는 요금제 전용이고, 무료는 Solar 만 씁니다. 크레딧·요
   `c81ac01`(범례 위치) 배포 뒤 11개 전부 통과 — legend 13 · units 13 · kinds 18 · blocks 15 · rows 13 · cols 13 ·
   scatter 7 · custom 15 · preset 7 · load 7, 콘솔 오류 0.
 
+## 9/29 — 창작마당 5×5 목록 · 대표 이미지 (`aa51cb9`) · 시뮬레이션 목록 여백 (`ed0f73a`)
+
+- 시안 두 개(5×5 · 8×8, 한 페이지에서 전환)를 보여 드리고 사용자가 **5×5** 를 골랐다. 틀은 `/simulation/` 목록과 같다 —
+  왼쪽 종류 필터(체크박스 · 개수), 도구줄(제목 · 개수 · 검색 · 올리기), 카드 5열 × 5줄 = **한 쪽 25개**, 아래 쪽 번호.
+  1100px 4열 · 920px 3열 · 700px 이하 2열. 카드 = 그림 · 종류 · 제목(두 줄) · 올린 사람 · 날짜(+ 지우기). 카드 전체가 실행 화면 링크.
+- 목록은 한 번에 다 받아 화면에서 거르고 나눈다. 헤더의 `/custom?kind=…` 로 오면 그 종류만 켠 채 시작.
+  자료가 수백 개로 늘면 서버에서 쪽을 나눌 것.
+- **대표 이미지(선택)** — 사용자 결정 「선생님이 올릴 때 같이, 안 올리면 지금 나오는 그림」. 화면이 16:10 가운데를 잘라
+  **400×250 JPEG**(품질 0.82 부터 낮춰 64KB 안)로 줄여 data URL 로 보낸다. 서버는 `data:image/jpeg;base64,` + JPEG 머리
+  바이트(FF D8 FF) + 64KB 이하만 받는다 — 우리 출처에서 그대로 내려보내는 바이트라 SVG·HTML 을 이미지라고 우겨 넣지 못하게.
+- 저장은 따로 둔다: **`type 'workshopThumb'` · `id 'thumb:<자료 id>'` · `pk 'workshop'`**, 자료 문서에는 `thumb: true` 만.
+  목록은 그 표시만 싣고, 카드의 `<img loading=lazy>` 가 `GET /api/workshop-thumb/{id}` 로 한 장씩 받는다(작은 문서 한 번 읽기).
+  응답은 `image/jpeg` + `nosniff` + `default-src 'none'; sandbox`, **1년 캐시** — `staticwebapp.config.json` 의
+  `/api/workshop-thumb/*` 규칙이 `/api/*`(no-store) **보다 앞**이어야 한다(처음 맞는 규칙 하나만 쓰임 — 테스트가 본다).
+  이미지를 고치는 기능을 붙이면 주소에 버전을 달 것(`?v=`).
+- 이미지가 없거나 못 받으면(`img` 의 error → 지움) 종류별 그림 — `custom.html` 의 `<symbol id="g-report|simulation|inquiry|etc">`,
+  색은 카드의 `--k`(`currentColor`). 이미지 → 자료 순서로 만든다(자료 생성이 실패하면 작은 이미지 문서가 남을 뿐).
+  지우기 · 탈퇴(`profile.purge`) 때 이미지도 지운다. 요청 상한 256KB → **352KB**(HTML 200KB 의 JSON + 이미지 base64 86KB).
+- `.custom-main` 은 좌우 여백을 `.container` 에 맡긴다 — `padding: X 0 Y` 한 줄로 쓰면 0 으로 덮여 휴대폰에서 카드가
+  화면 끝에 붙는다. `/simulation/` 목록도 같았다 — `ed0f73a` 에서 같은 방법으로 고침(375px 0 → 24px, 개별 시뮬레이션 21개는
+  원래 정상). **`/community` · `/settings` 도 main 좌우 여백이 0** 이고, `/community` 는 375px 에서 가로로 33px 넘친다
+  (라이브 확인, 손대지 않음). 재는 스크립트 `pwtest/pad-check.cjs`(`PAGES` 에 경로 — Git Bash 에선 `MSYS_NO_PATHCONV=1`).
+- 테스트 `workshop.test.js` 「대표 이미지」 추가 + 탈퇴 테스트에 이미지. JPEG 머리 확인 · 지우기 · 탈퇴 · 캐시 규칙 순서 · 목록이
+  이미지를 읽는지 — 다섯 곳을 하나씩 망가뜨려 빨간불 확인. 353개.
+- 로컬 `pwtest/custom-html.cjs` 18/18 — 5열 · `?kind=` · 30개 → 25개+쪽 · 2쪽 · 검색 · 기본 그림 · 대표 이미지 400×250 ·
+  올리기(그림 있음/없음) · 미리보기 격리 · 실행 화면 · 375px 2열 · 지우기, 콘솔 오류 0. 캡처 `custom-shot-grid.cjs`
+  (라이트 · 다크 · 375px · 올리기 폼).
+- **라이브(`ed0f73a`) 16/16**, 콘솔 오류 0 — 관리자 계정으로 그림 있는 자료 · 없는 자료를 올려 카드 확인, 이미지 응답
+  `image/jpeg` · `public, max-age=31536000, immutable` · `nosniff`, 지운 뒤 이미지 404, 목록 빈 것 확인. 첫 회엔 「칸 안의
+  폼·버튼」이 빨갛게 나왔는데 버튼을 누른 직후 결과를 읽은 스크립트 타이밍 문제였다(결과를 기다리게 고친 뒤 통과).
+
+## 9/28 — 창작마당을 HTML 실행으로 (`e7673ec` · `18851c7`)
+
+- 사용자 결정: **모든 종류를 HTML 로** — 선생님이 AI 로 만든(바이브 코딩) 시뮬레이션·양식·도구 HTML 을 올리면 사이트
+  시뮬레이션처럼 띄운다. 외부 라이브러리는 **cdnjs · jsdelivr 만**. 아래 「올리기 · 목록 · 지우기」의 종류별 내용(보고서 양식
+  JSON · 시뮬레이션 링크 · 글)은 이때 전부 HTML 로 바뀌었다 — 역할 판정 · 지우기 · 탈퇴 처리는 그대로.
+- 보안은 격리 칸 하나(`assets/js/workshop-frame.js`): `<iframe sandbox="allow-scripts allow-forms allow-modals allow-downloads">`
+  에 `srcdoc`. **`allow-same-origin` · `allow-popups` · `allow-top-navigation` 은 절대 넣지 않는다**(넣으면 올린 HTML 이
+  ans2quest.com 출처로 돌아 보는 사람의 세션으로 API 를 부른다). 불투명 출처라 쿠키·저장소·부모 화면·상단 이동이 막힌다.
+  새 창 · `blob:` 주소도 쓰지 않는다(우리 출처로 열림). 불투명 출처에서 `localStorage` 를 건드리면 예외가 나서, 메모리
+  대체물을 `<head>` 바로 뒤에 끼운다(doctype 앞에 끼우면 쿼크 모드).
+- `srcdoc` 는 부모의 CSP 를 물려받는다 → **`/custom` · `/custom/view` 두 경로에만** 넓힌 CSP(`staticwebapp.config.json` 경로
+  규칙의 headers — 같은 헤더면 globalHeaders 를 덮는다, 라이브에서 응답당 CSP 하나 확인): script-src 에 cdnjs · jsdelivr,
+  connect-src 는 self + 두 CDN(외부로 보내기 막힘), `form-action 'self'`, `frame-ancestors 'none'`. 나머지 사이트는 그대로.
+- API: HTML **200KB(바이트로 셈 — 한글은 3바이트)**, 목록은 HTML 을 읽지 않는다(필드 나열), `GET /api/workshop/{id}` 가 하나를
+  HTML 째로. 실행 화면 **`/custom/view?id=`**(`custom-view.html` + `assets/js/custom-view.js`) — 다시 시작 · 전체 화면.
+- **라이브에서 목록이 503 → `18851c7`**: `desc` 가 Cosmos SQL 예약어라 `SELECT c.desc` 가 쿼리를 통째로 실패시켰다.
+  `c["desc"]` 로 쓴다. 가짜 컨테이너는 SQL 을 해석하지 않아 테스트가 못 잡았다 → `workshop.test.js` 가 목록 쿼리에 예약어
+  `c.필드` 가 없는지 정규식으로 본다(되돌리면 빨간불).
+- 라이브 `pwtest/custom-html.cjs` 13/13 — 격리 점검 샘플 `workshop-sample.html`(jsdelivr 의 Chart.js 로드, 부모 · 쿠키 ·
+  외부 전송 · 상단 이동 · `/api/me` 전부 막힘), 콘솔 오류 0. 352개.
+
 ## 9/28 — 커스텀 창작마당 올리기 · 목록 · 지우기 (`c84f901`)
+
+> 종류별 내용(보고서 양식 · 시뮬레이션 링크 · 글)은 위 「HTML 실행으로」에서 전부 HTML 로 바뀌었다. `custom-upload.cjs` 도 그 시절 것.
 
 - **올리는 사람은 티처 요금제와 관리자뿐**(사용자 결정 「티처랑 관리자 두개만」). 서버가 요청마다 판정 —
   관리자는 `session.isAdmin(email)`, 선생님은 `credit.planOf(credit.readDoc(sub)) === 'teacher'`(기간 지나면 바로 못 올림).
@@ -1402,10 +1456,10 @@ create 충돌). 문제가 되면 횟수 증가 patch 에 조건(`filterPredicate
 **7. 잔액 부족(402)은 라이브에서 확인하지 않았다** — 계정 크레딧을 다 써야 해서
 단위 테스트로만 봤다.
 
-**8. 커스텀(창작마당) 다음 단계** — 올리기·목록·지우기는 끝(위 「9/28」). 남은 것: **가져오기**(보고서 양식은
-`GET /api/workshop/{id}` 로 `template` 을 받아 `research-report.js` 의 커스텀 데이터로 넣으면 된다 — 화면의 `normal()` 이 한 번 더
-거른다) · 추천 · **신고**(`reports.js`·`admin.js` 의 쿼리가 `type IN ('post', 'comment')` 라 창작마당 자료는 아직 신고·보류 대상이 아님) ·
-제목·설명 수정. 학생에게 올리기를 열면 도배 제한부터.
+**8. 커스텀(창작마당) 다음 단계** — 올리기(HTML + 대표 이미지) · 5×5 목록 · 실행 화면 · 지우기는 끝(위 「9/28」「9/29」).
+남은 것: 추천 · **신고**(`reports.js`·`admin.js` 의 쿼리가 `type IN ('post', 'comment')` 라 창작마당 자료는 아직 신고·보류 대상이 아님) ·
+제목·설명·대표 이미지 수정(이미지는 1년 캐시라 주소에 버전을 달 것). 자료가 수백 개로 늘면 목록을 서버에서 쪽 나누기.
+학생에게 올리기를 열면 도배 제한부터.
 
 나머지는 [progress.md](progress.md)의 '남은 일'에 우선순위대로 있습니다 —
 심화 탐구와 커뮤니티 연동, 시뮬레이션 세부 조작, 시뮬레이션 추가.
