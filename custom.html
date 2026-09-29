@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ans2Quest 커스텀 창작마당 — 선생님과 관리자가 만든 보고서 양식, 시뮬레이션 조건, 탐구 설계를 둘러보고 가져다 씁니다">
+  <meta name="description" content="Ans2Quest 커스텀 창작마당 — 선생님과 관리자가 AI 로 만든 HTML 시뮬레이션·보고서 양식·탐구 도구를 바로 실행해 봅니다">
   <title>커스텀 창작마당 — Ans2Quest</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,8 +42,8 @@
     .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
     .custom-card h3 { color: var(--ink); font-size: 17px; line-height: 1.4; word-break: keep-all; }
     .custom-card p, .custom-card details { color: var(--body); font-size: 14px; line-height: 1.65; word-break: keep-all; }
-    .custom-card .body { margin-top: 8px; white-space: pre-wrap; }
-    .custom-card summary { cursor: pointer; color: var(--primary-active); font-weight: 650; }
+    .up-form textarea.code { min-height: 160px; font: 12.5px/1.5 ui-monospace, Consolas, monospace; }
+    .up-preview .workshop-frame, .workshop-frame { display: block; width: 100%; height: 480px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); background: #fff; }
     .custom-card .open, .up-form .field-help a { color: var(--primary-active); font-weight: 700; }
     .up-form .field-help a { text-decoration: underline; text-underline-offset: 3px; }
     .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; color: var(--muted); font-size: 12.5px; }
@@ -119,7 +119,7 @@
           <div class="mega-col">
             <p class="mega-label">종류별로 보기</p>
             <a href="/custom?kind=report">보고서 양식</a>
-            <a href="/custom?kind=simulation">시뮬레이션 조건</a>
+            <a href="/custom?kind=simulation">시뮬레이션</a>
             <a href="/custom?kind=inquiry">탐구 주제·실험 설계</a>
             <a href="/custom?kind=etc">기타</a>
           </div>
@@ -137,12 +137,12 @@
     </div>
   </header>
   <main class="custom-main">
-    <section class="custom-hero"><div class="container"><p class="eyebrow">CUSTOM WORKSHOP</p><h1>선생님이 만든 탐구 자료를 골라 바로 쓰세요</h1><p>보고서 양식, 시뮬레이션 조건, 탐구 주제와 실험 설계까지. 선생님과 관리자가 만든 자료를 둘러보고 내 화면으로 가져와 쓰는 창작마당입니다.</p></div></section>
+    <section class="custom-hero"><div class="container"><p class="eyebrow">CUSTOM WORKSHOP</p><h1>선생님이 만든 탐구 자료를 골라 바로 쓰세요</h1><p>시뮬레이션, 보고서 양식, 탐구 주제와 실험 설계 도구까지. 선생님과 관리자가 AI 로 만든 HTML 을 이 사이트에서 바로 실행해 보는 창작마당입니다.</p></div></section>
     <div class="container custom-content">
       <nav class="kind-tabs" aria-label="자료 종류">
         <a href="/custom" data-kind="">전체</a>
         <a href="/custom?kind=report" data-kind="report">보고서 양식</a>
-        <a href="/custom?kind=simulation" data-kind="simulation">시뮬레이션 조건</a>
+        <a href="/custom?kind=simulation" data-kind="simulation">시뮬레이션</a>
         <a href="/custom?kind=inquiry" data-kind="inquiry">탐구 주제·실험 설계</a>
         <a href="/custom?kind=etc" data-kind="etc">기타</a>
       </nav>
@@ -150,19 +150,19 @@
       <form class="up-form edu-panel" id="up-form" hidden>
         <h2>자료 올리기</h2>
         <div class="up-row">
-          <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션 조건</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
+          <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
           <div class="field"><label for="up-title">제목</label><input id="up-title" maxlength="60" required placeholder="예: 마찰력 탐구 보고서 양식"></div>
         </div>
         <div class="field"><label for="up-desc">설명 <span class="field-help">(선택)</span></label><textarea id="up-desc" maxlength="500" placeholder="어떤 수업·탐구에 쓰면 좋은지 적어 주세요."></textarea></div>
-        <div class="field" data-for="report"><span class="field-title">올릴 양식</span><p class="field-help" id="up-report"></p></div>
-        <div class="field" data-for="simulation" hidden><label for="up-link">공유 링크</label><input id="up-link" type="url" placeholder="https://ans2quest.com/simulation/…"><p class="field-help">시뮬레이션에서 조건을 맞춘 뒤 「공유 링크 만들기」로 복사한 주소를 붙여 넣으세요.</p></div>
-        <div class="field" data-for="text" hidden><label for="up-body">내용</label><textarea id="up-body" maxlength="4000"></textarea></div>
-        <div class="up-actions"><button class="btn btn-primary" type="submit">올리기</button><button class="btn btn-ghost" id="up-cancel" type="button">취소</button><span class="up-msg" id="up-msg" aria-live="polite"></span></div>
+        <div class="field"><label for="up-file">HTML 파일</label><input id="up-file" type="file" accept=".html,.htm,text/html"><p class="field-help">AI 로 만든 시뮬레이션·양식·도구를 HTML 파일 하나로 올립니다. cdnjs · jsdelivr 의 라이브러리는 쓸 수 있고, 그 밖의 외부 스크립트와 외부로 보내는 연결은 막힙니다.</p></div>
+        <div class="field"><label for="up-html">또는 코드 붙여 넣기</label><textarea id="up-html" class="code" spellcheck="false" placeholder="<!DOCTYPE html> …"></textarea><p class="field-help" id="up-size">0KB / 200KB</p></div>
+        <div class="up-preview" id="up-preview" hidden></div>
+        <div class="up-actions"><button class="btn btn-ghost" id="up-try" type="button">미리보기</button><button class="btn btn-primary" type="submit">올리기</button><button class="btn btn-ghost" id="up-cancel" type="button">취소</button><span class="up-msg" id="up-msg" aria-live="polite"></span></div>
       </form>
       <p class="up-msg error" id="list-msg" role="alert" hidden></p>
       <ul class="custom-grid" id="items" aria-label="올라온 자료"></ul>
       <section class="custom-empty" id="empty" hidden><h2>아직 올라온 자료가 없습니다</h2><p id="empty-text">선생님과 관리자가 자료를 올리면 여기에 나타납니다.</p></section>
-      <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>자료는 선생님(티처 요금제)과 관리자만 올릴 수 있습니다. 올릴 수 있는 계정으로 로그인하면 목록 위에 올리기 버튼이 보입니다. 올라온 자료는 누구나 둘러볼 수 있고, 올린 사람과 관리자만 지울 수 있습니다.</p></section>
+      <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>자료는 선생님(티처 요금제)과 관리자만 올릴 수 있습니다. AI 로 만든 HTML 파일(시뮬레이션·보고서 양식·탐구 도구 등)을 올리면, 누구나 이 사이트에서 바로 실행해 볼 수 있습니다. 올린 HTML 은 사이트와 분리된 칸에서 돌아가서 로그인 정보에 손댈 수 없습니다. 올린 사람과 관리자만 지울 수 있습니다.</p></section>
     </div>
   </main>
   <div class="mobile-menu" id="mobile-menu">
@@ -198,6 +198,6 @@
     <div class="mobile-menu-actions" id="mobile-cta"><a href="/signup" class="btn btn-primary" style="width:100%">회원가입</a></div>
   </div>
   <script src="/assets/js/session.js"></script><script src="/assets/js/nav-user.js"></script><script src="/assets/js/nav-dropdown.js"></script>
-  <script src="/assets/js/custom-workshop.js"></script>
+  <script src="/assets/js/workshop-frame.js"></script><script src="/assets/js/custom-workshop.js"></script>
 </body>
 </html>

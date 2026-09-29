@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ans2Quest 커스텀 창작마당 — 선생님이 만든 HTML 시뮬레이션·도구를 실행합니다">
+  <title>커스텀 실행 — Ans2Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/research-pages.css">
+  <script src="/assets/js/theme.js"></script>
+  <style>
+    .view-main { padding: 28px 0 var(--sp-section); }
+    .view-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+    .view-head h1 { color: var(--ink); font-family: var(--font-display); font-size: clamp(26px,3.5vw,38px); line-height: 1.25; letter-spacing: -.02em; word-break: keep-all; }
+    .view-meta { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .view-actions { display: flex; gap: 8px; }
+    .view-desc { max-width: 820px; margin-bottom: 16px; color: var(--body); font-size: 15px; line-height: 1.7; white-space: pre-wrap; word-break: keep-all; }
+    .workshop-frame { display: block; width: 100%; height: max(520px, calc(100vh - 240px)); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: #fff; }
+    .view-stage:fullscreen { background: #fff; }
+    .view-stage:fullscreen .workshop-frame { height: 100vh; border: 0; border-radius: 0; }
+    .view-note { margin-top: 10px; color: var(--muted); font-size: 12.5px; line-height: 1.6; word-break: keep-all; }
+    @media(max-width:700px){.view-main{padding-top:20px}.view-actions{width:100%}.view-actions .btn{flex:1}.workshop-frame{height:max(420px, calc(100vh - 200px))}}
+  </style>
+</head>
+<body>
+  <header class="top-nav" id="top-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M10 3h6v7.5l5.5 11H4.5l5.5-11V3z" stroke="#167a63" stroke-width="1.4" stroke-linejoin="round"/><line x1="9" y1="3" x2="17" y2="3" stroke="var(--ink)" stroke-width="1.4"/><circle cx="11.5" cy="17" r="1.2" fill="#d97706"/><circle cx="15" cy="19" r=".9" fill="#167a63"/></svg>Ans2Quest</a>
+      <ul class="nav-links" id="nav-links">
+        <li>
+ <a href="/simulation/" data-dropdown="simulation">시뮬레이션</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=physics">물리학</a></p>
+            <a href="/simulation/pendulum.html">단진자</a>
+            <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+            <a href="/simulation/wave-interference.html">빛과 파동</a>
+            <a href="/simulation/orbital-motion.html">천체의 운동</a>
+            <a href="/simulation/thermal-gas.html">열과 통계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=chemistry">화학</a></p>
+            <a href="/simulation/particle-motion.html">입자의 운동</a>
+            <a href="/simulation/chemical-bond.html">화학 결합</a>
+            <a href="/simulation/chemical-reaction.html">화학 반응</a>
+            <a href="/simulation/acid-base.html">산과 염기</a>
+            <a href="/simulation/electrochemistry.html">전기화학</a>
+            <a href="/simulation/radioactivity.html">방사능</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=biology">생명과학</a></p>
+            <a href="/simulation/cell-structure.html">세포의 구조</a>
+            <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+            <a href="/simulation/ecology-population.html">개체와 생태계</a>
+            <a href="/simulation/neural-signal.html">신경과 자극전달</a>
+            <a href="/simulation/circulation-transport.html">순환과 수송</a>
+            <a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label"><a href="/simulation/?subject=earth">지구과학</a></p>
+            <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+            <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+            <a href="/simulation/earth-seasons.html">외권과 천체</a>
+            <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/community">커뮤니티</a></li>
+      <li><a href="/science">AI 과학 도우미</a></li>
+      <li>
+        <a href="/research" data-dropdown="research">심화 탐구</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">탐구 활동</p>
+            <a href="/research/topics">주제 탐색</a>
+            <a href="/research/hypothesis">가설 설정 가이드</a>
+            <a href="/research/experiment">실험 설계</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">탐구 기록과 공유</p>
+            <a href="/research/record">탐구 과정 기록하기</a>
+            <a href="/research/report">보고서 작성</a>
+            <a href="/research/examples">우수 사례</a>
+          </div>
+        </div>
+      </li>
+      <li class="active">
+        <a href="/custom" data-dropdown="custom">커스텀</a>
+        <div class="mega-dropdown">
+          <div class="mega-col">
+            <p class="mega-label">종류별로 보기</p>
+            <a href="/custom?kind=report">보고서 양식</a>
+            <a href="/custom?kind=simulation">시뮬레이션</a>
+            <a href="/custom?kind=inquiry">탐구 주제·실험 설계</a>
+            <a href="/custom?kind=etc">기타</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-label">창작마당</p>
+            <a href="/custom">전체 둘러보기</a>
+            <a href="/custom#upload">올리기 안내</a>
+          </div>
+        </div>
+      </li>
+      <li><a href="/guide">가이드</a></li>
+    </ul>
+      <div class="nav-cta" id="nav-cta"><a href="/signup">회원가입</a></div>
+      <button class="hamburger" type="button" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </header>
+  <main class="view-main">
+    <div class="container">
+      <p class="inquiry-crumb"><a href="/custom">커스텀</a> · <span id="v-kind">창작마당</span></p>
+      <div class="view-head">
+        <div><h1 id="v-title">불러오는 중…</h1><p class="view-meta" id="v-meta" aria-live="polite"></p></div>
+        <div class="view-actions" id="v-actions" hidden><button class="btn btn-ghost" id="v-reload" type="button">다시 시작</button><button class="btn btn-primary" id="v-full" type="button">전체 화면</button></div>
+      </div>
+      <p class="view-desc" id="v-desc" hidden></p>
+      <div class="view-stage" id="v-stage"></div>
+      <p class="view-note" id="v-note" hidden>이 칸은 올린 사람이 만든 화면입니다. 사이트와 분리돼 있어 로그인 정보나 이 사이트에 저장된 내용에 손댈 수 없습니다.</p>
+    </div>
+  </main>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header"><a href="/" class="nav-brand">Ans2Quest</a><button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">✕</button></div>
+    <nav>
+      <a href="/simulation/pendulum.html">단진자</a>
+      <a href="/simulation/electromagnetic-induction.html">전자기 유도</a>
+      <a href="/simulation/wave-interference.html">빛과 파동</a>
+      <a href="/simulation/orbital-motion.html">천체의 운동</a>
+      <a href="/simulation/thermal-gas.html">열과 통계</a>
+      <a href="/simulation/particle-motion.html">입자의 운동</a>
+      <a href="/simulation/chemical-bond.html">화학 결합</a>
+      <a href="/simulation/chemical-reaction.html">화학 반응</a>
+      <a href="/simulation/acid-base.html">산과 염기</a>
+      <a href="/simulation/electrochemistry.html">전기화학</a>
+      <a href="/simulation/radioactivity.html">방사능</a>
+      <a href="/simulation/cell-structure.html">세포의 구조</a>
+      <a href="/simulation/genetics-evolution.html">유전과 진화</a>
+      <a href="/simulation/ecology-population.html">개체와 생태계</a>
+      <a href="/simulation/neural-signal.html">신경과 자극전달</a>
+      <a href="/simulation/circulation-transport.html">순환과 수송</a>
+      <a href="/simulation/metabolism-enzyme.html">대사와 효소</a>
+      <a href="/simulation/plate-tectonics.html">판과 지각 변동</a>
+      <a href="/simulation/atmosphere-weather.html">대기와 기상</a>
+      <a href="/simulation/earth-seasons.html">외권과 천체</a>
+      <a href="/simulation/ocean-circulation.html">해양과 순환</a>
+      <a href="/community">커뮤니티</a>
+      <a href="/science">AI 과학 도우미</a>
+      <a href="/research">심화 탐구</a>
+      <a href="/custom">커스텀</a>
+      <a href="/guide">가이드</a>
+    </nav>
+    <div class="mobile-menu-actions" id="mobile-cta"><a href="/signup" class="btn btn-primary" style="width:100%">회원가입</a></div>
+  </div>
+  <script src="/assets/js/session.js"></script><script src="/assets/js/nav-user.js"></script><script src="/assets/js/nav-dropdown.js"></script>
+  <script src="/assets/js/workshop-frame.js"></script><script src="/assets/js/custom-view.js"></script>
+</body>
+</html>
