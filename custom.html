@@ -13,42 +13,83 @@
   <link rel="stylesheet" href="/assets/css/research-pages.css">
   <script src="/assets/js/theme.js"></script>
   <style>
-    .custom-main { padding-bottom: var(--sp-section); }
-    .custom-hero { padding: 72px 0 64px; border-bottom: 1px solid var(--hairline); background: linear-gradient(135deg, color-mix(in srgb,var(--primary) 9%,var(--canvas)),var(--surface-soft)); }
-    .eyebrow { margin-bottom: 10px; color: var(--primary-active); font-size: 12px; font-weight: 750; letter-spacing: .14em; }
-    .custom-hero h1 { max-width: 760px; color: var(--ink); font-family: var(--font-display); font-size: clamp(34px,5vw,54px); line-height: 1.18; letter-spacing: -.035em; }
-    .custom-hero p:last-child { max-width: 690px; margin-top: 16px; color: var(--body); font-size: 17px; line-height: 1.75; word-break: keep-all; }
-    .custom-content { padding-top: 48px; }
-    .kind-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-    .kind-tabs a { padding: 8px 16px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--body); font-size: 14px; font-weight: 600; transition: border-color .15s, color .15s; }
-    .kind-tabs a:hover { border-color: var(--primary); color: var(--primary-active); }
-    .kind-tabs a[aria-current="page"] { border-color: var(--primary-active); background: var(--primary-active); color: var(--on-primary); }
+    /* 좌우 여백은 .container 의 것을 쓴다 — padding 한 줄로 쓰면 0 으로 덮여 휴대폰에서 카드가 화면 끝에 붙는다 */
+    .custom-main { padding-top: var(--sp-xxl); padding-bottom: var(--sp-section); }
+    /* 틀은 /simulation/ 목록과 같다 — 왼쪽 종류 필터, 위 도구줄, 카드 격자(한 쪽 5×5) */
+    .sim-intro { margin-bottom: var(--sp-xxl); }
+    .sim-intro .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .12em; margin-bottom: 10px; }
+    .sim-intro h1 { color: var(--ink); font-family: var(--font-display); font-size: clamp(32px, 4vw, 46px); line-height: 1.25; letter-spacing: -.03em; margin-bottom: 12px; word-break: keep-all; }
+    .sim-intro p:not(.eyebrow) { color: var(--muted); font-size: 16px; word-break: keep-all; }
+    .sim-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-xl); align-items: start; }
+    .filters { position: sticky; top: 80px; padding: var(--sp-lg); background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); }
+    .filters h2 { color: var(--ink); font-size: 15px; margin-bottom: 6px; }
+    .filters p { color: var(--muted); font-size: 12px; line-height: 1.55; margin-bottom: var(--sp-md); }
+    .filter-list { display: grid; gap: 4px; }
+    .filter-option { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 7px 8px; border-radius: var(--rounded-md); cursor: pointer; color: var(--body); font-size: 14px; transition: background .15s; }
+    .filter-option:hover { background: var(--surface-soft); }
+    .filter-option input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .filter-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--k); }
+    .filter-count { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .k-report { --k: #2d6fa9; } .k-simulation { --k: #167a63; } .k-inquiry { --k: #b36600; } .k-etc { --k: #6656a8; }
+    .sim-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); margin-bottom: var(--sp-md); }
+    .sim-toolbar-title { display: flex; align-items: baseline; gap: var(--sp-sm); flex-wrap: wrap; }
+    .sim-toolbar h2 { color: var(--ink); font-size: 18px; }
+    .custom-count { color: var(--muted); font-size: 13px; }
+    .toolbar-side { display: flex; align-items: center; gap: var(--sp-sm); }
+    .sim-search { position: relative; width: min(100%, 320px); }
+    .sim-search .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .sim-search::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 20px; pointer-events: none; }
+    .sim-search input { width: 100%; height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); color: var(--ink); background: var(--canvas); font: 14px var(--font-body); }
+    .sim-search input::placeholder { color: var(--muted); }
+    .sim-search input:focus { outline: 2px solid color-mix(in srgb, var(--primary) 25%, transparent); border-color: var(--primary); }
+    .ws-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; list-style: none; }
+    .ws-card { position: relative; display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--rounded-lg); overflow: hidden; transition: border-color .15s, transform .15s; }
+    .ws-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .ws-card:has(.open:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .ws-card .open { color: inherit; }
+    /* 카드 전체를 누를 수 있게 링크를 덮는다(제목만 눌리면 과녁이 너무 작다). 지우기 버튼만 그 위로 올린다 */
+    .ws-card .open::after { content: ''; position: absolute; inset: 0; }
+    .ws-card .open:focus-visible { outline: none; }
+    .ws-thumb { position: relative; aspect-ratio: 16 / 10; margin: 6px; border-radius: 8px; overflow: hidden; color: var(--k); background: radial-gradient(120% 90% at var(--gx, 50%) 0%, color-mix(in srgb, var(--k) 38%, var(--surface-dark)), var(--surface-dark) 70%); }
+    .ws-thumb svg { display: block; width: 100%; height: 100%; }
+    /* 흰 바탕 이미지가 카드와 섞이지 않게 얇은 테두리 */
+    .ws-thumb::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent); pointer-events: none; }
+    .ws-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: var(--surface-dark); }
+    .ws-body { display: flex; flex: 1; flex-direction: column; padding: 2px 10px 10px; }
+    .ws-kind { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; color: var(--muted); font-size: 11.5px; font-weight: 600; }
+    .ws-kind .filter-dot { width: 6px; height: 6px; }
+    .ws-card h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em; color: var(--ink); font-size: 14.5px; line-height: 1.4; font-weight: 650; word-break: keep-all; }
+    .ws-meta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; color: var(--muted); font-size: 11.5px; }
+    .ws-meta span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .ws-del { position: relative; z-index: 1; flex: none; margin-left: auto; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 600 11.5px var(--font-body); cursor: pointer; }
+    .ws-del:hover { background: var(--surface-soft); color: var(--error); }
+    .pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; margin-top: var(--sp-xl); }
+    .pager button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid transparent; border-radius: var(--rounded-md); background: transparent; color: var(--body); font: 600 14px var(--font-body); cursor: pointer; }
+    .pager button:hover:not(:disabled) { border-color: var(--hairline); }
+    .pager button[aria-current="page"] { border-color: var(--primary-active); background: var(--primary-active); color: var(--on-primary); }
+    .pager button:disabled { color: var(--muted-soft); cursor: default; }
+    .empty-state { padding: 58px 20px; border: 1px dashed var(--hairline); border-radius: var(--rounded-lg); color: var(--muted); font-size: 14px; text-align: center; }
     .custom-empty { padding: 64px 24px; border: 1px dashed var(--hairline); border-radius: var(--rounded-lg); background: var(--surface-soft); text-align: center; }
     .custom-empty h2 { color: var(--ink); font-size: 20px; }
     .custom-empty p { max-width: 520px; margin: 10px auto 0; color: var(--body); font-size: 14px; line-height: 1.7; word-break: keep-all; }
     .custom-upload { margin-top: 56px; scroll-margin-top: 76px; padding: 28px; border: 1px solid var(--hairline); border-radius: var(--rounded-lg); background: var(--canvas); }
     .custom-upload h2 { color: var(--ink); font-family: var(--font-display); font-size: 24px; }
     .custom-upload p { margin-top: 10px; color: var(--body); font-size: 14px; line-height: 1.75; word-break: keep-all; }
-    .custom-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .custom-count { color: var(--muted); font-size: 13px; }
     .up-form { display: grid; gap: 16px; margin-bottom: 24px; padding: 24px; }
     .up-form h2 { color: var(--ink); font-size: 18px; }
     .up-row { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
     .up-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .up-msg { color: var(--muted); font-size: 13px; }
     .up-msg.error { color: var(--error); }
-    .custom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; list-style: none; }
-    .custom-card { display: flex; flex-direction: column; gap: 10px; padding: 22px; }
-    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .custom-card h3 { color: var(--ink); font-size: 17px; line-height: 1.4; word-break: keep-all; }
-    .custom-card p, .custom-card details { color: var(--body); font-size: 14px; line-height: 1.65; word-break: keep-all; }
     .up-form textarea.code { min-height: 160px; font: 12.5px/1.5 ui-monospace, Consolas, monospace; }
+    .thumb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .thumb-row input { flex: 1 1 220px; width: auto; }
+    .thumb-row img { width: 160px; aspect-ratio: 16 / 10; object-fit: cover; border: 1px solid var(--hairline); border-radius: 8px; }
     .up-preview .workshop-frame, .workshop-frame { display: block; width: 100%; height: 480px; border: 1px solid var(--hairline); border-radius: var(--rounded-md); background: #fff; }
-    .custom-card .open, .up-form .field-help a { color: var(--primary-active); font-weight: 700; }
-    .up-form .field-help a { text-decoration: underline; text-underline-offset: 3px; }
-    .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; color: var(--muted); font-size: 12.5px; }
-    .card-foot .btn { padding: 6px 12px; font-size: 12.5px; }
-    @media(max-width:700px){.custom-hero{padding:48px 0}.custom-content{padding-top:32px}.custom-empty{padding:44px 18px}.custom-upload{padding:22px}.up-form{padding:18px}.up-row{grid-template-columns:1fr}}
+    .up-form .field-help a { color: var(--primary-active); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 1100px) { .ws-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 920px) { .ws-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 700px) { .custom-main { padding-top: var(--sp-xl); } .sim-layout { grid-template-columns: 1fr; } .filters { position: static; } .filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sim-toolbar, .toolbar-side { align-items: stretch; flex-direction: column; } .sim-search { width: 100%; } .ws-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .custom-empty { padding: 44px 18px; } .custom-upload { padding: 22px; } .up-form { padding: 18px; } .up-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -136,34 +177,59 @@
       <button class="hamburger" type="button" aria-label="메뉴 열기" onclick="document.getElementById('mobile-menu').classList.add('open')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     </div>
   </header>
-  <main class="custom-main">
-    <section class="custom-hero"><div class="container"><p class="eyebrow">CUSTOM WORKSHOP</p><h1>선생님이 만든 탐구 자료를 골라 바로 쓰세요</h1><p>시뮬레이션, 보고서 양식, 탐구 주제와 실험 설계 도구까지. 선생님과 관리자가 AI 로 만든 HTML 을 이 사이트에서 바로 실행해 보는 창작마당입니다.</p></div></section>
-    <div class="container custom-content">
-      <nav class="kind-tabs" aria-label="자료 종류">
-        <a href="/custom" data-kind="">전체</a>
-        <a href="/custom?kind=report" data-kind="report">보고서 양식</a>
-        <a href="/custom?kind=simulation" data-kind="simulation">시뮬레이션</a>
-        <a href="/custom?kind=inquiry" data-kind="inquiry">탐구 주제·실험 설계</a>
-        <a href="/custom?kind=etc" data-kind="etc">기타</a>
-      </nav>
-      <div class="custom-bar"><span class="custom-count" id="count" aria-live="polite">불러오는 중…</span><button class="btn btn-primary" id="up-open" type="button" hidden>올리기</button></div>
-      <form class="up-form edu-panel" id="up-form" hidden>
-        <h2>자료 올리기</h2>
-        <div class="up-row">
-          <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
-          <div class="field"><label for="up-title">제목</label><input id="up-title" maxlength="60" required placeholder="예: 마찰력 탐구 보고서 양식"></div>
+  <main class="container custom-main">
+    <section class="sim-intro">
+      <p class="eyebrow">CUSTOM WORKSHOP</p>
+      <h1>선생님이 만든 탐구 자료를 골라 바로 쓰세요</h1>
+      <p>시뮬레이션, 보고서 양식, 탐구 주제와 실험 설계 도구까지 — 선생님과 관리자가 AI 로 만든 HTML 을 이 사이트에서 바로 실행해 봅니다.</p>
+    </section>
+    <!-- 대표 이미지가 없는 자료의 종류별 그림. 색은 카드의 --k 를 따른다(currentColor) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="g-report" viewBox="0 0 160 100"><rect x="58" y="16" width="44" height="58" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M66 32h28M66 42h28M66 52h18" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".75"/></symbol>
+      <symbol id="g-simulation" viewBox="0 0 160 100"><path d="M20 60 Q45 20 70 50 T120 45 T150 30" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="70" cy="50" r="7" fill="currentColor"/><path d="M20 82h120" stroke="currentColor" stroke-width="1.5" opacity=".45"/></symbol>
+      <symbol id="g-inquiry" viewBox="0 0 160 100"><path d="M70 16h20M74 16v20L58 70a5 5 0 0 0 4 7h36a5 5 0 0 0 4-7L86 36V16" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M63 62h34" stroke="currentColor" stroke-width="3" opacity=".6"/><circle cx="76" cy="55" r="3" fill="currentColor"/><circle cx="86" cy="49" r="2" fill="currentColor"/></symbol>
+      <symbol id="g-etc" viewBox="0 0 160 100"><rect x="54" y="18" width="22" height="22" rx="4" fill="currentColor"/><rect x="84" y="18" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="54" y="48" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="84" y="48" width="22" height="22" rx="4" fill="currentColor" opacity=".6"/></symbol>
+    </svg>
+    <div class="sim-layout">
+      <aside class="filters" aria-label="자료 종류 필터">
+        <h2>종류</h2>
+        <p>보고 싶은 종류를 선택하세요.</p>
+        <div class="filter-list" id="kinds">
+          <label class="filter-option k-report"><input type="checkbox" value="report" checked><span class="filter-dot"></span>보고서 양식 <span class="filter-count"></span></label>
+          <label class="filter-option k-simulation"><input type="checkbox" value="simulation" checked><span class="filter-dot"></span>시뮬레이션 <span class="filter-count"></span></label>
+          <label class="filter-option k-inquiry"><input type="checkbox" value="inquiry" checked><span class="filter-dot"></span>탐구 주제·실험 설계 <span class="filter-count"></span></label>
+          <label class="filter-option k-etc"><input type="checkbox" value="etc" checked><span class="filter-dot"></span>기타 <span class="filter-count"></span></label>
         </div>
-        <div class="field"><label for="up-desc">설명 <span class="field-help">(선택)</span></label><textarea id="up-desc" maxlength="500" placeholder="어떤 수업·탐구에 쓰면 좋은지 적어 주세요."></textarea></div>
-        <div class="field"><label for="up-file">HTML 파일</label><input id="up-file" type="file" accept=".html,.htm,text/html"><p class="field-help">AI 로 만든 시뮬레이션·양식·도구를 HTML 파일 하나로 올립니다. cdnjs · jsdelivr 의 라이브러리는 쓸 수 있고, 그 밖의 외부 스크립트와 외부로 보내는 연결은 막힙니다.</p></div>
-        <div class="field"><label for="up-html">또는 코드 붙여 넣기</label><textarea id="up-html" class="code" spellcheck="false" placeholder="<!DOCTYPE html> …"></textarea><p class="field-help" id="up-size">0KB / 200KB</p></div>
-        <div class="up-preview" id="up-preview" hidden></div>
-        <div class="up-actions"><button class="btn btn-ghost" id="up-try" type="button">미리보기</button><button class="btn btn-primary" type="submit">올리기</button><button class="btn btn-ghost" id="up-cancel" type="button">취소</button><span class="up-msg" id="up-msg" aria-live="polite"></span></div>
-      </form>
-      <p class="up-msg error" id="list-msg" role="alert" hidden></p>
-      <ul class="custom-grid" id="items" aria-label="올라온 자료"></ul>
-      <section class="custom-empty" id="empty" hidden><h2>아직 올라온 자료가 없습니다</h2><p id="empty-text">선생님과 관리자가 자료를 올리면 여기에 나타납니다.</p></section>
-      <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>자료는 선생님(티처 요금제)과 관리자만 올릴 수 있습니다. AI 로 만든 HTML 파일(시뮬레이션·보고서 양식·탐구 도구 등)을 올리면, 누구나 이 사이트에서 바로 실행해 볼 수 있습니다. 올린 HTML 은 사이트와 분리된 칸에서 돌아가서 로그인 정보에 손댈 수 없습니다. 올린 사람과 관리자만 지울 수 있습니다.</p></section>
+      </aside>
+      <section aria-labelledby="ws-title">
+        <div class="sim-toolbar">
+          <div class="sim-toolbar-title"><h2 id="ws-title">전체 자료</h2><span class="custom-count" id="count" aria-live="polite">불러오는 중…</span></div>
+          <div class="toolbar-side">
+            <label class="sim-search"><span class="sr-only">자료 검색</span><input type="search" id="q" placeholder="예: 포물선, 보고서" autocomplete="off"></label>
+            <button class="btn btn-primary" id="up-open" type="button" hidden>올리기</button>
+          </div>
+        </div>
+        <form class="up-form edu-panel" id="up-form" hidden>
+          <h2>자료 올리기</h2>
+          <div class="up-row">
+            <div class="field"><label for="up-kind">종류</label><select id="up-kind"><option value="report">보고서 양식</option><option value="simulation">시뮬레이션</option><option value="inquiry">탐구 주제·실험 설계</option><option value="etc">기타</option></select></div>
+            <div class="field"><label for="up-title">제목</label><input id="up-title" maxlength="60" required placeholder="예: 마찰력 탐구 보고서 양식"></div>
+          </div>
+          <div class="field"><label for="up-desc">설명 <span class="field-help">(선택)</span></label><textarea id="up-desc" maxlength="500" placeholder="어떤 수업·탐구에 쓰면 좋은지 적어 주세요."></textarea></div>
+          <div class="field"><label for="up-file">HTML 파일</label><input id="up-file" type="file" accept=".html,.htm,text/html"><p class="field-help">AI 로 만든 시뮬레이션·양식·도구를 HTML 파일 하나로 올립니다. cdnjs · jsdelivr 의 라이브러리는 쓸 수 있고, 그 밖의 외부 스크립트와 외부로 보내는 연결은 막힙니다.</p></div>
+          <div class="field"><label for="up-html">또는 코드 붙여 넣기</label><textarea id="up-html" class="code" spellcheck="false" placeholder="<!DOCTYPE html> …"></textarea><p class="field-help" id="up-size">0KB / 200KB</p></div>
+          <div class="field"><label for="up-thumb">대표 이미지 <span class="field-help">(선택)</span></label><div class="thumb-row"><img id="up-thumb-img" alt="대표 이미지 미리보기" hidden><input id="up-thumb" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><button class="btn btn-ghost" id="up-thumb-clear" type="button" hidden>빼기</button></div><p class="field-help">목록 카드에 보일 그림입니다. 16:10 으로 잘라 작게 줄여 올립니다. 올리지 않으면 종류별 기본 그림이 나옵니다.</p></div>
+          <div class="up-preview" id="up-preview" hidden></div>
+          <div class="up-actions"><button class="btn btn-ghost" id="up-try" type="button">미리보기</button><button class="btn btn-primary" type="submit">올리기</button><button class="btn btn-ghost" id="up-cancel" type="button">취소</button><span class="up-msg" id="up-msg" aria-live="polite"></span></div>
+        </form>
+        <p class="up-msg error" id="list-msg" role="alert" hidden></p>
+        <ul class="ws-grid" id="items" aria-label="올라온 자료"></ul>
+        <p class="empty-state" id="none" hidden>조건에 맞는 자료가 없습니다.</p>
+        <section class="custom-empty" id="empty" hidden><h2>아직 올라온 자료가 없습니다</h2><p>선생님과 관리자가 자료를 올리면 여기에 나타납니다.</p></section>
+        <nav class="pager" id="pager" aria-label="쪽 넘기기"></nav>
+      </section>
     </div>
+    <section class="custom-upload" id="upload" aria-labelledby="upload-title"><h2 id="upload-title">올리기 안내</h2><p>자료는 선생님(티처 요금제)과 관리자만 올릴 수 있습니다. AI 로 만든 HTML 파일(시뮬레이션·보고서 양식·탐구 도구 등)을 올리면, 누구나 이 사이트에서 바로 실행해 볼 수 있습니다. 목록 카드에 보일 대표 이미지도 함께 올릴 수 있고, 올리지 않으면 종류별 기본 그림이 나옵니다. 올린 HTML 은 사이트와 분리된 칸에서 돌아가서 로그인 정보에 손댈 수 없습니다. 올린 사람과 관리자만 지울 수 있습니다.</p></section>
   </main>
   <div class="mobile-menu" id="mobile-menu">
     <div class="mobile-menu-header"><a href="/" class="nav-brand">Ans2Quest</a><button class="mobile-menu-close" aria-label="메뉴 닫기" onclick="document.getElementById('mobile-menu').classList.remove('open')">✕</button></div>

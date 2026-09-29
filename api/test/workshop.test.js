@@ -126,12 +126,51 @@ test('지우기는 올린 사람과 관리자만', async () => {
   assert.strictEqual((await call('workshopDelete', { cookie: BOSS, id: other.id })).status, 204);
 });
 
+const jpeg = (n) => 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(n - 4, 7)]).toString('base64');
+const thumbs = () => state.docs.filter((d) => d.type === 'workshopThumb');
+
+test('대표 이미지 — JPEG 만 64KB 까지, 따로 두고 목록엔 있다는 표시만, 지우면 같이 지운다', async () => {
+  const before = [state.docs.filter((d) => d.type === 'workshop').length, thumbs().length];
+  const svg = 'data:image/jpeg;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>').toString('base64');
+  for (const thumb of [svg, 'data:image/png;base64,' + jpeg(100).split(',')[1], 'data:image/jpeg;base64,@@@', jpeg(64 * 1024 + 1), { x: 1 }, 'data:image/jpeg;base64,']) {
+    const r = await up(T1, { kind: 'etc', title: '이미지', html: HTML, thumb });
+    assert.strictEqual(r.status, 400, `막혀야 한다: ${String(thumb).slice(0, 40)}`);
+  }
+  assert.match((await up(T1, { kind: 'etc', title: '이미지', html: HTML, thumb: jpeg(64 * 1024 + 1) })).jsonBody.error, /64KB/);
+  assert.deepStrictEqual([state.docs.filter((d) => d.type === 'workshop').length, thumbs().length], before, '막힌 요청은 아무것도 남기지 않는다');
+
+  const withImg = (await up(T1, { kind: 'simulation', title: '그림 있는 자료', html: HTML, thumb: jpeg(64 * 1024) })).jsonBody.item;
+  const plain = (await up(T1, { kind: 'simulation', title: '그림 없는 자료', html: HTML, thumb: '' })).jsonBody.item;
+  assert.deepStrictEqual([withImg.thumb, plain.thumb], [true, false]);
+
+  queries.length = 0;
+  const list = await call('workshopList', {});
+  assert.ok(queries.every((q) => !/c\.data|workshopThumb/.test(q)), '목록이 이미지를 읽으면 안 된다: ' + queries);
+  assert.ok(JSON.stringify(list.jsonBody).length < 20000, '목록에 이미지 데이터가 실렸다');
+  assert.deepStrictEqual(['그림 있는 자료', '그림 없는 자료'].map((t) => list.jsonBody.items.find((i) => i.title === t).thumb), [true, false]);
+
+  const img = await call('workshopThumb', { id: withImg.id });
+  assert.strictEqual(img.status, undefined);
+  assert.strictEqual(img.headers['Content-Type'], 'image/jpeg');
+  assert.strictEqual(img.headers['X-Content-Type-Options'], 'nosniff');
+  assert.ok(Buffer.isBuffer(img.body) && img.body.equals(Buffer.from(jpeg(64 * 1024).split(',')[1], 'base64')));
+  assert.strictEqual((await call('workshopThumb', { id: plain.id })).status, 404);
+  assert.strictEqual((await call('workshopThumb', { id: 'w_none' })).status, 404);
+
+  assert.strictEqual((await call('workshopDelete', { cookie: T1, id: withImg.id })).status, 204);
+  assert.strictEqual(thumbs().filter((d) => d.id === 'thumb:' + withImg.id).length, 0, '자료를 지우면 이미지도 지운다');
+  assert.strictEqual((await call('workshopThumb', { id: withImg.id })).status, 404);
+});
+
 test('계정을 지우면 올린 자료도 지워지고, 이름을 바꾸면 작성자명도 바뀐다', async () => {
   await up(T2, { kind: 'etc', title: '남은 자료', html: HTML });
+  const pic = (await up(T2, { kind: 'etc', title: '그림 있는 남은 자료', html: HTML, thumb: jpeg(2000) })).jsonBody.item;
+  assert.strictEqual(thumbs().filter((d) => d.id === 'thumb:' + pic.id).length, 1);
   await profile.save({ sub: 'google:t2', name: '이름2', email: 'google:t2@example.com' }, { name: '새이름' });
   assert.ok(state.docs.filter((d) => d.type === 'workshop' && d.authorSub === 'google:t2').every((d) => d.authorName === '새이름'));
   await profile.purge('google:t2');
   assert.strictEqual(state.docs.filter((d) => d.type === 'workshop' && d.authorSub === 'google:t2').length, 0);
+  assert.strictEqual(thumbs().filter((d) => d.id === 'thumb:' + pic.id).length, 0, '대표 이미지도 지운다');
   assert.ok(state.docs.some((d) => d.type === 'workshop' && d.authorSub === 'google:t1'), '다른 사람 자료는 그대로');
 });
 
@@ -161,6 +200,10 @@ test('올린 HTML 은 사이트와 격리된 칸에서만 돈다', () => {
     assert.doesNotMatch(csp, /unsafe-eval|script-src[^;]*https:(?!\/\/)/);
   }
   assert.doesNotMatch(cfg.globalHeaders['Content-Security-Policy'], /cdnjs|script-src[^;]*jsdelivr/, '다른 화면의 스크립트 정책은 넓히지 않는다');
+  // 대표 이미지는 캐시한다 — 규칙은 처음 맞는 것 하나만 쓰이니 /api/* (no-store) 보다 앞이어야 한다
+  const at = (route) => cfg.routes.findIndex((x) => x.route === route);
+  assert.ok(at('/api/workshop-thumb/*') >= 0 && at('/api/workshop-thumb/*') < at('/api/*'), '/api/workshop-thumb/* 규칙이 /api/* 앞에 없다');
+  assert.match(cfg.routes[at('/api/workshop-thumb/*')].headers['Cache-Control'], /max-age=\d{5,}/);
   for (const page of ['custom.html', 'custom-view.html']) {
     assert.match(fs.readFileSync(path.join(ROOT, page), 'utf8'), /<script src="\/assets\/js\/workshop-frame\.js"><\/script>/);
   }

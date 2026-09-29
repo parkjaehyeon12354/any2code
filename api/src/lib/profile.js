@@ -347,14 +347,19 @@ async function purge(sub) {
       parameters: [{ name: '@s', value: sub }]
     }),
     query({
-      query: "SELECT c.id, c.pk, c.type FROM c WHERE c.type IN ('post', 'comment', 'workshop') AND c.authorSub = @s AND c.status != 'deleted'",
+      query: "SELECT c.id, c.pk, c.type, c.thumb FROM c WHERE c.type IN ('post', 'comment', 'workshop') AND c.authorSub = @s AND c.status != 'deleted'",
       parameters: [{ name: '@s', value: sub }]
     })
   ]);
 
   for (const row of content) {
     // 창작마당 자료는 남길 이유가 없다 — 다른 사람 글에 달린 답변과 달리 스레드가 끊기지 않는다
-    if (row.type === 'workshop') { await c.item(row.id, row.pk).delete(); continue; }
+    // 대표 이미지는 'thumb:<자료 id>' 에 따로 있다(functions/workshop.js)
+    if (row.type === 'workshop') {
+      await c.item(row.id, row.pk).delete();
+      if (row.thumb) await c.item('thumb:' + row.id, row.pk).delete().catch((e) => { if (e.code !== 404) throw e; });
+      continue;
+    }
     const emptyBody = row.type === 'post' ? '(탈퇴한 사용자의 글입니다.)' : '(탈퇴한 사용자의 답변입니다.)';
     await c.item(row.id, row.pk).patch([
       { op: 'set', path: '/status', value: 'deleted' },
