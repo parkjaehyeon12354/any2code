@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="/assets/css/styles.css">
   <script src="/assets/js/theme.js"></script>
   <style>
-    .sim-page { padding: var(--sp-xxl) 0 var(--sp-section); }
+    /* 좌우 여백은 .container 의 것을 쓴다 — padding 한 줄로 쓰면 0 으로 덮여 휴대폰에서 카드가 화면 끝에 붙는다 */
+    .sim-page { padding-top: var(--sp-xxl); padding-bottom: var(--sp-section); }
     .sim-intro { margin-bottom: var(--sp-xxl); }
     .sim-intro .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .12em; margin-bottom: 10px; }
     .sim-intro h1 { color: var(--ink); font-family: var(--font-display); font-size: clamp(32px, 4vw, 46px); line-height: 1.25; letter-spacing: -.03em; margin-bottom: 12px; word-break: keep-all; }
