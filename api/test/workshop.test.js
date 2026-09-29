@@ -83,6 +83,9 @@ test('목록은 HTML 을 읽지도 싣지도 않고, 실행 화면은 하나를 
   await call('workshopList', {});
   const list = (await call('workshopList', { query: '?kind=inquiry' })).jsonBody;
   assert.strictEqual(queries.filter((q) => /c\.type = 'workshop'/.test(q)).length, 2);
+  // 가짜 컨테이너는 SQL 을 해석하지 않는다 — 예약어를 필드로 쓰면 여기선 통과하고 실서버에서만 실패한다(c.desc 가 그랬다)
+  const RESERVED = /\bc\.(desc|asc|order|by|value|select|from|where|top|limit|offset|in|join|group|between|like|not|and|or|is|as|case|when|then|else|end|exists|set|on|left|right|inner|cross|distinct|having|escape|udf|undefined|null|true|false|array|cast|convert|insert|into|update|with|over|for|outer)\b/i;
+  assert.ok(queries.every((q) => !RESERVED.test(q)), '예약어를 c.필드 로 썼다: ' + queries.find((q) => RESERVED.test(q)));
   assert.ok(queries.every((q) => !/SELECT \*/.test(q) && !/c\.html/.test(q)), '목록 쿼리가 HTML 을 읽으면 한 번에 RU 를 크게 먹는다: ' + queries);
   const item = list.items.find((i) => i.id === made.id);
   assert.strictEqual(item.html, undefined);

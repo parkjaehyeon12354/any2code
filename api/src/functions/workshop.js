@@ -33,8 +33,9 @@ const publicItem = (d, viewerSub, admin, full = false) => ({
   ...(full ? { html: d.html } : {})
 });
 
-// 목록은 HTML 을 읽지 않는다 — 한 건에 수백 KB 라, 다 읽으면 목록 한 번에 RU 를 크게 먹는다
-const FIELDS = 'c.id, c.kind, c.title, c.desc, c.authorName, c.authorRole, c.authorSub, c.createdAt, c.size';
+// 목록은 HTML 을 읽지 않는다 — 한 건에 수백 KB 라, 다 읽으면 목록 한 번에 RU 를 크게 먹는다.
+// desc 는 Cosmos SQL 예약어(ORDER BY … DESC)라 c.desc 로 쓰면 쿼리가 통째로 실패한다(라이브 503) — c["desc"] 로 쓴다
+const FIELDS = 'c.id, c.kind, c.title, c["desc"], c.authorName, c.authorRole, c.authorSub, c.createdAt, c.size';
 
 /* ── 목록 ── 비로그인도 본다. 올릴 수 있는 사람인지(canUpload)도 함께 준다 — 화면이 올리기 버튼을 그린다 */
 app.http('workshopList', {
