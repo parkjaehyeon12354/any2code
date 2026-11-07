@@ -47,11 +47,13 @@ test('런타임 진입점이 테스트 파일을 끌어들이지 않는다', () 
   assert.deepStrictEqual(strays, [], '테스트는 test/ 에 둔다');
 });
 
-test('네 엔드포인트가 모두 등록된다', () => {
-  assert.deepStrictEqual(Object.keys(routes).sort(), ['authCallback', 'authStart', 'logout', 'me']);
+test('다섯 엔드포인트가 모두 등록된다', () => {
+  assert.deepStrictEqual(Object.keys(routes).sort(), ['authCallback', 'authStart', 'logout', 'logoutAll', 'me']);
   assert.strictEqual(routes.authStart.route, 'auth/{provider}/start');
   assert.strictEqual(routes.me.methods[0], 'GET');
   assert.strictEqual(routes.logout.methods[0], 'POST');
+  assert.strictEqual(routes.logoutAll.route, 'auth/logout-all');
+  assert.strictEqual(routes.logoutAll.methods[0], 'POST');
 });
 
 test('알 수 없는 제공자는 404', async () => {

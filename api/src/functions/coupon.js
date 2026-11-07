@@ -67,7 +67,7 @@ app.http('adminCoupons', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = session.requireAdmin(request);
+    const { error } = await session.requireAdmin(request);
     if (error) return error;
     try {
       const rows = await query({ query: "SELECT * FROM c WHERE c.type = 'coupon' AND c.pk = 'coupon'" });
@@ -97,7 +97,7 @@ app.http('adminCouponIssue', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error, user: admin } = session.requireAdmin(request);
+    const { error, user: admin } = await session.requireAdmin(request);
     if (error) return error;
 
     let b;
@@ -143,7 +143,7 @@ app.http('couponRedeem', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (!tryAllowed(user.sub)) {
       return { status: 429, jsonBody: { error: '입력을 너무 자주 했습니다. 10분 뒤에 다시 시도해 주세요.' } };

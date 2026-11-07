@@ -262,7 +262,7 @@ app.http('llmChat', {
     if (subject && !SUBJECTS.includes(subject)) return { status: 400, jsonBody: { error: '유효하지 않은 과목입니다.' } };
     if (!MODELS.includes(model)) return { status: 400, jsonBody: { error: '유효하지 않은 모델입니다.' } };
 
-    const user = session.current(request);
+    const user = await session.load(request);
 
     /* 로그인 필수.
 

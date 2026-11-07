@@ -151,7 +151,7 @@ app.http('me', {
   authLevel: 'anonymous',
   handler: async (request) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { authenticated: false } };
 
     // 제한 중이면 화면이 이유와 소명 경로를 안내할 수 있어야 한다.
@@ -211,4 +211,30 @@ app.http('logout', {
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: async () => ({ status: 204, cookies: [session.clear()] })
+});
+
+/* ── 5) 모든 기기에서 로그아웃 ──
+   지금까지 발급된 이 사람의 세션을 전부 끊는다(session.revokeAll). 다른 기기에 로그인해 둔 채
+   잊었거나 쿠키가 새어 나간 것 같을 때 쓴다. 이 브라우저의 쿠키도 함께 지운다.
+   킬 스위치 중에는 막는다 — 일반 로그아웃과 달리 DB 에 쓴다. */
+app.http('logoutAll', {
+  route: 'auth/logout-all',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const user = await session.load(request);
+    if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
+    try {
+      await session.revokeAll(user.sub);
+    } catch (e) {
+      // 문서가 없으면 끊을 다른 세션 기록도 없다 — 이 브라우저만 로그아웃하면 된다
+      if (e.code !== 404) {
+        context.error('전체 로그아웃 실패:', e.message);
+        return { status: 503, jsonBody: { error: '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.' } };
+      }
+    }
+    context.log(`전체 로그아웃: ${user.sub}`);
+    return { status: 204, cookies: [session.clear()] };
+  }
 });

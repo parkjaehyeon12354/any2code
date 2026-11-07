@@ -40,7 +40,7 @@ app.http('adminHeld', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = requireAdmin(request);
+    const { error } = await requireAdmin(request);
     if (error) return error;
 
     try {
@@ -69,7 +69,7 @@ app.http('adminModerate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { user, error } = requireAdmin(request);
+    const { user, error } = await requireAdmin(request);
     if (error) return error;
 
     let body;
@@ -156,7 +156,7 @@ app.http('adminCredits', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = requireAdmin(request);
+    const { error } = await requireAdmin(request);
     if (error) return error;
 
     try {
@@ -219,7 +219,7 @@ app.http('adminCreditGrant', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error, user: admin } = requireAdmin(request);
+    const { error, user: admin } = await requireAdmin(request);
     if (error) return error;
 
     let body;
@@ -251,7 +251,7 @@ app.http('adminSettings', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = requireAdmin(request);
+    const { error } = await requireAdmin(request);
     if (error) return error;
 
     try {
@@ -272,7 +272,7 @@ app.http('adminSettingsSave', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { user, error } = requireAdmin(request);
+    const { user, error } = await requireAdmin(request);
     if (error) return error;
 
     // 금칙어 200개라도 몇 KB다. 그보다 큰 요청은 파싱 전에 자른다.
@@ -297,3 +297,36 @@ app.http('adminSettingsSave', {
 });
 
 
+
+/* ── 세션 강제 종료 ──
+   특정 사용자의 모든 세션을 끊는다. 쿠키가 탈취된 것 같다는 신고를 받았을 때나, 관리자 자신의
+   쿠키가 새어 나간 것 같을 때 쓴다(자기 sub 를 넣으면 이 요청을 보낸 세션도 함께 끊긴다).
+   사용자 문서(user:<sub>)가 없으면 로그인한 적이 없는 사람이라 404 로 알려 준다. */
+app.http('adminRevokeSessions', {
+  route: 'moderation/sessions/revoke',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    const locked = lockdown(); if (locked) return locked;
+    const { error, user: admin } = await requireAdmin(request);
+    if (error) return error;
+
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    const sub = body && typeof body.sub === 'string' ? body.sub.trim() : '';
+    // sub 는 '<제공자>:<id>' 모양이다(auth.js). 그 밖의 값은 문서 경로에 넣지 않는다
+    if (!/^[a-z]+:[A-Za-z0-9_-]{1,100}$/.test(sub)) {
+      return { status: 400, jsonBody: { error: '대상을 선택해 주세요.' } };
+    }
+
+    try {
+      await session.revokeAll(sub);
+      context.log(`세션 강제 종료: ${admin.sub} → ${sub}`);
+      return { jsonBody: { ok: true, self: sub === admin.sub } };
+    } catch (e) {
+      if (e.code === 404) return { status: 404, jsonBody: { error: '로그인한 적이 없는 사용자입니다.' } };
+      context.error('세션 강제 종료 실패:', e.message);
+      return dbFail(e);
+    }
+  }
+});

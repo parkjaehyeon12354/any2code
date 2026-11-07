@@ -458,6 +458,7 @@
       </div>
       <div class="foot">
         <a href="#" class="btn btn-ghost" data-logout>로그아웃</a>
+        <button type="button" class="btn btn-ghost" id="logout-all">모든 기기에서 로그아웃</button>
       </div>
     </div>
 
@@ -790,6 +791,22 @@
   const couponInput = el('f-coupon');
   const couponBtn = el('coupon-use');
   const couponResult = el('coupon-result');
+
+  /* 모든 기기에서 로그아웃 — 다른 기기·브라우저에 남은 세션까지 서버가 끊는다.
+     쿠키가 새어 나갔을 수 있을 때 쓰는 버튼이라 확인을 한 번 받는다. */
+  el('logout-all').addEventListener('click', async function () {
+    if (!confirm('이 기기를 포함해 로그인된 모든 기기에서 로그아웃합니다. 계속할까요?')) return;
+    this.disabled = true;
+    try {
+      const res = await fetch('/api/auth/logout-all', { method: 'POST', credentials: 'same-origin' });
+      if (!res.ok && res.status !== 401) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+      await Session.logout();
+      location.href = '/login';
+    } catch (e) {
+      alert('처리하지 못했습니다: ' + e.message);
+      this.disabled = false;
+    }
+  });
 
   couponForm.addEventListener('submit', async function (e) {
     e.preventDefault();
