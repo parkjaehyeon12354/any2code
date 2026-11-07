@@ -6,9 +6,10 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const { readPage } = require('./page-source');
 const path = require('path');
 
-const postHtml = fs.readFileSync(path.join(__dirname, '../../post.html'), 'utf8');
+const postHtml = readPage(path.join(__dirname, '../../post.html'));
 
 test('글 수정·삭제 버튼은 내 글에만 붙는다', () => {
   /* post.mine 을 안 본 채 전부 붙이면 남의 글에 수정·삭제가 보인다.

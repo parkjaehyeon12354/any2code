@@ -7,9 +7,10 @@ process.env.SESSION_SECRET = 'test-secret-for-onboarding';
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const { readPage } = require('./page-source');
 const path = require('path');
 
-const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
+const read = (p) => readPage(path.join(__dirname, '..', p));
 /* 저장소 루트의 프론트엔드 파일을 읽는다.
 
    ⚠ 경로를 그대로 붙이지 않고 후보를 순서대로 본다.
@@ -29,14 +30,14 @@ function readRoot(name) {
   // 경로가 붙어 있으면(simulation/index.html) 그대로도 한 번 본다
   for (const r of ROOTS) {
     const full = path.join(__dirname, '../..', r, name);
-    if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
+    if (fs.existsSync(full)) return readPage(full);
   }
   // 폴더가 바뀐 경우 — 파일 이름만 떼어 다시 찾는다
   const base = path.basename(name);
   if (base !== name) {
     for (const r of ROOTS) {
       const full = path.join(__dirname, '../..', r, base);
-      if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
+      if (fs.existsSync(full)) return readPage(full);
     }
   }
   throw new Error(
@@ -557,7 +558,7 @@ test('"시작하기" 버튼은 전부 회원가입으로 간다', () => {
 
   const offenders = [];
   for (const file of walk(ROOT)) {
-    const html = fs.readFileSync(file, 'utf8');
+    const html = readPage(file);
     if (/<a href="\/login">시작하기<\/a>/.test(html)) offenders.push(file);
   }
   assert.deepStrictEqual(offenders, [], '아직 /login 으로 바로 가는 "시작하기" 가 남아 있다');

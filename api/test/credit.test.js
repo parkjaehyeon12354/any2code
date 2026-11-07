@@ -5,6 +5,7 @@ process.env.SESSION_SECRET = 'test-secret-for-unit-tests-only';
 
 const test = require('node:test');
 const assert = require('node:assert');
+const { readPage } = require('./page-source');
 
 const credit = require('../src/lib/credit');
 const { MODEL_COST, FREE_CREDITS } = credit;
@@ -29,7 +30,7 @@ test('모든 모델 값은 양의 정수다 — 0 이면 무한정 쓸 수 있�
 test('한도 도달은 402로 알린다 — 401/403 과 구분되어야 한다', () => {
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
   assert.ok(/remaining < cost\)[\s\S]{0,200}status: 402/.test(src),
     '잔액이 모델 값보다 적으면 402 를 반환해야 한다');
   // 402 는 "한도 도달"이지 "로그인 필요"(401)나 "정지"(403)가 아니다
@@ -40,7 +41,7 @@ test('한도 도달은 402로 알린다 — 401/403 과 구분되어야 한다',
 test('차감은 답변을 받은 뒤에 한다', () => {
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
   const callAt = src.indexOf('await callLLM(');
   const consumeAt = src.indexOf('credit.consume(');
   assert.ok(callAt > 0 && consumeAt > callAt,
@@ -50,7 +51,7 @@ test('차감은 답변을 받은 뒤에 한다', () => {
 test('차감 실패가 답변을 막지 않는다', () => {
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
   // 답변은 이미 만들어졌다. 여기서 예외를 던지면 사용자가 오류 화면을 본다.
   assert.ok(/credit\.consume\([\s\S]{0,120}\}\s*catch/.test(src),
     'consume 은 try/catch 로 감싸야 한다');
@@ -164,7 +165,7 @@ test('credit 문서 id 는 sanction 과 겹치지 않는다', () => {
      실패했다. 제재를 받은 적 없는 계정은 멀쩡해서 원인이 한참 늦게 드러났다. */
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/lib/credit.js'));
 
   assert.ok(/const docId = \(sub\) => 'credit:' \+ sub/.test(src),
     'credit 문서는 접두사 붙은 id 를 써야 한다');
@@ -184,7 +185,7 @@ test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
      차감(consume)이 같은 식으로 조용히 실패하면 한도가 사실상 없어진다. */
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/lib/credit.js'));
 
   assert.ok(!/\.item\(sub, sub\)\.patch\(/.test(src),
     'credit 문서에 patch 를 쓰면 옛 문서에서 실패한다 — upsert 를 쓸 것');
@@ -235,7 +236,7 @@ test('목록은 사용자 기준이다 — 아직 안 쓴 사람도 나와야 �
 test('설정 화면의 다음 충전 시각은 한국 시간 정시이고, 기기 시간대와 무관하다', () => {
   const fs = require('fs');
   const path = require('path');
-  const html = fs.readFileSync(path.join(__dirname, '../../settings.html'), 'utf8');
+  const html = readPage(path.join(__dirname, '../../settings.html'));
   const start = html.indexOf('function nextResetLabel');
   const end = html.indexOf('\n  }\n', start) + 4;
   assert.ok(start > 0, 'settings.html 에서 nextResetLabel 을 찾지 못했다');
