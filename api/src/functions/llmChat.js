@@ -241,6 +241,24 @@ async function callGemini(system, question) {
 const GEMINI_BLOCKED = ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII'];
 const SAFETY_REFUSAL = '그 내용은 안전을 위해 알려 드릴 수 없어요. 반응의 원리나 실험실 안전 수칙처럼 과학 공부에 도움이 되는 질문이라면 기꺼이 도와 드릴게요.';
 
+/* 크레딧이 모자랄 때의 응답. 미리 확인할 때와 잡아 두다 막혔을 때 같은 모양으로 낸다. */
+const noCredit = (v, cost) => ({
+  status: 402,
+  jsonBody: {
+    error: v.remaining <= 0
+      ? 'AI 도우미 크레딧을 모두 사용했습니다.'
+      : `이 모델은 질문 1번에 ${cost} 크레딧이 필요합니다. 남은 크레딧은 ${v.remaining} 입니다.`,
+    credit: {
+      remaining: v.remaining,
+      granted: v.granted,
+      bonus: v.bonus,
+      used: v.used,
+      // 3시간마다 채워지므로 언제 풀리는지 함께 알려준다
+      resetInMs: v.resetInMs
+    }
+  }
+});
+
 app.http('llmChat', {
   route: 'llm/chat',
   methods: ['POST'],
@@ -355,59 +373,56 @@ app.http('llmChat', {
     if (!models.includes(model)) {
       return { status: 403, jsonBody: { error: '이 모델은 요금제 전용입니다. 설정에서 쿠폰을 등록하면 쓸 수 있습니다.' } };
     }
-    if (bal && !bal.unlimited && bal.remaining < cost) {
-      return {
-        status: 402,
-        jsonBody: {
-          error: bal.remaining <= 0
-            ? 'AI 도우미 크레딧을 모두 사용했습니다.'
-            : `이 모델은 질문 1번에 ${cost} 크레딧이 필요합니다. 남은 크레딧은 ${bal.remaining} 입니다.`,
-          credit: {
-            remaining: bal.remaining,
-            granted: bal.granted,
-            bonus: bal.bonus,
-            used: bal.used,
-            // 3시간마다 채워지므로 언제 풀리는지 함께 알려준다
-            resetInMs: bal.resetInMs
-          }
+    if (bal && !bal.unlimited && bal.remaining < cost) return noCredit(bal, cost);
+
+    /* 크레딧을 AI 호출 전에 잡아 둔다(credit.reserve). 위 잔액 확인만으로는 동시 요청을 못 막는다 —
+       1번 값만 남은 사람이 10개를 한꺼번에 보내면 10개 모두 확인을 통과했다.
+       관리자(무제한)는 잡지 않는다 — 잔액 문서도 건드리지 않는다.
+       잔액을 못 읽었을 때처럼 DB 가 흔들리면 학습을 막지 않고 통과시킨다(로그만 남긴다). */
+    let held = null;
+    if (!(bal && bal.unlimited)) {
+      try {
+        held = await credit.reserve(user.sub, model, user.name);
+      } catch (e) {
+        if (e.code === 'INSUFFICIENT_CREDIT') return noCredit(e.credit, cost);
+        // 여러 번 다시 해도 계속 부딪혔다 = 같은 계정이 한꺼번에 몰아 보내는 중이다.
+        // 여기서 통과시키면 그게 바로 공짜로 묻는 길이 되므로 막는다.
+        if (credit.isRace(e)) {
+          return { status: 429, jsonBody: { error: '요청이 한꺼번에 몰렸습니다. 잠시 후 다시 시도해 주세요.' } };
         }
-      };
+        context.error('크레딧 차감 실패:', e.message);
+      }
     }
 
+    let answer;
     try {
-      const answer = await callLLM(question, subject, model);
-
-      /* 답변을 받은 뒤에만 차감한다. 실패해도 답변은 이미 만들어졌으므로 그대로 보낸다 —
-         여기서 예외를 던지면 답변을 받은 사용자가 오류 화면을 보게 된다. */
-      // 관리자(무제한)는 차감하지 않는다 — 잔액 문서도 건드리지 않는다
-      let after = bal && bal.unlimited ? { ...bal, cost: 0 } : null;
-      if (!after) {
-        try {
-          after = await credit.consume(user.sub, model, user.name);
-        } catch (e) {
-          context.error('크레딧 차감 실패:', e.message);
-        }
-      }
-
-      return {
-        jsonBody: {
-          answer,
-          credit: after
-            ? {
-                spent: after.cost,
-                remaining: after.remaining,
-                granted: after.granted,
-                bonus: after.bonus,
-                resetInMs: after.resetInMs,
-                unlimited: !!after.unlimited
-              }
-            : null
-        }
-      };
+      answer = await callLLM(question, subject, model);
     } catch (e) {
+      // 호출이 실패하면 잡아 둔 크레딧을 돌려준다. 돌려주기가 실패해도 오류 응답은 그대로 보낸다.
+      if (held) {
+        await credit.refund(user.sub, held.hold, user.name)
+          .catch((err) => context.error('크레딧 환불 실패:', err.message));
+      }
       context.error('LLM 요청 실패:', e.message);
       const msg = e.status && e.status >= 500 ? '외부 서비스 오류입니다. 잠시 후 다시 시도해 주세요.' : e.message;
       return { status: 502, jsonBody: { error: msg } };
     }
+
+    const after = bal && bal.unlimited ? { ...bal, cost: 0 } : (held ? held.after : null);
+    return {
+      jsonBody: {
+        answer,
+        credit: after
+          ? {
+              spent: after.cost,
+              remaining: after.remaining,
+              granted: after.granted,
+              bonus: after.bonus,
+              resetInMs: after.resetInMs,
+              unlimited: !!after.unlimited
+            }
+          : null
+      }
+    };
   }
 });

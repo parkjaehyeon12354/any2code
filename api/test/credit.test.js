@@ -31,30 +31,24 @@ test('한도 도달은 402로 알린다 — 401/403 과 구분되어야 한다',
   const fs = require('fs');
   const path = require('path');
   const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
-  assert.ok(/remaining < cost\)[\s\S]{0,200}status: 402/.test(src),
+  assert.ok(/remaining < cost\) return noCredit\(/.test(src) && /const noCredit[\s\S]{0,40}status: 402/.test(src),
     '잔액이 모델 값보다 적으면 402 를 반환해야 한다');
   // 402 는 "한도 도달"이지 "로그인 필요"(401)나 "정지"(403)가 아니다
   assert.ok(/status: 401/.test(src) && /status: 403/.test(src),
     '401/403 과 함께 쓰여 구분이 유지되어야 한다');
 });
 
-test('차감은 답변을 받은 뒤에 한다', () => {
-  const fs = require('fs');
+test('크레딧은 AI 호출 전에 잡아 두고, 실패하면 돌려준다', () => {
+  /* 예전에는 '답변 뒤에 차감' 이었다. 확인과 차감 사이에 AI 를 기다리는 수 초가 끼어
+     동시 요청이 전부 확인을 통과했다. 이제는 호출 전에 잡고(reserve) 실패하면 돌려준다(refund).
+     실제 동시 요청 동작은 credit-race.test.js 가 본다. */
   const path = require('path');
   const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
+  const reserveAt = src.indexOf('credit.reserve(');
   const callAt = src.indexOf('await callLLM(');
-  const consumeAt = src.indexOf('credit.consume(');
-  assert.ok(callAt > 0 && consumeAt > callAt,
-    '호출이 실패하면 빼지 않도록 callLLM 뒤여야 한다');
-});
-
-test('차감 실패가 답변을 막지 않는다', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
-  // 답변은 이미 만들어졌다. 여기서 예외를 던지면 사용자가 오류 화면을 본다.
-  assert.ok(/credit\.consume\([\s\S]{0,120}\}\s*catch/.test(src),
-    'consume 은 try/catch 로 감싸야 한다');
+  assert.ok(reserveAt > 0 && callAt > reserveAt, '잡아 두기는 callLLM 앞이어야 한다');
+  assert.ok(/callLLM\([\s\S]{0,120}\}\s*catch[\s\S]{0,200}credit\.refund\(/.test(src),
+    'callLLM 이 실패하면 refund 로 돌려줘야 한다');
 });
 
 /* ── 3시간 주기 초기화 ──
@@ -191,7 +185,11 @@ test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
     'credit 문서에 patch 를 쓰면 옛 문서에서 실패한다 — upsert 를 쓸 것');
   // 문서 쓰기는 save() 의 upsert 한 곳으로 모았다 — 차감·지급·쿠폰이 모두 그리로 간다
   assert.ok(!/\.patch\(/.test(src), 'credit.js 에 patch 가 있으면 안 된다');
-  assert.strictEqual((src.match(/items\.upsert\(/g) || []).length, 1, '쓰는 곳은 save() 하나여야 한다');
+  // 조건부 upsert(IfMatch)와 첫 create 가 모두 save() 안에만 있어야 한다
+  const saveBody = src.slice(src.indexOf('async function save('), src.indexOf('const MAX_TRIES'));
+  const all = (src.match(/items\.(?:upsert|create)\(/g) || []).length;
+  const inSave = (saveBody.match(/items\.(?:upsert|create)\(/g) || []).length;
+  assert.ok(inSave > 0 && all === inSave, '쓰는 곳은 save() 하나여야 한다');
 });
 
 /* ── 관리자 크레딧 지급 ── */
