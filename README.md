@@ -88,3 +88,9 @@ LLM 은 **OpenAI 호환 엔드포인트**로 부릅니다. 현재 기본값은 U
 계열 모델(Gemini 3.x 등)은 이 예산을 **사고 토큰이 먼저 소비**해서, 답변이 빈 채로
 `finish_reason: length` 가 떨어집니다. 에러가 아니라 빈 문자열이라 조용히 깨집니다.
 응답의 `usage.completion_tokens_details.reasoning_tokens` 가 0 인지 먼저 확인하세요.
+
+## 보안 · 라이선스
+
+- 보안 문제는 공개 이슈 대신 [SECURITY.md](SECURITY.md) 의 비공개 제보 절차를 따라 주세요.
+- 이 프로젝트는 [GNU AGPL-3.0](LICENSE) 으로 배포됩니다. 코드를 고쳐서 서비스로 운영하면
+  그 서비스의 사용자에게도 고친 소스 코드를 공개해야 합니다(13조).

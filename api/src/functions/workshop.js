@@ -81,7 +81,7 @@ app.http('workshopList', {
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
     const kind = new URL(request.url).searchParams.get('kind');
-    const user = session.current(request);
+    const user = await session.load(request);
     try {
       const spec = KINDS.includes(kind)
         ? { query: `SELECT ${FIELDS} FROM c WHERE c.type = 'workshop' AND c.pk = @p AND c.kind = @k`,
@@ -112,7 +112,7 @@ app.http('workshopCreate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
     try {
@@ -160,7 +160,7 @@ app.http('workshopGet', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     try {
       const doc = (await container().item(request.params.id, PK).read()).resource;
       if (!doc || doc.type !== 'workshop') return { status: 404, jsonBody: { error: '없는 자료입니다.' } };
@@ -184,7 +184,7 @@ app.http('workshopDelete', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     try {
       const item = container().item(request.params.id, PK);
@@ -237,7 +237,7 @@ app.http('workshopLike', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인하면 추천할 수 있습니다.' } };
     if (!likeAllowed(user.sub)) return { status: 429, jsonBody: { error: '너무 빠르게 누르고 있습니다. 잠시 후 다시 시도해 주세요.' } };
     const wid = request.params.id;

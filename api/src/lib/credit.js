@@ -119,10 +119,19 @@ function view(doc, nowMs = Date.now()) {
   };
 }
 
-/* 통째로 upsert 한다. patch 는 쓰지 않는다 — 기능을 붙이기 전에 만들어진 문서에는
+/* 통째로 쓴다. patch 는 쓰지 않는다 — 기능을 붙이기 전에 만들어진 문서에는
    새 필드(period·bonus·plan)가 없어서 patch 가 실패한다. 실제로 그렇게 짰다가
    기존 문서를 가진 사용자만 503 이 났다. 기존 필드는 펼쳐서 보존한다 —
-   차감이 bonus·plan 을 빠뜨리고 쓰면 충전한 크레딧과 요금제가 조용히 사라진다. */
+   차감이 bonus·plan 을 빠뜨리고 쓰면 충전한 크레딧과 요금제가 조용히 사라진다.
+
+   ⚠ 동시 요청. 예전에는 '읽고 → 계산하고 → 그냥 upsert' 였다. 같은 사람이 질문을 동시에
+   10개 보내면 10개가 같은 잔액을 읽고, 마지막에 쓴 하나만 남아 차감이 1번만 됐다.
+   쿠폰 충전과 질문이 겹치면 충전분이 덮여 사라지기도 했다.
+   그래서 읽을 때 받은 _etag 를 IfMatch 로 건다. 그 사이 누가 고쳤으면 412 로 거절되고,
+   mutate() 가 다시 읽어 다시 계산한다. 문서가 없을 때는 create 로 만든다 — 둘이 동시에
+   처음 만들면 한쪽이 409 를 받고 역시 다시 읽는다. */
+const SYSTEM_FIELDS = ['_rid', '_self', '_etag', '_attachments', '_ts'];
+
 async function save(sub, doc, fields, userName) {
   const now = new Date().toISOString();
   const next = {
@@ -133,8 +142,37 @@ async function save(sub, doc, fields, userName) {
     updatedAt: now,
     ...fields
   };
-  await container().items.upsert(next);
+  for (const k of SYSTEM_FIELDS) delete next[k];
+  if (!doc) {
+    await container().items.create(next);
+  } else if (doc._etag) {
+    await container().items.upsert(next, { accessCondition: { type: 'IfMatch', condition: doc._etag } });
+  } else {
+    await container().items.upsert(next);   // _etag 가 없는 문서는 실서버에 없다(테스트용 수동 문서)
+  }
   return next;
+}
+
+const MAX_TRIES = 8;
+const isRace = (e) => e && (e.code === 412 || e.code === 409);
+// 다시 시도할 때 조금씩 늦춘다. 모두 같은 순간에 다시 읽으면 또 같이 부딪힌다.
+const backoff = (i) => new Promise((r) => setTimeout(r, Math.floor(Math.random() * 10 * i) + 2));
+
+/* 읽기 → 계산 → 조건부 쓰기를 한 덩어리로 돈다. 충돌하면 처음부터 다시 한다.
+   change(v, nowMs) 는 저장할 필드를 돌려준다. 던지면(잔액 부족 등) 아무것도 쓰지 않는다. */
+async function mutate(sub, change, userName) {
+  for (let i = 1; ; i++) {
+    const nowMs = Date.now();
+    const doc = await readDoc(sub);
+    const v = view(doc, nowMs);
+    const fields = change(v, nowMs);
+    try {
+      return { before: v, saved: await save(sub, doc, fields, userName), nowMs };
+    } catch (e) {
+      if (isRace(e) && i < MAX_TRIES) { await backoff(i); continue; }
+      throw e;
+    }
+  }
 }
 
 async function balance(sub, { admin = false } = {}) {
@@ -142,23 +180,58 @@ async function balance(sub, { admin = false } = {}) {
   return admin ? asAdmin(v) : v;
 }
 
-/* 모델 값만큼 차감한다. 답변을 받은 뒤에 부른다 — 호출이 실패하면 빼지 않는다.
-   무료 몫을 먼저 쓰고, 모자란 만큼 충전 잔액에서 뺀다(충전분은 초기화로 안 사라지니 아껴 둔다).
+/** 무료 몫을 먼저 쓰고, 모자란 만큼 충전 잔액에서 뺀다(충전분은 초기화로 안 사라지니 아껴 둔다). */
+const split = (v, cost) => {
+  const fromFree = Math.min(cost, v.free);
+  return { fromFree, fromBonus: Math.min(cost - fromFree, v.bonus) };
+};
 
-   ⚠ 차감에 실패해도 답변은 이미 나갔다. 그 경우 조용히 넘어가되 로그를 남긴다 —
-   여기서 예외를 던지면 답변을 받은 사용자에게 오류 화면을 보여주게 된다. */
+/* 모델 값만큼 차감한다. 잔액이 모자라면 있는 만큼만 뺀다(0 아래로 내려가지 않는다). */
 async function consume(sub, model, userName) {
   const cost = MODEL_COST[model];
   if (!cost) throw new Error('알 수 없는 모델: ' + model);
-  const nowMs = Date.now();
-  const doc = await readDoc(sub);
-  const v = view(doc, nowMs);
-  const fromFree = Math.min(cost, v.free);
-  const fromBonus = Math.min(cost - fromFree, v.bonus);
-  const saved = await save(sub, doc, {
-    granted: v.granted, used: v.used + fromFree, period: v.period, bonus: v.bonus - fromBonus
+  const { saved, nowMs } = await mutate(sub, (v) => {
+    const { fromFree, fromBonus } = split(v, cost);
+    return { granted: v.granted, used: v.used + fromFree, period: v.period, bonus: v.bonus - fromBonus };
   }, userName);
   return { cost, ...view(saved, nowMs) };
+}
+
+/* AI 질문 전에 크레딧을 먼저 잡아 둔다(선차감). 모자라면 INSUFFICIENT_CREDIT 을 던지고
+   아무것도 빼지 않는다.
+
+   왜 답변 뒤가 아니라 앞인가 — 예전에는 '잔액 확인 → AI 호출 → 차감' 이었다. 확인과 차감
+   사이에 AI 를 기다리는 수 초가 끼어 있어서, 1번 값만 남은 사람이 질문을 동시에 10개
+   보내면 10개 모두 확인을 통과하고 답을 받았다. 차감은 0 에서 멈추니 9번은 공짜였다.
+   잡아 두는 쓰기가 IfMatch 로 하나씩 줄을 서므로, 잔액이 모자란 요청은 AI 를 부르기 전에 막힌다.
+   호출이 실패하면 refund() 로 돌려준다 — '실패하면 빼지 않는다' 는 약속은 그대로다. */
+async function reserve(sub, model, userName) {
+  const cost = MODEL_COST[model];
+  if (!cost) throw new Error('알 수 없는 모델: ' + model);
+  let hold;
+  const { saved, nowMs } = await mutate(sub, (v) => {
+    if (v.remaining < cost) {
+      const e = new Error('크레딧이 모자랍니다.');
+      e.code = 'INSUFFICIENT_CREDIT';
+      e.credit = v;
+      throw e;
+    }
+    hold = { ...split(v, cost), period: v.period, cost };
+    return { granted: v.granted, used: v.used + hold.fromFree, period: v.period, bonus: v.bonus - hold.fromBonus };
+  }, userName);
+  return { hold, after: { cost, ...view(saved, nowMs) } };
+}
+
+/* 잡아 둔 크레딧을 돌려준다. 그 사이 3시간 구간이 바뀌었으면 무료 몫은 이미 새로 채워졌으므로
+   충전분(bonus)만 돌려준다 — 무료 몫까지 돌려주면 새 구간 한도를 넘게 된다. */
+async function refund(sub, hold, userName) {
+  const { saved, nowMs } = await mutate(sub, (v) => ({
+    granted: v.granted,
+    used: v.period === hold.period ? Math.max(0, v.used - hold.fromFree) : v.used,
+    period: v.period,
+    bonus: v.bonus + hold.fromBonus
+  }), userName);
+  return view(saved, nowMs);
 }
 
 /* 관리자가 이번 구간 한도를 더 준다. 소명이 받아들여진 경우 등.
@@ -166,10 +239,7 @@ async function consume(sub, model, userName) {
    ⚠ 이 추가분은 다음 초기화(3시간)에 사라진다 — granted 는 구간이 바뀌면 요금제
    값으로 돌아간다. 오래 남아야 하면 크레딧 쿠폰(bonus)을 쓴다. */
 async function grant(sub, amount, userName) {
-  const nowMs = Date.now();
-  const doc = await readDoc(sub);
-  const v = view(doc, nowMs);
-  const saved = await save(sub, doc, { granted: v.granted + amount, used: v.used, period: v.period }, userName);
+  const { saved, nowMs } = await mutate(sub, (v) => ({ granted: v.granted + amount, used: v.used, period: v.period }), userName);
   return view(saved, nowMs);
 }
 
@@ -186,24 +256,22 @@ function couponBlock(v, coupon) {
    - 요금제: 같은 요금제면 남은 기간 뒤에 이어 붙이고, 아니면 지금부터 센다.
      이번 구간 한도도 바로 새 요금제 값으로 올린다(관리자가 더 준 몫은 유지). */
 async function applyCoupon(sub, coupon, userName) {
-  const nowMs = Date.now();
-  const doc = await readDoc(sub);
-  const v = view(doc, nowMs);
-  const base = { granted: v.granted, used: v.used, period: v.period };
-  if (coupon.kind === 'credit') {
-    return view(await save(sub, doc, { ...base, bonus: v.bonus + coupon.amount }, userName), nowMs);
-  }
-  const from = v.plan === coupon.plan ? Date.parse(v.planUntil) : nowMs;
-  return view(await save(sub, doc, {
-    ...base,
-    granted: v.granted - PLANS[v.plan].credits + PLANS[coupon.plan].credits,
-    plan: coupon.plan,
-    planUntil: new Date(from + coupon.days * 86400000).toISOString()
-  }, userName), nowMs);
+  const { saved, nowMs } = await mutate(sub, (v, now) => {
+    const base = { granted: v.granted, used: v.used, period: v.period };
+    if (coupon.kind === 'credit') return { ...base, bonus: v.bonus + coupon.amount };
+    const from = v.plan === coupon.plan ? Date.parse(v.planUntil) : now;
+    return {
+      ...base,
+      granted: v.granted - PLANS[v.plan].credits + PLANS[coupon.plan].credits,
+      plan: coupon.plan,
+      planUntil: new Date(from + coupon.days * 86400000).toISOString()
+    };
+  }, userName);
+  return view(saved, nowMs);
 }
 
 module.exports = {
-  balance, consume, grant, view, planOf, couponBlock, applyCoupon, readDoc, docId, asAdmin,
+  balance, consume, reserve, refund, grant, isRace, view, planOf, couponBlock, applyCoupon, readDoc, docId, asAdmin,
   currentPeriod, msUntilReset,
   MODEL_COST, PLANS, FREE_CREDITS, RESET_HOURS
 };

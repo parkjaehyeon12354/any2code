@@ -68,7 +68,7 @@ app.http('postsList', {
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
     const channel = new URL(request.url).searchParams.get('channel') || 'all';
-    const user = session.current(request);
+    const user = await session.load(request);
 
     try {
       const spec = channel === 'all'
@@ -115,7 +115,7 @@ app.http('postsGet', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
 
     try {
       const post = (await query({
@@ -153,7 +153,7 @@ app.http('postsCreate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
 
@@ -238,7 +238,7 @@ app.http('postsVote', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (!voteAllowed(user.sub)) {
       return { status: 429, jsonBody: { error: '너무 빠르게 누르고 있습니다. 잠시 후 다시 시도해 주세요.' } };
@@ -319,7 +319,7 @@ app.http('commentsList', {
         query: "SELECT * FROM c WHERE c.type = 'comment' AND c.pk = @p AND c.status = 'public' ORDER BY c.createdAt ASC",
         parameters: [{ name: '@p', value: postId }]
       });
-      const viewer = session.current(request);
+      const viewer = await session.load(request);
       return {
         jsonBody: { comments: rows.map((c) => publicComment(c, viewer && viewer.sub)) },
         headers: { 'Cache-Control': 'no-store' }
@@ -337,7 +337,7 @@ app.http('commentsCreate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
 
@@ -420,7 +420,7 @@ app.http('commentsUpdate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
 
@@ -513,7 +513,7 @@ app.http('commentsDelete', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     const postId = request.params.postId;
@@ -569,7 +569,7 @@ app.http('postsUpdate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
     if (tooBig(request)) return { status: 413, jsonBody: { error: '요청이 너무 큽니다.' } };
 
@@ -637,7 +637,7 @@ app.http('postsDelete', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     const postId = request.params.id;

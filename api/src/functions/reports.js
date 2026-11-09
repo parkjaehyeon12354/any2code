@@ -43,7 +43,7 @@ app.http('reportCreate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     let body;
@@ -140,7 +140,7 @@ app.http('reportList', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = requireAdmin(request);
+    const { error } = await requireAdmin(request);
     if (error) return error;
 
     try {
@@ -170,7 +170,7 @@ app.http('reportResolve', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { user, error } = requireAdmin(request);
+    const { user, error } = await requireAdmin(request);
     if (error) return error;
 
     let body;
@@ -278,7 +278,7 @@ app.http('appealCreate', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     let body;
@@ -338,7 +338,7 @@ app.http('appealList', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { error } = requireAdmin(request);
+    const { error } = await requireAdmin(request);
     if (error) return error;
 
     try {
@@ -371,7 +371,7 @@ app.http('appealDecide', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const { user, error } = requireAdmin(request);
+    const { user, error } = await requireAdmin(request);
     if (error) return error;
 
     let body;

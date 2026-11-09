@@ -10,6 +10,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const { readPage } = require('./page-source');
 const path = require('path');
 
 const ROOTS = ['', 'assets/js', 'assets/css', 'assets', 'pages'];
@@ -17,13 +18,13 @@ const ROOTS = ['', 'assets/js', 'assets/css', 'assets', 'pages'];
 function readRoot(name) {
   for (const r of ROOTS) {
     const full = path.join(__dirname, '../..', r, name);
-    if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
+    if (fs.existsSync(full)) return readPage(full);
   }
   const base = path.basename(name);
   if (base !== name) {
     for (const r of ROOTS) {
       const full = path.join(__dirname, '../..', r, base);
-      if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
+      if (fs.existsSync(full)) return readPage(full);
     }
   }
   throw new Error(`${name} 를 찾을 수 없습니다. 찾아본 곳: ` + ROOTS.map((r) => r || '(루트)').join(', '));

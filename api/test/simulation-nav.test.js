@@ -14,12 +14,13 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const { readPage } = require('./page-source');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
 const SIM_DIR = path.join(ROOT, 'simulation');
 
-const read = (p) => fs.readFileSync(p, 'utf8');
+const read = (p) => readPage(p);
 
 // 저장소 안의 모든 HTML (node_modules 제외)
 function allHtml(dir, out = []) {
@@ -679,7 +680,7 @@ test('시뮬레이션 목록의 카드 21개가 같은 마크업을 쓴다', () 
      class="sim-body"(옛 마크업)를 썼는데, 그 클래스에는 CSS 규칙 자체가
      없어서 브라우저 기본 여백이 그대로 나와 다른 카드보다 글자 간격이
      떴다. 지금은 21개 전부 sim-card-body 로 통일돼야 한다. */
-  const idx = fs.readFileSync(path.join(SIM_DIR, 'index.html'), 'utf8');
+  const idx = readPage(path.join(SIM_DIR, 'index.html'));
   const cardCount = (idx.match(/<article class="simulation-card/g) || []).length;
   assert.strictEqual(cardCount, 21, '카드가 21개가 아니다');
 

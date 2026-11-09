@@ -8,6 +8,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const { readPage } = require('./page-source');
 const path = require('node:path');
 
 process.env.SESSION_SECRET = 's'.repeat(48);
@@ -141,7 +142,7 @@ test('Gemini 오류 원문은 학생에게 보이지 않고, 실패한 질문은
 });
 
 test('화면 선택지에 적힌 값이 가격표와 같다', () => {
-  const html = fs.readFileSync(path.join(__dirname, '../../science.html'), 'utf8');
+  const html = readPage(path.join(__dirname, '../../science.html'));
   for (const [model, cost] of Object.entries(credit.MODEL_COST)) {
     assert.match(html, new RegExp(`<option value="${model}">[^<]*· ${cost}</option>`),
       `${model} 선택지에 ${cost} 가 적혀 있어야 한다`);

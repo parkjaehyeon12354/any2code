@@ -5,6 +5,7 @@ process.env.SESSION_SECRET = 'test-secret-for-unit-tests-only';
 
 const test = require('node:test');
 const assert = require('node:assert');
+const { readPage } = require('./page-source');
 
 const credit = require('../src/lib/credit');
 const { MODEL_COST, FREE_CREDITS } = credit;
@@ -29,31 +30,25 @@ test('모든 모델 값은 양의 정수다 — 0 이면 무한정 쓸 수 있�
 test('한도 도달은 402로 알린다 — 401/403 과 구분되어야 한다', () => {
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
-  assert.ok(/remaining < cost\)[\s\S]{0,200}status: 402/.test(src),
+  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
+  assert.ok(/remaining < cost\) return noCredit\(/.test(src) && /const noCredit[\s\S]{0,40}status: 402/.test(src),
     '잔액이 모델 값보다 적으면 402 를 반환해야 한다');
   // 402 는 "한도 도달"이지 "로그인 필요"(401)나 "정지"(403)가 아니다
   assert.ok(/status: 401/.test(src) && /status: 403/.test(src),
     '401/403 과 함께 쓰여 구분이 유지되어야 한다');
 });
 
-test('차감은 답변을 받은 뒤에 한다', () => {
-  const fs = require('fs');
+test('크레딧은 AI 호출 전에 잡아 두고, 실패하면 돌려준다', () => {
+  /* 예전에는 '답변 뒤에 차감' 이었다. 확인과 차감 사이에 AI 를 기다리는 수 초가 끼어
+     동시 요청이 전부 확인을 통과했다. 이제는 호출 전에 잡고(reserve) 실패하면 돌려준다(refund).
+     실제 동시 요청 동작은 credit-race.test.js 가 본다. */
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/functions/llmChat.js'));
+  const reserveAt = src.indexOf('credit.reserve(');
   const callAt = src.indexOf('await callLLM(');
-  const consumeAt = src.indexOf('credit.consume(');
-  assert.ok(callAt > 0 && consumeAt > callAt,
-    '호출이 실패하면 빼지 않도록 callLLM 뒤여야 한다');
-});
-
-test('차감 실패가 답변을 막지 않는다', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/functions/llmChat.js'), 'utf8');
-  // 답변은 이미 만들어졌다. 여기서 예외를 던지면 사용자가 오류 화면을 본다.
-  assert.ok(/credit\.consume\([\s\S]{0,120}\}\s*catch/.test(src),
-    'consume 은 try/catch 로 감싸야 한다');
+  assert.ok(reserveAt > 0 && callAt > reserveAt, '잡아 두기는 callLLM 앞이어야 한다');
+  assert.ok(/callLLM\([\s\S]{0,120}\}\s*catch[\s\S]{0,200}credit\.refund\(/.test(src),
+    'callLLM 이 실패하면 refund 로 돌려줘야 한다');
 });
 
 /* ── 3시간 주기 초기화 ──
@@ -164,7 +159,7 @@ test('credit 문서 id 는 sanction 과 겹치지 않는다', () => {
      실패했다. 제재를 받은 적 없는 계정은 멀쩡해서 원인이 한참 늦게 드러났다. */
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/lib/credit.js'));
 
   assert.ok(/const docId = \(sub\) => 'credit:' \+ sub/.test(src),
     'credit 문서는 접두사 붙은 id 를 써야 한다');
@@ -184,13 +179,17 @@ test('문서 쓰기는 patch 가 아니라 upsert 를 쓴다', () => {
      차감(consume)이 같은 식으로 조용히 실패하면 한도가 사실상 없어진다. */
   const fs = require('fs');
   const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '../src/lib/credit.js'), 'utf8');
+  const src = readPage(path.join(__dirname, '../src/lib/credit.js'));
 
   assert.ok(!/\.item\(sub, sub\)\.patch\(/.test(src),
     'credit 문서에 patch 를 쓰면 옛 문서에서 실패한다 — upsert 를 쓸 것');
   // 문서 쓰기는 save() 의 upsert 한 곳으로 모았다 — 차감·지급·쿠폰이 모두 그리로 간다
   assert.ok(!/\.patch\(/.test(src), 'credit.js 에 patch 가 있으면 안 된다');
-  assert.strictEqual((src.match(/items\.upsert\(/g) || []).length, 1, '쓰는 곳은 save() 하나여야 한다');
+  // 조건부 upsert(IfMatch)와 첫 create 가 모두 save() 안에만 있어야 한다
+  const saveBody = src.slice(src.indexOf('async function save('), src.indexOf('const MAX_TRIES'));
+  const all = (src.match(/items\.(?:upsert|create)\(/g) || []).length;
+  const inSave = (saveBody.match(/items\.(?:upsert|create)\(/g) || []).length;
+  assert.ok(inSave > 0 && all === inSave, '쓰는 곳은 save() 하나여야 한다');
 });
 
 /* ── 관리자 크레딧 지급 ── */
@@ -235,7 +234,7 @@ test('목록은 사용자 기준이다 — 아직 안 쓴 사람도 나와야 �
 test('설정 화면의 다음 충전 시각은 한국 시간 정시이고, 기기 시간대와 무관하다', () => {
   const fs = require('fs');
   const path = require('path');
-  const html = fs.readFileSync(path.join(__dirname, '../../settings.html'), 'utf8');
+  const html = readPage(path.join(__dirname, '../../settings.html'));
   const start = html.indexOf('function nextResetLabel');
   const end = html.indexOf('\n  }\n', start) + 4;
   assert.ok(start > 0, 'settings.html 에서 nextResetLabel 을 찾지 못했다');

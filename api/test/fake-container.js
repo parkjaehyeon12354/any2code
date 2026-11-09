@@ -7,6 +7,10 @@
 
 function createFake() {
   const state = { docs: [] };
+  /* 실제 Cosmos 처럼 쓸 때마다 _etag 가 바뀐다. upsert 에 IfMatch 를 걸면 그 사이 남이 고친
+     문서는 412 로 거절한다 — 이게 없으면 동시 요청 테스트가 '덮어쓰기' 를 못 잡는다. */
+  let etagSeq = 0;
+  const stamp = (d) => { d._etag = '"e' + (++etagSeq) + '"'; return d; };
 
   const fake = {
     items: {
@@ -18,12 +22,21 @@ function createFake() {
           e.code = 409;
           throw e;
         }
-        state.docs.push(d);
+        state.docs.push(stamp(d));
         return { resource: d };
       },
-      upsert: async (d) => {
+      upsert: async (d, options) => {
+        const ac = options && options.accessCondition;
+        if (ac && ac.type === 'IfMatch') {
+          const cur = state.docs.find((x) => x.id === d.id && x.pk === d.pk);
+          if (!cur || cur._etag !== ac.condition) {
+            const e = new Error('Precondition Failed: 읽은 뒤에 문서가 바뀌었습니다.');
+            e.code = 412;
+            throw e;
+          }
+        }
         state.docs = state.docs.filter((x) => x.id !== d.id);
-        state.docs.push(d);
+        state.docs.push(stamp(d));
         return { resource: d };
       },
       query: (spec) => ({
@@ -101,6 +114,7 @@ function createFake() {
           }
           throw new Error(`알 수 없는 patch 연산: ${o.op}`);
         });
+        stamp(d);
         return { resource: d };
       }
     })

@@ -19,7 +19,7 @@ app.http('profileGet', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     try {
@@ -46,7 +46,7 @@ app.http('profileSave', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     // 이름 20자 + 생일이면 몇십 바이트다. 그보다 큰 요청은 파싱 전에 자른다.
@@ -82,7 +82,7 @@ app.http('profileAcceptTerms', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     if (Number(request.headers.get('content-length') || 0) > 8 * 1024) {
@@ -119,7 +119,7 @@ app.http('profileScheduleDeletion', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     try {
@@ -144,7 +144,7 @@ app.http('profileCancelDeletion', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const locked = lockdown(); if (locked) return locked;
-    const user = session.current(request);
+    const user = await session.load(request);
     if (!user) return { status: 401, jsonBody: { error: '로그인이 필요합니다.' } };
 
     try {
